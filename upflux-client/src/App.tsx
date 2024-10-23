@@ -1,4 +1,4 @@
-import logo from "./common/logos/logo-dark.png";
+import logo from "./assets/logos/logo-dark.png";
 import './App.css';
 
 export const App = () => {

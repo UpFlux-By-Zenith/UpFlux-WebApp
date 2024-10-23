@@ -1,13 +1,24 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@font-face {
+  font-family: 'PPTelegraf-Regular';
+  src: url('./assets/fonts/PPTelegraf-Regular.otf') format('opentype');
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@font-face {
+  font-family: 'PPTelegraf-UltraBold';
+  src: url('./assets/fonts/PPTelegraf-UltraBold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'PPTelegraf-UltraLight';
+  src: url('./assets/fonts/PPTelegraf-UltraLight.otf') format('opentype');
+}
+
+/* Now you can use the fonts in your CSS */
+body {
+  margin: 0;
+  font-family: 'PPTelegraf-Regular', sans-serif;
+}
+
+h1 {
+  font-family: 'PPTelegraf-UltraBold', sans-serif;
 }
