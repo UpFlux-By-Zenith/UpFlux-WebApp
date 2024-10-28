@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import HeroImage from './components/Header'; 
 import About from './components/About';
 import ContactUs from './components/ContactUs';
+import Footer from './components/Footer';
 
 
 export const App = () => {
@@ -15,6 +16,7 @@ export const App = () => {
     <HeroImage />
     <About/>
     <ContactUs/>
+    <Footer/>
   </Router>
 
   );
