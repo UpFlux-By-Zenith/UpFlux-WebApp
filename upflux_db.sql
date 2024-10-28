@@ -1,4 +1,4 @@
-/*CREATE DATABASE upflux_db*/
+/*CREATE DATABASE upflux*/
 
 USE upflux;
 
