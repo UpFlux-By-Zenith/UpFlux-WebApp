@@ -4,6 +4,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import Navbar from './components/Navbar'; 
 import HeroImage from './components/Header'; 
 import About from './components/About';
+import ContactUs from './components/ContactUs';
 
 
 export const App = () => {
@@ -13,10 +14,7 @@ export const App = () => {
     <Navbar />
     <HeroImage />
     <About/>
-    <div style={{ padding: '20px' }}>
-      <h1>Welcome to My Website</h1>
-      <p>This is the main content of the page.</p>
-    </div>
+    <ContactUs/>
   </Router>
 
   );
