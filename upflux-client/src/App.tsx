@@ -12,10 +12,18 @@ export const App = () => {
 
   return (
     <Router>
+      <section id="home">
     <Navbar />
+    </section>
     <HeroImage />
+
+    <section id="about">
     <About/>
+    </section>
+
+    <section id="contact">
     <ContactUs/>
+    </section>
     <Footer/>
   </Router>
 

@@ -137,10 +137,16 @@ textarea {
 }
 
 @media (max-width: 768px) {
+    
     .contact-content {
         flex-direction: column; 
         align-items: center; 
         gap: 40px;
+    }
+
+    .info-boxes {
+        width: 100%; 
+        margin-left: 0; 
     }
 
     .info-boxes, .contact-form {

@@ -10,7 +10,9 @@ const Header = () => {
         <div className="text-container">
           <h1>Welcome to UpFlux!</h1>
           <p>The leading update management tool in paper mills</p>
-          <button className="learn-more-btn">Learn More</button>
+          <a href="#about" className="learn-more-btn">
+            Learn More
+          </a>
         </div>
       </div>
     </div>

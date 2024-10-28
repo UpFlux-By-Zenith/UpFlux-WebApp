@@ -55,8 +55,17 @@
     cursor: pointer; 
     transition: background-color 0.3s; 
     margin-top: 15px; 
+    text-decoration: none;
   }
   
   .learn-more-btn:hover {
     background-color: #1d2aa0; 
+  }
+
+  @media (max-width: 768px) {
+
+    .text-container {
+      margin-right: 0; 
+    }
+
   }
