@@ -1,3 +1,5 @@
+/*CREATE DATABASE upflux_db*/
+
 USE upflux;
 
 /*Create Table Statements*/
