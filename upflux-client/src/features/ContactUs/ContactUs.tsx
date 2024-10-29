@@ -1,7 +1,8 @@
-import React, { ChangeEvent, FormEvent, useState } from 'react'; 
+import React, { ChangeEvent, FormEvent, useState } from 'react';
+import { Container, TextInput, Textarea, Button, Image, Title, Text } from '@mantine/core';
 import './contactUs.css';
-import phoneIcon from '../../assets/images/phone.png'; 
-import emailIcon from '../../assets/images/email.png'; 
+import phoneIcon from '../../assets/images/phone.png';
+import emailIcon from '../../assets/images/email.png';
 
 // Define an interface for the contact form data
 interface ContactForm {
@@ -17,7 +18,6 @@ export const ContactUs = () => {
     message: '',
   });
 
-  // Type the event parameter for the handleChange function
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -26,7 +26,6 @@ export const ContactUs = () => {
     }));
   };
 
-  // Type the event parameter for the handleSubmit function
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
@@ -35,71 +34,69 @@ export const ContactUs = () => {
 
   return (
     <section id="contact" className="contact section light-background">
-      <div className="contactContainer">
-      <div className="contact-header">
-          <h2>Contact Us</h2>
+      <Container className="contactContainer">
+        <div className="contact-header">
+          <Title order={2}>Contact Us</Title>
         </div>
         <div className="contact-content">
           <div className="info-boxes">
             <div className="info-item">
-              <img src={phoneIcon} alt="Call Us" className="info-icon" />
-              <h3>Call Us</h3>
-              <p>+353 5589 55488 55</p>
-              <p>+353 6678 254445 41</p>
+              <Image src={phoneIcon} alt="Call Us" className="info-icon" />
+              <Title order={3}>Call Us</Title>
+              <Text>+353 5589 55488 55</Text>
+              <Text>+353 6678 254445 41</Text>
             </div>
 
             <div className="info-item">
-              <img src={emailIcon} alt="Email Us" className="info-icon" />
-              <h3>Email Us</h3>
-              <p>support@upflux.com</p>
-              <p>contact@upflux.com</p>
+              <Image src={emailIcon} alt="Email Us" className="info-icon" />
+              <Title order={3}>Email Us</Title>
+              <Text>support@upflux.com</Text>
+              <Text>contact@upflux.com</Text>
             </div>
           </div>
 
           <div className="contact-form">
             <form onSubmit={handleSubmit}>
               <div className="form-group name-email-group">
-                <div className="name-group">
-                  <label htmlFor="name">Name</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="email-group">
-                  <label htmlFor="email">Email</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+                <TextInput
+                  label="Name"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="name-group"
+                />
+                <TextInput
+                  label="Email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="email-group"
+                />
               </div>
               <div className="form-group message-group">
-                <label htmlFor="message">Message</label>
-                <textarea
+                <Textarea
+                  label="Message"
                   id="message"
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
                   required
-                ></textarea>
+                  autosize
+                  minRows={4}
+                  className="message-group"
+                />
               </div>
-              <button type="submit" className="submit-button">
+              <Button type="submit" className="submit-button">
                 Send Message
-              </button>
+              </Button>
             </form>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 };
-
