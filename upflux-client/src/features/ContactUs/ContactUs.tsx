@@ -1,16 +1,24 @@
-import React, { useState } from 'react'; 
+import React, { ChangeEvent, FormEvent, useState } from 'react'; 
 import './contactUs.css';
 import phoneIcon from '../../assets/images/phone.png'; 
 import emailIcon from '../../assets/images/email.png'; 
 
+// Define an interface for the contact form data
+interface ContactForm {
+  name: string;
+  email: string;
+  message: string;
+}
+
 export const ContactUs = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactForm>({
     name: '',
     email: '',
     message: '',
   });
 
-  const handleChange = (e: { target: { name: any; value: any; }; }) => {
+  // Type the event parameter for the handleChange function
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -18,7 +26,8 @@ export const ContactUs = () => {
     }));
   };
 
-  const handleSubmit = (e: { preventDefault: () => void; }) => {
+  // Type the event parameter for the handleSubmit function
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
     setFormData({ name: '', email: '', message: '' });
