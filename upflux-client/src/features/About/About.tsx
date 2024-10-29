@@ -9,7 +9,7 @@ import monitoringimg from "../../assets/images/monitoring.jpg";
 //Image from https://pixabay.com/en/calendar-dates-schedule-date-2027122/
 import schedulingimg from "../../assets/images/scheduling.jpg";
 
-const About = () => {
+export const About = () => {
   return (
     <section id="about" className="about section light-background">
       <div className="container">
@@ -60,4 +60,3 @@ const About = () => {
   );
 };
 
-export default About;

@@ -3,7 +3,7 @@ import './contactUs.css';
 import phoneIcon from '../../assets/images/phone.png'; 
 import emailIcon from '../../assets/images/email.png'; 
 
-const ContactUs = () => {
+export const ContactUs = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -94,4 +94,3 @@ const ContactUs = () => {
   );
 };
 
-export default ContactUs;

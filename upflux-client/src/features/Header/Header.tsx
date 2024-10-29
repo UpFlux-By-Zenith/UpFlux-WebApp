@@ -2,7 +2,7 @@
 import heroImage from '../../assets/images/hero-image.png'; 
 import './header.css';
 
-const Header = () => {
+export const Header = () => {
   return (
     <div className="hero-image">
       <img src={heroImage} alt="Hero" className="hero-img" />
@@ -19,4 +19,3 @@ const Header = () => {
   );
 };
 
-export default Header;

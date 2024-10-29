@@ -1,7 +1,7 @@
 import logo from "../../assets/logos/logo-light-large.png";
 import './navbar.css';
 
-const Navbar = () => {
+export const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-logo">
@@ -16,4 +16,3 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
