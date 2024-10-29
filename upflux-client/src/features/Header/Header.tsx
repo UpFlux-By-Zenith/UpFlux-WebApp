@@ -1,6 +1,6 @@
 //Image from https://img.freepik.com/premium-photo/warehouse-technician-using-computer-update-stock-records-manage-inventory_1291600-36060.jpg
-import heroImage from '../assets/images/hero-image.png'; 
-import '../features/Header/header.css';
+import heroImage from '../../assets/images/hero-image.png'; 
+import './header.css';
 
 const Header = () => {
   return (

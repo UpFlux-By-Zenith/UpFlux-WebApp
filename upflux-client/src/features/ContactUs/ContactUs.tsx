@@ -1,7 +1,7 @@
 import React, { useState } from 'react'; 
-import '../features/ContactUs/contactUs.css';
-import phoneIcon from '../assets/images/phone.png'; 
-import emailIcon from '../assets/images/email.png'; 
+import './contactUs.css';
+import phoneIcon from '../../assets/images/phone.png'; 
+import emailIcon from '../../assets/images/email.png'; 
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({

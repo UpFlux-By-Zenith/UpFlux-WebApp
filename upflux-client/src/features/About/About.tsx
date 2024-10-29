@@ -1,13 +1,13 @@
-import '../features//About/about.css';
+import './about.css';
 
 //Image from https://depositphotos.com/46719109/stock-photo-update-icon.html
-import updateimg from "../assets/images/update.jpg";
+import updateimg from "../../assets/images/update.jpg";
 //Image from https://rmhbc.ca/ways-to-give/
-import rollbackimg from "../assets/images/rollback.jpg";
+import rollbackimg from "../../assets/images/rollback.jpg";
 //Image from https://www.vectorstock.com/royalty-free-vector/charts-monitoring-rounded-icon-vector-10489125
-import monitoringimg from "../assets/images/monitoring.jpg";
+import monitoringimg from "../../assets/images/monitoring.jpg";
 //Image from https://pixabay.com/en/calendar-dates-schedule-date-2027122/
-import schedulingimg from "../assets/images/scheduling.jpg";
+import schedulingimg from "../../assets/images/scheduling.jpg";
 
 const About = () => {
   return (

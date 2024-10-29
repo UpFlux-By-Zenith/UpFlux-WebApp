@@ -1,5 +1,5 @@
-import logo from "../assets/logos/logo-light-large.png";
-import '../features/Navbar/navbar.css';
+import logo from "../../assets/logos/logo-light-large.png";
+import './navbar.css';
 
 const Navbar = () => {
   return (
