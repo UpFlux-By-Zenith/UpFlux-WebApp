@@ -6,11 +6,13 @@ import { Header } from './features/Header/Header';
 import { About } from './features/About/About';
 import { ContactUs } from './features/ContactUs/ContactUs';
 import { Footer } from './features/Footer/Footer';
+import { MantineProvider } from "@mantine/core";
 
 
 export const App = () => {
 
   return (
+    <MantineProvider>
     <Router>
       <section id="home">
     <Navbar />
@@ -26,7 +28,7 @@ export const App = () => {
     </section>
     <Footer/>
   </Router>
-
+</MantineProvider>
   );
 }
 
