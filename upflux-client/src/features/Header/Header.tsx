@@ -1,4 +1,5 @@
-//Image from https://img.freepik.com/premium-photo/warehouse-technician-using-computer-update-stock-records-manage-inventory_1291600-36060.jpg
+import React from 'react';
+import { Container, Button, Text } from '@mantine/core';
 import heroImage from '../../assets/images/hero-image.png'; 
 import './header.css';
 
@@ -7,15 +8,25 @@ export const Header = () => {
     <div className="hero-image">
       <img src={heroImage} alt="Hero" className="hero-img" />
       <div className="overlay">
-        <div className="text-container">
-          <h1>Welcome to UpFlux!</h1>
-          <p>The leading update management tool in paper mills</p>
-          <a href="#about" className="learn-more-btn">
+        <Container className="text-container" style={{ position: 'relative', zIndex: 2 }}>
+          <Text component="h1" className="hero-title" size="xl">
+            Welcome to UpFlux!
+          </Text>
+          <Text className="hero-subtitle" size="lg">
+            The leading update management tool in paper mills
+          </Text>
+          <Button 
+            component="a" 
+            href="#about" 
+            className="learn-more-btn"
+            variant="filled" 
+            color="blue"
+            size="md"
+          >
             Learn More
-          </a>
-        </div>
+          </Button>
+        </Container>
       </div>
     </div>
   );
 };
-
