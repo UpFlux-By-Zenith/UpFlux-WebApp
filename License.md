@@ -3,7 +3,7 @@
 ## Ownership
 This project and all its associated code, documentation, and assets are the intellectual property of the following five members:
 1. Gursimar Singh Ply
-2. Robert Nuget
+2. Robert Nugent
 3. Erling Munguia 
 4. Kevas Hans
 5. Patrick Orjieh
