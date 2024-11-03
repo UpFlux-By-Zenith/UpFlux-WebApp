@@ -1,0 +1,181 @@
+.contact {
+    padding: 60px 0;
+}
+
+.contactContainer {
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.contact-header {
+    text-align: center; 
+}
+
+.contact-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; 
+    gap: 100px; 
+}
+
+.info-boxes {
+    width: 45%; 
+    display: flex; 
+    justify-content: space-between; 
+    gap: 60px; 
+    margin-left: 100px;
+}
+
+.info-item {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    text-align: center; 
+}
+
+.info-icon {
+    width: 40px; 
+    height: 40px;
+    margin-bottom: 10px; 
+}
+
+.contactContainer h2 {
+    margin-bottom: 80px;
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.contactContainer h2::before,
+.contactContainer h2::after {
+    content: "";
+    width: 40px; 
+    height: 2px; 
+    background-color: #2F3BFF; 
+    margin: 0 15px; 
+}
+
+.contact-form {
+    width: 60%; 
+    display: flex;
+    flex-direction: column;
+    gap: 20px; 
+}
+
+.form-group {
+    display: flex; 
+}
+
+.name-email-group {
+    display: flex; 
+    gap: 20px; 
+    width: 70%; 
+}
+
+.name-group,
+.email-group {
+    flex: 1; 
+    margin-bottom: 30px;
+}
+
+.name-group input,
+.email-group input {
+    width: 250px;
+}
+
+.message-group {
+    flex-direction: column;
+    margin-bottom: 30px;
+}
+
+.message-group textarea {
+    width: 100%;
+    max-width: 540px; 
+}
+
+label {
+    margin-bottom: 5px;
+    color: #666;
+}
+
+input,
+textarea {
+    max-width: 100%; 
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    resize: none; 
+}
+
+textarea {
+    min-height: 100px; 
+}
+
+.submit-button {
+    background-color: #2F3BFF;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+    background-color: #1a2bb0; 
+}
+
+@media (max-width: 768px) {
+    
+    .contact-content {
+        flex-direction: column; 
+        align-items: center; 
+        gap: 40px;
+    }
+
+    .info-boxes {
+        width: 100%; 
+        margin-left: 0; 
+    }
+
+    .info-boxes, .contact-form {
+        width: 100%; 
+    }
+
+    .name-email-group {
+        flex-direction: column; 
+        width: 100%; 
+        gap: 10px;
+    }
+
+    .info-item {
+        flex-direction: column; 
+        align-items: center;
+        text-align: center;
+        white-space: normal; 
+        word-wrap: break-word; 
+    }
+
+    .info-item h3, .info-item p {
+        margin: 5px 0; 
+    }
+
+    .contactContainer h2 {
+        font-size: 20px;
+    }
+
+    .submit-button {
+        width: 100%; 
+    }
+}
