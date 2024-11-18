@@ -7,7 +7,7 @@ export const Navbar = () => {
   return (
     <Container fluid className="navbar">
       <div className="navbar-logo">
-        <Image src={logo} alt="Logo" className="logo" />
+        <Image src={logo} alt="Logo" className="logo"/>
       </div>
       <ul className="navbar-links">
         <li><Link to="/">Home</Link></li>        
