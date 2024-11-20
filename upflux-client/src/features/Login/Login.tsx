@@ -45,7 +45,7 @@ export const LoginComponent: React.FC = () => {
     const { userName, tokenFile } = formState;
 
     if (!userName.trim() || !tokenFile) {
-      setErrorMessage('User Name or Token file not recognised.');
+      setErrorMessage('User Name or Token not recognised.');
       return false;
     }
 
@@ -61,7 +61,9 @@ export const LoginComponent: React.FC = () => {
         const reader = new FileReader();
         reader.onload = () => {
           console.log('Token file content:', reader.result);
-          // You can now process the token string (reader.result)
+
+          // Process the string content here
+
         };
         reader.readAsText(formState.tokenFile);
       }
@@ -73,7 +75,6 @@ export const LoginComponent: React.FC = () => {
       <Box className="main-card">
         <Image src={logo} alt="UpFlux Logo" className="logo" />
 
-        {/* Error Message */}
         {errorMessage && (
           <Text className="error-message">
             {errorMessage}

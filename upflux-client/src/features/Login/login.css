@@ -71,12 +71,11 @@
     text-align: center;
     margin-bottom: 15px;
   }
-  
-/* File Input Box */
+
 .file-input-box {
     width: 100%;
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 40px;
   }
   
   .file-label {
