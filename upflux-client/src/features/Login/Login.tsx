@@ -5,31 +5,47 @@ import './login.css';
 
 interface LoginFormState {
   userName: string;
-  password: string;
+  tokenFile: File | null;
 }
 
 export const LoginComponent: React.FC = () => {
   const [formState, setFormState] = useState<LoginFormState>({
     userName: '',
-    password: '',
+    tokenFile: null,
   });
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleInputChange = (field: keyof LoginFormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormState({
-      ...formState,
-      [field]: event.target.value,
-    });
-    // Clear error when user types
-    setErrorMessage(null); 
-  };
+  const handleInputChange = (field: keyof LoginFormState) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (field === 'tokenFile') {
+      // Handle file input
+      const file = event.target.files?.[0] || null;
+      if (file && file.type !== 'application/json') {
+        setErrorMessage('Please upload a valid JSON file.');
+      } else {
+        setFormState({
+          ...formState,
+          [field]: file,
+        });
+        setErrorMessage(null); // Clear any existing errors
+      }
+    } else {
+      // Handle text input
+      setFormState({
+        ...formState,
+        [field]: event.target.value,
+      });
+      setErrorMessage(null); // Clear error when user types
+    }
+  };  
 
   const validateForm = (): boolean => {
-    const { userName, password } = formState;
+    const { userName, tokenFile } = formState;
 
-    if (!userName.trim() || !password || password.length < 6) {
-      setErrorMessage('User Name or Password not recognised.');
+    if (!userName.trim() || !tokenFile) {
+      setErrorMessage('User Name or Token file not recognised.');
       return false;
     }
 
@@ -39,7 +55,16 @@ export const LoginComponent: React.FC = () => {
   const handleSubmit = (): void => {
     if (validateForm()) {
       console.log('Form submitted:', formState);
-      // Login Logic Here
+
+      if (formState.tokenFile) {
+        // Read the file content
+        const reader = new FileReader();
+        reader.onload = () => {
+          console.log('Token file content:', reader.result);
+          // You can now process the token string (reader.result)
+        };
+        reader.readAsText(formState.tokenFile);
+      }
     }
   };
 
@@ -63,14 +88,18 @@ export const LoginComponent: React.FC = () => {
             className="input-card"
           />
 
-          <TextInput
-            placeholder="Password"
-            type="password"
-            value={formState.password}
-            onChange={handleInputChange('password')}
-            className="input-card"
-            style={{ marginTop: '15px' }}
-          />
+          <Box className="file-input-box">
+            <label htmlFor="tokenFile" className="file-label">
+              Token File
+            </label>
+            <input
+              type="file"
+              id="tokenFile"
+              accept=".json"
+              onChange={handleInputChange('tokenFile')}
+              className="file-input"
+            />
+          </Box>
         </Box>
 
         <Button className="login-button" onClick={handleSubmit}>
