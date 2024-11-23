@@ -6,16 +6,17 @@
     background-color: #ffffff; 
     color: #333;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+    height: 50px;
   }
   
   .navbar-logo {
     display: flex;
     align-items: center;
+    margin-top:30px;
   }
   
-  .logo {
-    height: 50px; 
-    width: auto;  
+  .navbar-logo .logo {
+    width:80px;
   }
 
   .navbar-links {
