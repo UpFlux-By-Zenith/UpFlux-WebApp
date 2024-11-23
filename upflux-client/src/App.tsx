@@ -6,8 +6,9 @@ import { Header } from './features/Header/Header';
 import { About } from './features/About/About';
 import { ContactUs } from './features/ContactUs/ContactUs';
 import { Footer } from './features/Footer/Footer';
-import { LoginComponent } from './features/Login/Login'; // Import the LoginComponent
+import { LoginComponent } from './features/Login/Login'; 
 import { MantineProvider } from "@mantine/core";
+import { PasswordSettingsContent } from "./features/PasswordSettings/PasswordSettings";
 
 export const App = () => {
   return (
@@ -32,6 +33,18 @@ export const App = () => {
           />
 
           <Route path="/login" element={<LoginComponent />} />
+
+          <Route
+          path="/password-settings"
+          element={
+            <>
+            <Navbar />
+              <PasswordSettingsContent />
+              <Footer />
+            </>
+          }
+        />
+
         </Routes>
       </Router>
     </MantineProvider>
