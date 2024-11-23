@@ -5,6 +5,7 @@ using System.Text;
 using Upflux_WebService.Core.Configuration;
 using Upflux_WebService.Services.Interfaces;
 using Upflux_WebService.Services;
+using System.Reflection;
 
 namespace Upflux_WebService
 {
@@ -60,6 +61,11 @@ namespace Upflux_WebService
                     Description = "Enter 'Bearer' [space] and then your token in the text input below.\nExample: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'"
                 });
 
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                options.IncludeXmlComments(xmlPath);
+
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
@@ -102,6 +108,8 @@ namespace Upflux_WebService
                 options.AddPolicy("EngineerOnly", policy => policy.RequireRole("Engineer"));
                 options.AddPolicy("AdminOrEngineer", policy => policy.RequireRole("Admin", "Engineer"));
             });
+
+   
 
             // Add any other required services here
             // Example: Dependency Injection for custom services

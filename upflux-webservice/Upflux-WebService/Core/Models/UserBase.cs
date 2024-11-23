@@ -7,6 +7,13 @@ public abstract class UserBase
     public string Email { get; set; }
     public Role UserRole { get; set; }
 
+    /// <summary>
+    /// Constructor 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="name"></param>
+    /// <param name="email"></param>
+    /// <param name="userRole"></param>
     public UserBase(Guid id, string name, string email, Role userRole)
     {
         Id = id;
