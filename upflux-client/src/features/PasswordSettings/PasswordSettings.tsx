@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { TextInput, Button, Text, Stack, Box, Group } from '@mantine/core';
 import './passwordSettings.css';
+import {
+  MIN_PASSWORD_LENGTH,
+  HAS_NUMBER_REGEX,
+  HAS_SPECIAL_CHAR_REGEX,
+  PASSWORD_SET_NOT_ENOUGH_LENGTH,
+  PASSWORD_SET_NO_NUMBER,
+  PASSWORD_SET_NO_SPECIAL_CHAR,
+  PASSWORD_CONFIRMATION_MISMATCH,
+} from './PasswordSettingsConsts';
 
 export const PasswordSettingsContent: React.FC = () => {
   // State for form values and errors
@@ -15,18 +24,14 @@ export const PasswordSettingsContent: React.FC = () => {
 
   // Validation function for the New Password
   const validateNewPassword = (password: string) => {
-    const minLength = 12;
-    const hasNumber = /\d/;
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/;
-
-    if (password.length < minLength) {
-      return 'Password must be at least 12 characters long.';
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return PASSWORD_SET_NOT_ENOUGH_LENGTH;
     }
-    if (!hasNumber.test(password)) {
-      return 'Password must contain at least one number.';
+    if (!HAS_NUMBER_REGEX.test(password)) {
+      return PASSWORD_SET_NO_NUMBER;
     }
-    if (!hasSpecialChar.test(password)) {
-      return 'Password must contain at least one special character.';
+    if (!HAS_SPECIAL_CHAR_REGEX.test(password)) {
+      return PASSWORD_SET_NO_SPECIAL_CHAR;
     }
     return ''; // No error
   };
@@ -34,7 +39,7 @@ export const PasswordSettingsContent: React.FC = () => {
   // Validation function for Confirm Password
   const validateConfirmPassword = (confirmPassword: string, newPassword: string) => {
     if (confirmPassword !== newPassword) {
-      return 'Passwords do not match.';
+      return PASSWORD_CONFIRMATION_MISMATCH;
     }
     return ''; // No error
   };
