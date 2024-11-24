@@ -10,3 +10,8 @@ export const PASSWORD_SET_NOT_ENOUGH_LENGTH = `Password must be at least ${MIN_P
 export const PASSWORD_SET_NO_NUMBER = 'Password must contain at least one number.';
 export const PASSWORD_SET_NO_SPECIAL_CHAR = 'Password must contain at least one special character.';
 export const PASSWORD_CONFIRMATION_MISMATCH = 'Passwords do not match.';
+
+// Placeholders
+export const PLACEHOLDER_CURRENT_PASSWORD = 'Please enter your current password';
+export const PLACEHOLDER_NEW_PASSWORD = 'Please enter your new password';
+export const PLACEHOLDER_CONFIRM_PASSWORD = 'Please confirm your new password';

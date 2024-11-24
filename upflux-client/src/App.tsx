@@ -1,14 +1,9 @@
-import logo from "./assets/logos/logo-dark.png";
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Navbar } from './features/Navbar/Navbar';
-import { Header } from './features/Header/Header';
-import { About } from './features/About/About';
-import { ContactUs } from './features/ContactUs/ContactUs';
-import { Footer } from './features/Footer/Footer';
-import { LoginComponent } from './features/Login/Login';
-import { MantineProvider, Container } from "@mantine/core";
-import { PasswordSettingsContent } from "./features/PasswordSettings/PasswordSettings";
+import { MantineProvider } from '@mantine/core';
+import { HomeRoute } from './routes/HomeRoute';
+import { LoginRoute } from './routes/LoginRoute';
+import { PasswordSettingsRoute } from './routes/PasswordSettingsRoute';
 
 export const App = () => {
   return (
@@ -16,39 +11,13 @@ export const App = () => {
       <Router>
         <Routes>
           {/* Home route */}
-          <Route
-            path="/"
-            element={
-              <>
-                <Navbar onHomePage={true} />
-                <Header />
-                <section id="about">
-                  <About />
-                </section>
-                <section id="contact">
-                  <ContactUs />
-                </section>
-                <Footer />
-              </>
-            }
-          />
+          <Route path="/" element={<HomeRoute />} />
 
           {/* Login route */}
-          <Route path="/login" element={<LoginComponent />} />
+          <Route path="/login" element={<LoginRoute />} />
 
           {/* Password settings route */}
-          <Route
-            path="/password-settings"
-            element={
-              <>
-                <Navbar onHomePage={false} /> 
-                <PasswordSettingsContent />
-                <Container className="Footer">
-                  <Footer />
-                </Container>
-              </>
-            }
-          />
+          <Route path="/password-settings" element={<PasswordSettingsRoute />} />
         </Routes>
       </Router>
     </MantineProvider>

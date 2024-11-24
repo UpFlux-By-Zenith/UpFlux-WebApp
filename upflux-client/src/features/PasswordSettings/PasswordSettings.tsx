@@ -9,6 +9,9 @@ import {
   PASSWORD_SET_NO_NUMBER,
   PASSWORD_SET_NO_SPECIAL_CHAR,
   PASSWORD_CONFIRMATION_MISMATCH,
+  PLACEHOLDER_CURRENT_PASSWORD,
+  PLACEHOLDER_NEW_PASSWORD,
+  PLACEHOLDER_CONFIRM_PASSWORD,
 } from './PasswordSettingsConsts';
 
 export const PasswordSettingsContent: React.FC = () => {
@@ -87,7 +90,7 @@ export const PasswordSettingsContent: React.FC = () => {
             Current password <span className="label-required">*</span>
           </>
         }
-        placeholder="Please enter your current password"
+        placeholder={PLACEHOLDER_CURRENT_PASSWORD}
         className="input-field wide-input"
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
@@ -99,7 +102,7 @@ export const PasswordSettingsContent: React.FC = () => {
             New password <span className="label-required">*</span>
           </>
         }
-        placeholder="Please enter your new password"
+        placeholder={PLACEHOLDER_NEW_PASSWORD}
         className="input-field wide-input"
         type="password"
         value={newPassword}
@@ -112,7 +115,7 @@ export const PasswordSettingsContent: React.FC = () => {
             Confirm new password <span className="label-required">*</span>
           </>
         }
-        placeholder="Please confirm your new password"
+        placeholder={PLACEHOLDER_CONFIRM_PASSWORD}
         className="input-field wide-input"
         type="password"
         value={confirmPassword}
