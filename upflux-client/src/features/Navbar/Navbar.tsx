@@ -7,17 +7,18 @@ import './navbar.css';
 
 // Accept a prop `home` to conditionally render the navigation items
 interface NavbarProps {
-  home: boolean;
+  onHomePage: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ home }) => {
+export const Navbar: React.FC<NavbarProps> = (props : NavbarProps) => {
+  const { onHomePage } = props;
   return (
     <Container fluid className="navbar">
       <div className="navbar-logo">
         <Image src={logo} alt="Logo" className="logo" />
       </div>
       <ul className="navbar-links">
-        {home ? (
+        {onHomePage ? (
           <>
             <li><Link to="/">Home</Link></li>
             <li><a href="#about">About</a></li>

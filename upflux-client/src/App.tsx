@@ -20,7 +20,7 @@ export const App = () => {
             path="/"
             element={
               <>
-                <Navbar home={true} />
+                <Navbar onHomePage={true} />
                 <Header />
                 <section id="about">
                   <About />
@@ -41,7 +41,7 @@ export const App = () => {
             path="/password-settings"
             element={
               <>
-                <Navbar home={false} /> 
+                <Navbar onHomePage={false} /> 
                 <PasswordSettingsContent />
                 <Container className="Footer">
                   <Footer />
