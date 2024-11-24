@@ -23,3 +23,8 @@ h1 {
   font-family: 'PPTelegraf-UltraBold', sans-serif;
 }
 
+.Footer{
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}

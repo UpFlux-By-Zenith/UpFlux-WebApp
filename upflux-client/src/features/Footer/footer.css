@@ -5,8 +5,7 @@
     padding: 20px 0;
     background-color: #fff;
     width: 100%;
-    position: absolute; /* Stick the footer to the bottom */
-    bottom: 0;           /* Always position it at the bottom of the page */
+
 }
 
 .contact-us {

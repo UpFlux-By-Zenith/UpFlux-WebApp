@@ -7,7 +7,7 @@ import { About } from './features/About/About';
 import { ContactUs } from './features/ContactUs/ContactUs';
 import { Footer } from './features/Footer/Footer';
 import { LoginComponent } from './features/Login/Login';
-import { MantineProvider } from "@mantine/core";
+import { MantineProvider, Container } from "@mantine/core";
 import { PasswordSettingsContent } from "./features/PasswordSettings/PasswordSettings";
 
 export const App = () => {
@@ -20,7 +20,7 @@ export const App = () => {
             path="/"
             element={
               <>
-                <Navbar home={true} /> {/* Pass home=true */}
+                <Navbar home={true} />
                 <Header />
                 <section id="about">
                   <About />
@@ -41,9 +41,11 @@ export const App = () => {
             path="/password-settings"
             element={
               <>
-                <Navbar home={false} /> {/* Pass home=false */}
+                <Navbar home={false} /> 
                 <PasswordSettingsContent />
-                <Footer />
+                <Container className="Footer">
+                  <Footer />
+                </Container>
               </>
             }
           />
