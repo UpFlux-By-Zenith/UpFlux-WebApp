@@ -4,13 +4,13 @@ import logo from "../../assets/logos/logo-light-large.png";
 import './login.css';
 
 interface LoginFormState {
-  userName: string;
+  email: string;
   tokenFile: File | null;
 }
 
 export const LoginComponent: React.FC = () => {
   const [formState, setFormState] = useState<LoginFormState>({
-    userName: '',
+    email: '',
     tokenFile: null,
   });
 
@@ -39,33 +39,61 @@ export const LoginComponent: React.FC = () => {
       });
       setErrorMessage(null); // Clear error when user types
     }
-  };  
+  };
 
   const validateForm = (): boolean => {
-    const { userName, tokenFile } = formState;
+    const { email, tokenFile } = formState;
 
-    if (!userName.trim() || !tokenFile) {
-      setErrorMessage('User Name or Token not recognised.');
+    if (!email.trim() || !tokenFile) {
+      setErrorMessage('E-mail or Token not recognised.');
       return false;
     }
 
     return true;
   };
 
-  const handleSubmit = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     if (validateForm()) {
-      console.log('Form submitted:', formState);
-
       if (formState.tokenFile) {
-        // Read the file content
         const reader = new FileReader();
-        reader.onload = () => {
-          console.log('Token file content:', reader.result);
+        reader.onload = async () => {
+          try {
+            const tokenContent = reader.result as string; 
 
-          // Process the string content here
+            // Prepare the payload
+            const payload = {
+              email: formState.email, 
+              engineerToken: tokenContent, 
+            };
 
+            console.log('Payload:', payload);
+
+            // Make the API call
+            const response = await fetch('/api/Auth/engineer/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              console.log('Login successful:', data);
+              setErrorMessage(null); // Clear any errors
+              // Go to Machines Overview Page
+            } else {
+              const errorData = await response.json();
+              console.error('Login error:', errorData);
+              setErrorMessage('Login failed. Please check your credentials and token.');
+            }
+          } catch (error) {
+            console.error('Error processing or submitting data:', error);
+            setErrorMessage('An error occurred while processing the token file.');
+          }
         };
-        reader.readAsText(formState.tokenFile);
+
+        reader.readAsText(formState.tokenFile); 
       }
     }
   };
@@ -83,9 +111,9 @@ export const LoginComponent: React.FC = () => {
 
         <Box className="input-field-box">
           <TextInput
-            placeholder="User Name"
-            value={formState.userName}
-            onChange={handleInputChange('userName')}
+            placeholder="E-mail"
+            value={formState.email}
+            onChange={handleInputChange('email')}
             className="input-card"
           />
 
