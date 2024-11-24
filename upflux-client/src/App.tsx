@@ -1,9 +1,9 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
-import { HomeRoute } from './routes/Home/HomeRoute';
-import { LoginRoute } from './routes/Login/LoginRoute';
-import { PasswordSettingsRoute } from './routes/PasswordSettings/PasswordSettingsRoute';
+import { HomeRoute } from './HomeRoute';
+import { LoginComponent } from './features/Login/Login';
+import { PasswordSettingsRoute } from './features/PasswordSettings/PasswordSettingsRoute';
 
 export const App = () => {
   return (
@@ -14,7 +14,7 @@ export const App = () => {
           <Route path="/" element={<HomeRoute />} />
 
           {/* Login route */}
-          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/login" element={<LoginComponent />} />
 
           {/* Password settings route */}
           <Route path="/password-settings" element={<PasswordSettingsRoute />} />
