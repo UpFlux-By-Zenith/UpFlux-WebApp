@@ -19,6 +19,7 @@ export const changePassword = async (payload: PasswordChangePayload): Promise<st
 
     if (response.ok) {
       console.log('Password updated successfully!');
+      window.location.href = '/login'; 
       return null; // No error
     } 
     

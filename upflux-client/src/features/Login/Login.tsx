@@ -74,7 +74,7 @@ export const LoginComponent: React.FC = () => {
         </Box>
         <Button className="login-button" onClick={handleSubmit}>Log in</Button>
         <Box className="forgot-password">
-          <a href="#" className="forgot-password-link">Forgotten your Password?</a>
+          <a href="/password-settings" className="forgot-password-link">Forgotten your Password?</a>
         </Box>
       </Box>
     </Container>
