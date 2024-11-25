@@ -12,7 +12,7 @@ import {
   PLACEHOLDER_CURRENT_PASSWORD,
   PLACEHOLDER_NEW_PASSWORD,
   PLACEHOLDER_CONFIRM_PASSWORD,
-} from './PasswordSettingsConsts';
+} from './passwordSettingsConsts';
 
 export const PasswordSettingsContent: React.FC = () => {
   // State for form values and errors

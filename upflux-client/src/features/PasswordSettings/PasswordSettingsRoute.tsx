@@ -1,7 +1,7 @@
 import React from 'react';
-import { Navbar } from '../Navbar/Navbar';
+import { Navbar } from '../navbar/Navbar';
 import { PasswordSettingsContent } from './PasswordSettings';
-import { Footer } from '../Footer/Footer';
+import { Footer } from '../footer/Footer';
 
 export const PasswordSettingsRoute: React.FC = () => {
   return (
