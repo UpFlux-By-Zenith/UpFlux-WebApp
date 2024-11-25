@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Container, Box, Image, Button, TextInput, Text } from '@mantine/core';
 import logo from "../../assets/logos/logo-light-large.png";
 import './login.css';
+import { submitLogin } from '../../api/loginRequests';
 
 interface LoginFormState {
   email: string;
@@ -44,6 +45,18 @@ export const LoginComponent: React.FC = () => {
       reader.onload = async () => {
         const tokenContent = reader.result as string;
         const payload = { email: formState.email, engineerToken: tokenContent };
+
+        try {
+          const result = await submitLogin(payload);
+          if (result) {
+            console.log('Login successful!');
+          } else {
+            setErrorMessage('Login failed.');
+          }
+        } catch (error) {
+          console.error('Error during login:', error);
+          setErrorMessage('An unexpected error occurred. Please try again.');
+        }
       };
       reader.readAsText(formState.tokenFile);
     }

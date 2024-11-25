@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { HomeRoute } from './HomeRoute';
 import { LoginComponent } from './features/login/Login';
 import { PasswordSettingsRoute } from './features/passwordSettings/PasswordSettingsRoute';
+import { GetEngineerTokenRoute } from './features/getEngineerToken/GetEngineerTokenRoute';
 
 export const App = () => {
   return (
@@ -18,6 +19,10 @@ export const App = () => {
 
           {/* Password settings route */}
           <Route path="/password-settings" element={<PasswordSettingsRoute />} />
+
+          {/* Get Engineer Token route */}
+          <Route path="/get-engineer-token" element={<GetEngineerTokenRoute />} />
+
         </Routes>
       </Router>
     </MantineProvider>

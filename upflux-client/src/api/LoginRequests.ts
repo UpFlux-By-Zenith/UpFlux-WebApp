@@ -1,4 +1,4 @@
-import { AUTH_API } from './apiConsts.js';
+import { AUTH_API } from './apiConsts';
 
 interface LoginPayload {
   email: string;

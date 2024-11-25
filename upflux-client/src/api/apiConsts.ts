@@ -4,6 +4,7 @@ export const API_BASE_URL = 'https://localhost:7034/api';
 export const AUTH_API = {
   LOGIN: `${API_BASE_URL}/Auth/engineer/login`,
   CHANGE_PASSWORD: `${API_BASE_URL}/Auth/admin/change-password`,
+  GET_ENGINEER_TOKEN: `${API_BASE_URL}/Auth/admin/create-engineer-token`,
 };
 
 
