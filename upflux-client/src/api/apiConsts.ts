@@ -1,4 +1,9 @@
-export const API_BASE_URL = 'https://localhost:7034/api';
+const API_BASE_URL =
+  process.env.REACT_APP_ENV === 'production'
+    ? process.env.REACT_APP_PROD_API_BASE
+    : process.env.REACT_APP_DEV_API_BASE;
+
+export default API_BASE_URL;
 
 // Auth-related endpoints
 export const AUTH_API = {
