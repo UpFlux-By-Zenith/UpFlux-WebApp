@@ -12,18 +12,20 @@ import {
   PLACEHOLDER_CURRENT_PASSWORD,
   PLACEHOLDER_NEW_PASSWORD,
   PLACEHOLDER_CONFIRM_PASSWORD,
-} from './PasswordSettingsConsts';
+} from './passwordSettingsConsts';
+import { changePassword } from '../../api/passwordRequests'; // Import the API function
 
 export const PasswordSettingsContent: React.FC = () => {
   // State for form values and errors
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
   const [errors, setErrors] = useState({
     newPassword: '',
     confirmPassword: '',
   });
+
+  const [generalError, setGeneralError] = useState<string | null>(null); // Error for API responses
 
   // Validation function for the New Password
   const validateNewPassword = (password: string) => {
@@ -48,8 +50,11 @@ export const PasswordSettingsContent: React.FC = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Reset general error state
+    setGeneralError(null);
 
     // Validate fields
     const newPasswordError = validateNewPassword(newPassword);
@@ -61,10 +66,22 @@ export const PasswordSettingsContent: React.FC = () => {
       confirmPassword: confirmPasswordError,
     });
 
-    // If no errors, proceed with form submission (e.g., updating password)
+    // If no errors, proceed with API call
     if (!newPasswordError && !confirmPasswordError) {
-      console.log('Password updated successfully!');
-      // Perform further actions (e.g., make API call)
+      const payload = {
+        oldPassword: currentPassword,
+        newPassword,
+        confirmPassword,
+      };
+
+      // Call the changePassword API
+      const result = await changePassword(payload);
+
+      // Handle response
+      if (result) {
+        // If result contains an error message, display it
+        setGeneralError(result);
+      }
     }
   };
 
@@ -92,6 +109,7 @@ export const PasswordSettingsContent: React.FC = () => {
         }
         placeholder={PLACEHOLDER_CURRENT_PASSWORD}
         className="input-field wide-input"
+        type="password"
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
       />
@@ -122,6 +140,13 @@ export const PasswordSettingsContent: React.FC = () => {
         onChange={(e) => setConfirmPassword(e.target.value)}
         error={errors.confirmPassword}
       />
+
+      {/* Display general API error if it exists */}
+      {generalError && (
+        <Text color="red" className="error-text">
+          {generalError}
+        </Text>
+      )}
 
       {/* Action Buttons */}
       <Box className="button-group">
