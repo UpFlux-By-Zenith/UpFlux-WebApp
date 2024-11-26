@@ -1,14 +1,13 @@
 import React from 'react';
 import { Navbar } from '../navbar/Navbar';
-import { PasswordSettingsContent } from './PasswordSettings';
 import { Footer } from '../footer/Footer';
+import { GetEngineerToken } from './GetEngineerToken'; // Adjust the import path as needed
 
-export const PasswordSettingsRoute: React.FC = () => {
+export const GetEngineerTokenRoute: React.FC = () => {
   return (
     <>
       <Navbar onHomePage={false} />
-      <PasswordSettingsContent />
-      <Footer />
+      <GetEngineerToken />
     </>
   );
 };

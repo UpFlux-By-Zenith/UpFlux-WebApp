@@ -1,4 +1,4 @@
-import { Container, Grid, Card, Image, Text, Title, Button } from '@mantine/core';
+import { Container, Card, Image, Text, Title} from '@mantine/core';
 import './about.css';
 import updateimg from "../../assets/images/update.jpg";
 import rollbackimg from "../../assets/images/rollback.jpg";
