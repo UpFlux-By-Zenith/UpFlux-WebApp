@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Box, Image, Button, TextInput, Text } from '@mantine/core';
+import { Container, Box, Image, Button, Text } from '@mantine/core';
 import logo from "../../assets/logos/logo-light-large.png";
 import './login.css';
 import { submitLogin } from '../../api/loginRequests';

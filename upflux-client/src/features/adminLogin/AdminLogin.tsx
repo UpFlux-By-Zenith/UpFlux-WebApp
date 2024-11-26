@@ -3,6 +3,7 @@ import { Container, Box, Image, Button, TextInput, Text } from '@mantine/core';
 import logo from '../../assets/logos/logo-light-large.png';
 import './adminLogin.css';
 import { adminLogin } from '../../api/adminLoginRequests';
+import { useNavigate } from 'react-router-dom';
 
 interface AdminLoginFormState {
   email: string;
@@ -11,6 +12,7 @@ interface AdminLoginFormState {
 
 export const AdminLogin: React.FC = () => {
   const [formState, setFormState] = useState<AdminLoginFormState>({ email: '', password: '' });
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,6 +48,8 @@ export const AdminLogin: React.FC = () => {
           sessionStorage.setItem('adminToken', adminToken);
           console.log('Admin login successful!');
           setError(null);
+          //Navigate to /get-engineer-token route
+          navigate('/get-engineer-token'); // Navigate 
         } else {
           setError('Login failed. Please check your credentials.');
         }

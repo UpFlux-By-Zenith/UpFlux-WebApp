@@ -2,7 +2,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: calc(84.5vh - 100px); 
     padding: 20px;
   }
   
@@ -41,4 +40,3 @@
     font-size: 16px;
     color: red;
   }
-  

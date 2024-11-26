@@ -11,6 +11,7 @@ export const AUTH_API = {
   CHANGE_PASSWORD: `${API_BASE_URL}/api/Auth/admin/change-password`,
   GET_ENGINEER_TOKEN: `${API_BASE_URL}/api/Auth/admin/create-engineer-token`,
   ADMIN_LOGIN: `${API_BASE_URL}/api/Auth/admin/login`,
+  VERIFY_TOKEN: `${API_BASE_URL}/api/Auth/parse-token`,
 };
 
 

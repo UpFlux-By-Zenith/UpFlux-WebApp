@@ -8,7 +8,6 @@ export const GetEngineerTokenRoute: React.FC = () => {
     <>
       <Navbar onHomePage={false} />
       <GetEngineerToken />
-      <Footer />
     </>
   );
 };
