@@ -49,7 +49,7 @@ export const LoginComponent: React.FC = () => {
         try {
           const authToken = await submitLogin(payload);
           if (authToken) {
-            localStorage.setItem('authToken', authToken);
+            sessionStorage.setItem('engineerToken', authToken);
             console.log('Login successful!');
           } else {
             setError('An unexpected error occurred. Please try again.');

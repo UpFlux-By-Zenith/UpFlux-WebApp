@@ -7,9 +7,9 @@ export default API_BASE_URL;
 
 // Auth-related endpoints
 export const AUTH_API = {
-  LOGIN: `${API_BASE_URL}/Auth/engineer/login`,
-  CHANGE_PASSWORD: `${API_BASE_URL}/Auth/admin/change-password`,
-  GET_ENGINEER_TOKEN: `${API_BASE_URL}/Auth/admin/create-engineer-token`,
+  LOGIN: `${API_BASE_URL}/api/Auth/engineer/login`,
+  CHANGE_PASSWORD: `${API_BASE_URL}/api/Auth/admin/change-password`,
+  GET_ENGINEER_TOKEN: `${API_BASE_URL}/api/Auth/admin/create-engineer-token`,
 };
 
 
