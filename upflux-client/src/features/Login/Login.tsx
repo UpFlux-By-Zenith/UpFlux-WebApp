@@ -5,57 +5,60 @@ import './login.css';
 import { submitLogin } from '../../api/loginRequests';
 
 interface LoginFormState {
-  email: string;
   tokenFile: File | null;
 }
 
 export const LoginComponent: React.FC = () => {
-  const [formState, setFormState] = useState<LoginFormState>({ email: '', tokenFile: null });
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [formState, setFormState] = useState<LoginFormState>({ tokenFile: null });
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: keyof LoginFormState) => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    if (field === 'tokenFile') {
-      const file = event.target.files?.[0] || null;
-      if (file && file.type !== 'application/json') {
-        setErrorMessage('Please upload a valid JSON file.');
-      } else {
-        setFormState({ ...formState, [field]: file });
-        setErrorMessage(null);
-      }
-    } else {
-      setFormState({ ...formState, [field]: event.target.value });
-      setErrorMessage(null);
-    }
+    const { files } = event.target;
+    setFormState((prevState) => ({
+      ...prevState,
+      [field]: files?.[0] || null,
+    }));
+    setError(null);
   };
 
   const validateForm = (): boolean => {
-    const { email, tokenFile } = formState;
-    if (!email.trim() || !tokenFile) {
-      setErrorMessage('E-mail or Token not recognised.');
+    if (!formState.tokenFile) {
+      setError('Token file is required');
+      return false;
+    } 
+    
+    if (formState.tokenFile.type !== 'application/json') {
+      setError('Please upload a valid JSON file');
       return false;
     }
+
     return true;
   };
 
   const handleSubmit = async (): Promise<void> => {
     if (validateForm() && formState.tokenFile) {
+      setIsLoading(true);
       const reader = new FileReader();
       reader.onload = async () => {
         const tokenContent = reader.result as string;
-        const payload = { email: formState.email, engineerToken: tokenContent };
+        const payload = {email:"engineer@upflux.com", engineerToken: tokenContent };
 
         try {
-          const result = await submitLogin(payload);
-          if (result) {
+          const authToken = await submitLogin(payload);
+          if (authToken) {
+            localStorage.setItem('authToken', authToken);
             console.log('Login successful!');
           } else {
-            setErrorMessage('Login failed.');
+            setError('An unexpected error occurred. Please try again.');
           }
         } catch (error) {
           console.error('Error during login:', error);
-          setErrorMessage('An unexpected error occurred. Please try again.');
+          setError('An unexpected error occurred. Please try again.');
+        } finally {
+          setIsLoading(false);
         }
       };
       reader.readAsText(formState.tokenFile);
@@ -66,14 +69,8 @@ export const LoginComponent: React.FC = () => {
     <Container className="login-container">
       <Box className="main-card">
         <Image src={logo} alt="UpFlux Logo" className="logo" />
-        {errorMessage && <Text className="error-message">{errorMessage}</Text>}
+        {error && <Text className="error-message">{error}</Text>}
         <Box className="input-field-box">
-          <TextInput
-            placeholder="E-mail"
-            value={formState.email}
-            onChange={handleInputChange('email')}
-            className="input-card"
-          />
           <Box className="file-input-box">
             <label htmlFor="tokenFile" className="file-label">Token File</label>
             <input
@@ -85,7 +82,14 @@ export const LoginComponent: React.FC = () => {
             />
           </Box>
         </Box>
-        <Button className="login-button" onClick={handleSubmit}>Log in</Button>
+        <Button
+          className="login-button"
+          onClick={handleSubmit}
+          loading={isLoading}
+          disabled={isLoading}
+        >
+          Log in
+        </Button>
         <Box className="forgot-password">
           <a href="/password-settings" className="forgot-password-link">Forgotten your Password?</a>
         </Box>
