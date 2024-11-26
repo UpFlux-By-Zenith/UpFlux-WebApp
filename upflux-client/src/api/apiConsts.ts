@@ -10,6 +10,7 @@ export const AUTH_API = {
   LOGIN: `${API_BASE_URL}/api/Auth/engineer/login`,
   CHANGE_PASSWORD: `${API_BASE_URL}/api/Auth/admin/change-password`,
   GET_ENGINEER_TOKEN: `${API_BASE_URL}/api/Auth/admin/create-engineer-token`,
+  ADMIN_LOGIN: `${API_BASE_URL}/api/Auth/admin/login`,
 };
 
 
