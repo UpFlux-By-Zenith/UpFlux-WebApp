@@ -1,0 +1,40 @@
+name: Build and Publish npm Package
+
+on:
+  push:
+    branches:
+      - main  # Trigger on merge to main branch
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'  # Specify Node.js version, update as necessary
+        registry-url: 'https://npm.pkg.github.com'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build npm package
+      run: npm run build  # Adjust if you have a custom build command
+
+    - name: Set up GitHub Packages authentication
+      run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+
+    - name: Get the package version
+      id: version
+      run: echo "PACKAGE_VERSION=$(node -p -e "require('./package.json').version")" >> $GITHUB_ENV
+
+    - name: Publish to GitHub Packages
+      run: |
+        npm version patch -m "Release version %s"  # Adjust to "minor" or "major" if necessary
+        npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
