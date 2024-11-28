@@ -3,125 +3,146 @@
 USE upflux;
 
 /*Create Table Statements*/
-CREATE TABLE Users (
-    user_id INT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    PRIMARY KEY (user_id)
-);
 
+-- Create Machines Table
 CREATE TABLE Machines (
-    machine_id INT NOT NULL AUTO_INCREMENT,
+    machine_id INT AUTO_INCREMENT PRIMARY KEY,
     machine_status ENUM('Alive', 'Shutdown', 'Unknown') NOT NULL,
     memory_usage FLOAT,
-    activity_status ENUM('Busy', 'Idle', 'Offline'),
-    PRIMARY KEY (machine_id)
+    activity_status ENUM('Busy', 'Idle', 'Offline') NOT NULL
 );
 
-CREATE TABLE Packages (
-    package_id INT NOT NULL AUTO_INCREMENT,
-    version_number FLOAT NOT NULL,
-    package_size FLOAT NOT NULL,
-    package_signature VARCHAR(255),
-    release_date TIMESTAMP NOT NULL,
-    PRIMARY KEY (package_id)
+-- Create Users Table
+CREATE TABLE Users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    role ENUM('Admin', 'Engineer') NOT NULL
 );
 
-CREATE TABLE Licences (
-    licence_key VARCHAR(255) NOT NULL,
+-- Create Licenses Table
+CREATE TABLE Licenses (
+    licence_key VARCHAR(255) NOT NULL PRIMARY KEY,
     machine_id INT NOT NULL,
     validity_status VARCHAR(50) NOT NULL,
     expiration_date TIMESTAMP NOT NULL,
-    PRIMARY KEY (licence_key),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
 );
 
+-- Create Credentials Table
 CREATE TABLE Credentials (
-    machine_id INT NOT NULL,
     user_id INT NOT NULL,
-    access_level ENUM('Read', 'Write', 'Admin') NOT NULL,
-    access_granted_at TIMESTAMP,
-    PRIMARY KEY (machine_id, user_id),
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
-    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+    machine_id INT NOT NULL,
+    access_granted_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (user_id, machine_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
 );
 
+-- Create Packages Table
+CREATE TABLE Packages (
+    package_id INT AUTO_INCREMENT PRIMARY KEY,
+    version_number FLOAT NOT NULL,
+    package_size FLOAT NOT NULL,
+    package_signature VARCHAR(255) NOT NULL,
+    release_date TIMESTAMP NOT NULL
+);
+
+-- Create Update Logs Table
 CREATE TABLE Update_Logs (
-    update_id INT NOT NULL AUTO_INCREMENT,
-    machine_id INT NOT NULL,
+    update_id INT AUTO_INCREMENT PRIMARY KEY,
     package_id INT NOT NULL,
+    user_id INT NOT NULL,
+    machine_id INT NOT NULL,
     update_status ENUM('Pending', 'Completed', 'Failed') NOT NULL,
-    time_applied TIMESTAMP,
-    PRIMARY KEY (update_id),
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
-    FOREIGN KEY (package_id) REFERENCES Packages(package_id)
+    time_applied TIMESTAMP NOT NULL,
+    FOREIGN KEY (package_id) REFERENCES Packages(package_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
 );
 
+-- Create Action Logs Table
 CREATE TABLE Action_Logs (
-    log_id INT NOT NULL AUTO_INCREMENT,
-    machine_id INT NOT NULL,
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    action ENUM('update_initiated', 'update_scheduled', 'rollback_initiated') NOT NULL,
-    time_performed TIMESTAMP,
-    PRIMARY KEY (log_id),
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
+    action_type ENUM('CREATE', 'UPDATE', 'DELETE') NOT NULL,
+    time_performed TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
+
+
 
 /*Show all tables present in the database*/
 SHOW TABLES;
 
 DESCRIBE Machines;
 
-/*Insert Sample data for each table*/
+/* Inserting data into Machines */
 INSERT INTO Machines (machine_status, memory_usage, activity_status) VALUES
 ('Alive', 50.3, 'Busy'),
 ('Shutdown', 0, 'Offline'),
 ('Alive', 70.1, 'Idle'),
 ('Unknown', NULL, 'Offline');
 
-INSERT INTO Users (user_id, name, email, password_hash) VALUES
-(1, 'Alice', 'alice@example.com', '5f4dcc3b5aa765d61d8327deb882cf99'),
-(2, 'Bob', 'bob@example.com', '5f4dcc3b5aa765d61d8327deb882cf99'),
-(3, 'Charlie', 'charlie@example.com', '5f4dcc3b5aa765d61d8327deb882cf99');
+-- View Machines table data
+SELECT * FROM Machines;
 
-Select * from Users;
+/* Inserting data into Users */
+INSERT INTO Users (name, email, role) VALUES
+('Alice', 'alice@example.com', 'Admin'),
+('Bob', 'bob@example.com', 'Engineer'),
+('Charlie', 'charlie@example.com', 'Engineer');
 
-INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date) VALUES
+-- View Users table data
+SELECT * FROM Users;
+
+/* Inserting data into Licenses */
+INSERT INTO Licenses (licence_key, machine_id, validity_status, expiration_date) VALUES
 ('ABC123', 1, 'Valid', '2025-12-31 23:59:59'),
 ('DEF456', 2, 'Expired', '2023-08-15 12:00:00'),
 ('GHI789', 3, 'Valid', '2026-07-10 10:00:00');
 
-Select * from Licences;
+-- View Licenses table data
+SELECT * FROM Licenses;
 
-INSERT INTO Credentials (machine_id, user_id, access_level, access_granted_at) VALUES
-(1, 1, 'Admin', '2023-01-01 12:00:00'),
-(2, 2, 'Write', '2023-03-15 09:30:00'),
-(3, 3, 'Read', '2023-05-20 11:45:00');
+/* Inserting data into Credentials */
+INSERT INTO Credentials (user_id, machine_id, access_granted_at) VALUES
+(1, 1, '2023-01-01 12:00:00'),
+(2, 2, '2023-03-15 09:30:00'),
+(3, 3, '2023-05-20 11:45:00');
 
-Select * from Credentials;
+-- View Credentials table data
+SELECT * FROM Credentials;
 
+/* Inserting data into Packages */
 INSERT INTO Packages (version_number, package_size, package_signature, release_date) VALUES
 (1.0, 15.5, 'abcde12345', '2023-07-01 14:30:00'),
 (1.1, 20.2, 'fghij67890', '2023-08-15 16:00:00'),
 (1.2, 25.3, 'klmno54321', '2023-09-30 12:15:00');
 
-Select * from Packages;
+-- View Packages table data
+SELECT * FROM Packages;
 
-INSERT INTO Update_Logs (machine_id, package_id, update_status, time_applied) VALUES
-(1, 1, 'Completed', '2023-07-02 15:00:00'),
-(2, 2, 'Pending', '2023-08-16 10:00:00'),
-(3, 3, 'Failed', '2023-10-01 13:45:00'),
-(2, 3, 'Completed', '2023-08-16 10:00:00'),
-(3, 2, 'Completed', '2023-10-01 13:45:00');
+/* Inserting data into Update Logs */
+INSERT INTO Update_Logs (package_id, user_id, machine_id, update_status, time_applied) VALUES
+(1, 1, 1, 'Completed', '2023-07-02 15:00:00'),
+(2, 2, 2, 'Pending', '2023-08-16 10:00:00'),
+(3, 3, 3, 'Failed', '2023-10-01 13:45:00'),
+(3, 2, 2, 'Completed', '2023-08-16 10:00:00'),
+(2, 3, 3, 'Completed', '2023-10-01 13:45:00');
 
-Select * from Update_Logs;
+-- View Update Logs table data
+SELECT * FROM Update_Logs;
 
-INSERT INTO Action_Logs (machine_id, user_id, action, time_performed) VALUES
-(1, 1, 'update_initiated', '2023-07-01 14:45:00'),
-(2, 2, 'update_scheduled', '2023-08-14 15:00:00'),
-(3, 3, 'rollback_initiated', '2023-10-02 10:30:00');
+/* Inserting data into Action Logs */
+INSERT INTO Action_Logs (user_id, action_type, time_performed) VALUES
+(1, 'CREATE', '2023-07-01 14:45:00'),
+(2, 'UPDATE', '2023-08-14 15:00:00'),
+(3, 'DELETE', '2023-10-02 10:30:00');
+
+-- View Action Logs table data
+SELECT * FROM Action_Logs;
+
 
 /*Basic Queries*/
 
@@ -135,6 +156,7 @@ SELECT * FROM Users;
 SELECT * FROM Packages;
 
 /*Show all licences*/
+SELECT * FROM Licences
 
 /*Update-Related Queries*'/
 
