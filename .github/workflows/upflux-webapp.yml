@@ -53,8 +53,11 @@ jobs:
     - name: Display version summary
       run: echo "The package version is ${{ env.PACKAGE_VERSION }}."
 
-    - name: Set Summary (for manual runs)
-      if: ${{ github.event_name == 'workflow_dispatch' }}
-      run: |
+    - name: Upload Library Artifact
+      if: github.event_name == 'workflow_dispatch'
+      uses: actions/upload-artifact@v3
+      with:
+        name: upflux-webclient
+        path: ./upflux-client
         echo "Package version: **${{ env.PACKAGE_VERSION }}**" >> $GITHUB_STEP_SUMMARY
 
