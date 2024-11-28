@@ -376,4 +376,42 @@ GRANT SELECT, INSERT, UPDATE ON upflux_db.Machines TO 'Engineer';
 GRANT SELECT, INSERT, UPDATE ON upflux_db.Update_Logs TO 'Engineer';
 GRANT SELECT, INSERT, UPDATE ON upflux_db.Packages TO 'Engineer';
 
+DELIMITER //
+
+CREATE PROCEDURE CreateUser(
+    IN p_name VARCHAR(255), 
+    IN p_email VARCHAR(255), 
+    IN p_role ENUM('Admin', 'Engineer'),
+    IN p_password VARCHAR(255)
+)
+BEGIN
+    DECLARE v_user_id INT;
+    DECLARE v_username VARCHAR(255);
+
+    -- Insert into Users table
+    INSERT INTO Users (name, email, role) 
+    VALUES (p_name, p_email, p_role);
+
+    -- Get the last inserted user_id
+    SET v_user_id = LAST_INSERT_ID();
+    
+    -- Create a MySQL User (for database access) based on email
+    SET v_username = REPLACE(p_email, '@', '_at_');  -- Adjust for valid MySQL user names
+    EXECUTE IMMEDIATE CONCAT('CREATE USER "', v_username, '"@"localhost" IDENTIFIED BY "', p_password, '"');
+
+    -- For Admin, insert into Admin_Details with password hash
+    IF p_role = 'Admin' THEN
+        INSERT INTO Admin_Details (user_id, password_hash) 
+        VALUES (v_user_id, SHA2(p_password, 256));
+
+        -- Grant Admin role
+        GRANT 'Admin' TO v_username@'localhost';
+    ELSE
+        -- Grant Engineer role
+        GRANT 'Engineer' TO v_username@'localhost';
+    END IF;
+
+END //
+
+DELIMITER ;
 
