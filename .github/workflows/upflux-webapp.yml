@@ -26,7 +26,7 @@ jobs:
       run: npm run build  # Adjust if you have a custom build command
 
     - name: Set up GitHub Packages authentication
-      run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+      run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.MY_GITHUB_PAT }}" >> ~/.npmrc
 
     - name: Get the package version
       id: version
@@ -34,7 +34,7 @@ jobs:
 
     - name: Publish to GitHub Packages
       run: |
-        npm version patch -m "Release version %s"  # Adjust to "minor" or "major" if necessary
+        npm version patch -m "Release version %s"
         npm publish
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.MY_GITHUB_PAT }}
