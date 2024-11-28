@@ -1,19 +1,9 @@
 import React, { useState } from 'react';
 import { TextInput, Button, Text, Stack, Box, Group } from '@mantine/core';
 import './passwordSettings.css';
-import {
-  MIN_PASSWORD_LENGTH,
-  HAS_NUMBER_REGEX,
-  HAS_SPECIAL_CHAR_REGEX,
-  PASSWORD_SET_NOT_ENOUGH_LENGTH,
-  PASSWORD_SET_NO_NUMBER,
-  PASSWORD_SET_NO_SPECIAL_CHAR,
-  PASSWORD_CONFIRMATION_MISMATCH,
-  PLACEHOLDER_CURRENT_PASSWORD,
-  PLACEHOLDER_NEW_PASSWORD,
-  PLACEHOLDER_CONFIRM_PASSWORD,
-} from './passwordSettingsConsts';
+
 import { changePassword } from '../../api/passwordRequests'; // Import the API function
+import { MIN_PASSWORD_LENGTH, PASSWORD_SET_NOT_ENOUGH_LENGTH, HAS_NUMBER_REGEX, PASSWORD_SET_NO_NUMBER, HAS_SPECIAL_CHAR_REGEX, PASSWORD_SET_NO_SPECIAL_CHAR, PASSWORD_CONFIRMATION_MISMATCH, PLACEHOLDER_CURRENT_PASSWORD, PLACEHOLDER_NEW_PASSWORD, PLACEHOLDER_CONFIRM_PASSWORD } from './passwordSettingsConsts';
 
 export const PasswordSettingsContent: React.FC = () => {
   // State for form values and errors
