@@ -20,6 +20,14 @@ CREATE TABLE Users (
     role ENUM('Admin', 'Engineer') NOT NULL
 );
 
+-- Create Admin_Details Table 
+CREATE TABLE Admin_Details (
+    admin_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+
 -- Create Licenses Table
 CREATE TABLE Licenses (
     licence_key VARCHAR(255) NOT NULL PRIMARY KEY,
@@ -354,5 +362,18 @@ JOIN
 WHERE 
     al.action = 'rollback_initiated';
 
+/*Role-Based Access Control*/
+
+-- Create Roles
+CREATE ROLE 'Admin';
+CREATE ROLE 'Engineer';
+
+-- Admin Role: Full Permissions on All Tables
+GRANT ALL PRIVILEGES ON upflux_db.* TO 'Admin';
+
+-- Engineer Role: Specific Permissions
+GRANT SELECT, INSERT, UPDATE ON upflux_db.Machines TO 'Engineer';
+GRANT SELECT, INSERT, UPDATE ON upflux_db.Update_Logs TO 'Engineer';
+GRANT SELECT, INSERT, UPDATE ON upflux_db.Packages TO 'Engineer';
 
 
