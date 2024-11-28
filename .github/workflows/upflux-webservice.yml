@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'UpFlux-webservice/**'  # Specify the project path to only trigger when changes happen here
+      - 'upFlux-webservice/**'  # Specify the project path to only trigger when changes happen here
   pull_request:
     branches:
       - main
