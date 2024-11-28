@@ -1,0 +1,66 @@
+name: Build and Publish npm Package
+
+on:
+  push:
+    branches:
+      - main  # Trigger on merge to the main branch
+  workflow_dispatch:  # Trigger manually from the GitHub Actions UI
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'  # Specify Node.js version, update as necessary
+        registry-url: 'https://npm.pkg.github.com'
+
+    - name: Navigate to the upflux-client folder
+      run: cd upflux-client  # Change directory to your React project folder
+
+    - name: Install dependencies
+      run: npm install
+      working-directory: ./upflux-client  # Ensure npm install runs in the correct folder
+
+    - name: Build npm package
+      run: npm run build  # Adjust if you have a custom build command
+      working-directory: ./upflux-client
+
+    - name: Set up GitHub Packages authentication
+      run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.MY_GITHUB_PAT }}" >> ~/.npmrc
+      working-directory: ./upflux-client
+
+    - name: Get the package version
+      id: version
+      run: echo "PACKAGE_VERSION=$(node -p -e "require('./package.json').version")" >> $GITHUB_ENV
+      working-directory: ./upflux-client
+
+    - name: Publish to GitHub Packages
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          npm version patch -m "Release version %s"  # Adjust to "minor" or "major" if necessary
+          npm publish
+        fi
+      working-directory: ./upflux-client
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.MY_GITHUB_PAT }}
+
+    - name: Display version summary
+      run: echo "The package version is ${{ env.PACKAGE_VERSION }}."
+
+    - name: Set Summary (for manual runs)
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const version = process.env.PACKAGE_VERSION;
+          const summary = `Package version: **${version}**`;
+          github.actions.updateJobSummary({
+            job_id: 'build-and-publish',
+            summary: summary
+          });
