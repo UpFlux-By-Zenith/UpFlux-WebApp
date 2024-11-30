@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Upflux_WebService.Core.DTOs;
 using Upflux_WebService.Services.Interfaces;
 
@@ -22,7 +24,6 @@ namespace Upflux_WebService.Controllers
 		/// Admin register a machine and create license for it.
 		/// </summary>
 		/// <param name="registerMachineDto">the register request containing machineId</param>
-		/// <returns></returns>
 		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
 		[HttpPost("admin/register")]
 		public async Task<IActionResult> RegisterMachine([FromBody] RegisterMachineRequest registerMachineDto)
@@ -42,14 +43,15 @@ namespace Upflux_WebService.Controllers
 			}
 		}
 
+		/// <summary>
+		/// Generate UUID that can used as a device's identifier
+		/// </summary>
 		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
 		[HttpGet("admin/generateId")]
-		public async Task<IActionResult> GenerateMachineId()
+		public IActionResult GenerateMachineId()
 		{
-			// Generate a new UUID (GUID in .NET)
 			var machineId = Guid.NewGuid().ToString();
 
-			// Return the generated ID in the response
 			return Ok(new { MachineId = machineId });
 		}
 
