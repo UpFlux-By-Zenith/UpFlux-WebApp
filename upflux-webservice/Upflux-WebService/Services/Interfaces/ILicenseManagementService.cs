@@ -1,7 +1,15 @@
 ﻿namespace Upflux_WebService.Services.Interfaces
 {
-    public interface ILicenseManagementService
+	/// <summary>
+	/// Interface for license related services.
+	/// </summary>
+	public interface ILicenseManagementService
 	{
-		Task CreateLicence(int machineId);
+		/// <summary>
+		/// Create License, store its metadata in the database, and send it to the gateway.
+		/// </summary>
+		/// <param name="machineId">the machineId which the license belong to</param>
+		/// <returns></returns>
+		Task CreateLicense(int machineId);
 	}
 }

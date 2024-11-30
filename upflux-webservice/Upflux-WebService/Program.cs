@@ -35,7 +35,7 @@ namespace Upflux_WebService
 			builder.Services.AddScoped<IAuthService, AuthService>()
 				.AddScoped<ILicenseManagementService, LicenseManagementService>()
 				.AddScoped(typeof(IRepository<>), typeof(Repository<>))
-				.AddScoped<ILicenceRepository, LicenceRepository>()
+				.AddScoped<ILicenseRepository, LicenseRepository>()
 				.AddScoped<IMachineRepository, MachineRepository>();
 
 			// Load JWT settings from configuration

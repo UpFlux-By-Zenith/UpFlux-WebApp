@@ -34,7 +34,7 @@ namespace Upflux_WebService.Controllers
 				//if (string.IsNullOrEmpty(adminEmail))
 				//	return Unauthorized(new { Error = "Invalid admin token." });
 
-				await _licenseManagementService.CreateLicence(registerMachineDto.MachineId);
+				await _licenseManagementService.CreateLicense(registerMachineDto.MachineId);
 				return Ok();
 			}
 			catch (Exception ex)

@@ -4,6 +4,6 @@ namespace Upflux_WebService.Repository.Interfaces
 {
 	public interface IMachineRepository : IRepository<Machine>
 	{
-		Machine? GetById(int id);
+		Task<IEnumerable<Machine>> GetUnregisteredMachines(int id);
 	}
 }

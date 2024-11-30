@@ -14,9 +14,15 @@ namespace Upflux_WebService.Repository
 			_context = context;
 		}
 
-		public Machine? GetById(int id)
+		/// <summary>
+		/// example use of the table specific repository
+		/// </summary>
+		/// <param name="id"></param>
+		/// <returns></returns>
+		/// <exception cref="NotImplementedException"></exception>
+		public Task<IEnumerable<Machine>> GetUnregisteredMachines(int id)
 		{
-			return  _context.Machines.FirstOrDefault(m => m.MachineId == id);
+			throw new NotImplementedException();
 		}
 	}
 }

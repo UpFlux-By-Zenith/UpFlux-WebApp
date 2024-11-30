@@ -1,8 +1,5 @@
 ﻿using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
-using System.ComponentModel;
-using System.Text;
-using Upflux_WebService.Core.Models;
 using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Services.Interfaces;
 
@@ -10,11 +7,13 @@ namespace Upflux_WebService.Services
 {
 	public class LicenseManagementService : ILicenseManagementService
 	{
-		private readonly ILicenceRepository _licenceRepository;
-
+		#region private members
+		private readonly ILicenseRepository _licenceRepository;
 		private readonly IMachineRepository _machineRepository;
+		#endregion
 
-		public LicenseManagementService(ILicenceRepository licenceRepository, IMachineRepository machineRepository)
+		#region public methods
+		public LicenseManagementService(ILicenseRepository licenceRepository, IMachineRepository machineRepository)
 		{
 			_licenceRepository = licenceRepository;
 			_machineRepository = machineRepository;
@@ -23,8 +22,8 @@ namespace Upflux_WebService.Services
 		/// <summary>
 		/// Receives machine Id, generate license and store metadata
 		/// </summary>
-		/// <param name="machineId"></param>
-		public async Task CreateLicence(int machineId)
+		/// <param name="machineId">the machine id which the licence belong to</param>
+		public async Task CreateLicense(int machineId)
 		{
 			var machine = await _machineRepository.GetByIdAsync(machineId);
 
@@ -33,9 +32,9 @@ namespace Upflux_WebService.Services
 
 			var key = await CreateKmsKeyAsync();
 
-			await _licenceRepository.AddAsync(new Licence
+			await _licenceRepository.AddAsync(new Core.Models.License
 			{
-				LicenceKey = key.KeyMetadata.KeyId,
+				LicenseKey = key.KeyMetadata.KeyId,
 				MachineId = machineId,
 				ValidityStatus = "Valid",
 				ExpirationDate = DateTime.UtcNow.AddYears(1)
@@ -45,14 +44,20 @@ namespace Upflux_WebService.Services
 
 			await _licenceRepository.SaveChangesAsync();
 		}
+		#endregion
 
-		static async Task<CreateKeyResponse> CreateKmsKeyAsync()
+		#region private methods
+		/// <summary>
+		/// Creates a Asymmetric key using 
+		/// </summary>
+		/// <returns>a key pair that is used for signing and verifying</returns>
+		private async Task<CreateKeyResponse> CreateKmsKeyAsync()
 		{
 			var request = new CreateKeyRequest
 			{
 				Description = "Asymmetric key for signing and verifying messages",
 				KeyUsage = KeyUsageType.SIGN_VERIFY, 
-				CustomerMasterKeySpec = CustomerMasterKeySpec.RSA_2048
+				KeySpec = KeySpec.RSA_2048
 			};
 
 			try
@@ -68,7 +73,7 @@ namespace Upflux_WebService.Services
 			}
 		}
 
-		private static async Task<byte[]> SignDataAsync(string keyId, byte[] hash)
+		private async Task<byte[]> SignDataAsync(string keyId, byte[] hash)
 		{
 			try
 			{
@@ -91,6 +96,6 @@ namespace Upflux_WebService.Services
 				throw;
 			}
 		}
-
+		#endregion
 	}
 }
