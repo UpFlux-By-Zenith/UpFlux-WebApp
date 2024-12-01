@@ -504,3 +504,16 @@ END //
 
 DELIMITER ;
 
+-- Trigger for adding entry to action_logs when a user performs an Update
+DELIMITER //
+
+CREATE TRIGGER LogUserUpdate
+AFTER UPDATE ON Users
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (@current_user_id, 'UPDATE', 'Users', NOW());
+END //
+
+DELIMITER ;
+
