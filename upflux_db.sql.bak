@@ -6,10 +6,8 @@ USE upflux;
 
 -- Create Machines Table
 CREATE TABLE Machines (
-    machine_id INT AUTO_INCREMENT PRIMARY KEY,
-    machine_status ENUM('Alive', 'Shutdown', 'Unknown') NOT NULL,
-    memory_usage FLOAT,
-    activity_status ENUM('Busy', 'Idle', 'Offline') NOT NULL
+    machine_id VARCHAR(255) PRIMARY KEY,
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create Users Table
@@ -31,7 +29,7 @@ CREATE TABLE Admin_Details (
 -- Create Licences Table
 CREATE TABLE Licences (
     licence_key VARCHAR(255) NOT NULL PRIMARY KEY,
-    machine_id INT NOT NULL,
+    machine_id VARCHAR NOT NULL,
     validity_status VARCHAR(50) NOT NULL,
     expiration_date TIMESTAMP NOT NULL,
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
@@ -41,7 +39,7 @@ CREATE TABLE Licences (
 CREATE TABLE Credentials (
     credential_id INT AUTO_INCREMENT PRIMARY KEY, 
     user_id INT NOT NULL,                  
-    machine_id INT NOT NULL,                 
+    machine_id VARCHAR NOT NULL,                 
     access_granted_at TIMESTAMP NOT NULL,   
     expires_at TIMESTAMP NOT NULL,           
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
@@ -63,7 +61,7 @@ CREATE TABLE Update_Logs (
     update_id INT AUTO_INCREMENT PRIMARY KEY,
     package_id INT NOT NULL,
     user_id INT NOT NULL,
-    machine_id INT NOT NULL,
+    machine_id VARCHAR NOT NULL,
     update_status ENUM('Pending', 'Completed', 'Failed') NOT NULL,
     time_applied TIMESTAMP NOT NULL,
     FOREIGN KEY (package_id) REFERENCES Packages(package_id),
@@ -86,12 +84,12 @@ SHOW TABLES;
 
 DESCRIBE Machines;
 
-/* Inserting data into Machines */
-INSERT INTO Machines (machine_status, memory_usage, activity_status) VALUES
-('Alive', 50.3, 'Busy'),
-('Shutdown', 0, 'Offline'),
-('Alive', 70.1, 'Idle'),
-('Unknown', NULL, 'Offline');
+-- Inserting data into machine table
+INSERT INTO Machines (machine_id) VALUES
+('1'),
+('2'),
+('3');
+
 
 -- View Machines table data
 SELECT * FROM Machines;
@@ -107,18 +105,18 @@ SELECT * FROM Users;
 
 /* Inserting data into Licences */
 INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date) VALUES
-('ABC123', 1, 'Valid', '2025-12-31 23:59:59'),
-('DEF456', 2, 'Expired', '2023-08-15 12:00:00'),
-('GHI789', 3, 'Valid', '2026-07-10 10:00:00');
+('ABC123', '1', 'Valid', '2025-12-31 23:59:59'),
+('DEF456', '2', 'Expired', '2023-08-15 12:00:00'),
+('GHI789', '3', 'Valid', '2026-07-10 10:00:00');
 
 -- View Licences table data
 SELECT * FROM Licences;
 
 /* Inserting data into Credentials */
 INSERT INTO Credentials (user_id, machine_id, access_granted_at, expires_at) VALUES
-(1, 1, '2023-01-01 12:00:00', '2023-01-31 12:00:00'),
-(2, 2, '2023-03-15 09:30:00', '2023-04-14 09:30:00'),
-(3, 3, '2023-05-20 11:45:00', '2023-06-19 11:45:00');
+(1, '1', '2023-01-01 12:00:00', '2023-01-31 12:00:00'),
+(2, '2', '2023-03-15 09:30:00', '2023-04-14 09:30:00'),
+(3, '3', '2023-05-20 11:45:00', '2023-06-19 11:45:00');
 
 
 -- View Credentials table data
@@ -511,6 +509,19 @@ FOR EACH ROW
 BEGIN
     INSERT INTO Action_Logs (user_id, action_type, time_performed)
     VALUES (NEW.user_id, 'UPDATE', NOW());
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete
+DELIMITER //
+
+CREATE TRIGGER LogUserDelete
+AFTER DELETE ON Users
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, time_performed)
+    VALUES (OLD.user_id, 'DELETE', NOW());
 END //
 
 DELIMITER ;
