@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navbar } from './features/navbar/Navbar';
-import { Header } from './features/header/Header';
 import { About } from './features/about/About';
 import { ContactUs } from './features/contactUs/ContactUs';
 import { Footer } from './features/footer/Footer';
+import { Header } from './features/header/Header';
+import { Navbar } from './features/navbar/Navbar';
+
 
 export const HomeRoute: React.FC = () => {
   return (
