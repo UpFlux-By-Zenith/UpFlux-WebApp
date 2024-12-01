@@ -1,5 +1,6 @@
 # Visual Studio
 .vs/
+/upflux-webservice/publish
 *.user
 *.suo
 *.userosscache
@@ -64,4 +65,3 @@ node_modules/
 # Package directories
 *.nuget/
 packages/
-/upflux-webservice/publish
