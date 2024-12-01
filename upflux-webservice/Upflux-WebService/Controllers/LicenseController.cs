@@ -50,7 +50,7 @@ namespace Upflux_WebService.Controllers
 					return Unauthorized(new { Error = "Invalid admin token." });
 
 				await _licenseManagementService.CreateLicense(registerMachineDto.MachineId);
-				return Ok();
+				return Ok(new { Message = "Machine Registered Succesfully." });
 			}
 			catch (Exception ex)
 			{

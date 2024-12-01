@@ -26,7 +26,7 @@ namespace Upflux_WebService.Services
 		/// Receives machine Id, generate license and store metadata
 		/// </summary>
 		/// <param name="machineId">the machine id which the licence belong to</param>
-		public async Task CreateLicense(int machineId)
+		public async Task CreateLicense(string machineId)
 		{
 			var machine = await _machineRepository.GetByIdAsync(machineId);
 

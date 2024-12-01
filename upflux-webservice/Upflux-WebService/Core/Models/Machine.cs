@@ -7,7 +7,7 @@ namespace Upflux_WebService.Core.Models
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 		[Column("machine_id")]
-		public int MachineId { get; set; }
+		public string MachineId { get; set; }
 
 		[Required]
 		[EnumDataType(typeof(MachineStatus))]

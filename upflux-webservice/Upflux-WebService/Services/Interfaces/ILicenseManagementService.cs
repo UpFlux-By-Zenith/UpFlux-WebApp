@@ -10,6 +10,6 @@
 		/// </summary>
 		/// <param name="machineId">the machineId which the license belong to</param>
 		/// <returns></returns>
-		Task CreateLicense(int machineId);
+		Task CreateLicense(string machineId);
 	}
 }

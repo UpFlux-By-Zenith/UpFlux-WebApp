@@ -13,7 +13,7 @@ namespace Upflux_WebService.Core.Models
 
 		[Required]
 		[Column("machine_id")]
-		public int MachineId { get; set; }
+		public string MachineId { get; set; }
 
 		[Required]
 		[MaxLength(50)]
