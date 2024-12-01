@@ -559,3 +559,38 @@ END //
 
 DELIMITER ;
 
+-- Trigger for updating credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialsUpdate
+AFTER UPDATE ON Credentials
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (NEW.user_id, 'UPDATE', 'Credentials', NOW());
+END //
+
+DELIMITER ;
+
+-- Trigger for deleting credentials
+DELIMITER //
+CREATE TRIGGER LogCredentialsDelete
+AFTER DELETE ON Credentials
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (OLD.user_id, 'DELETE', 'Credentials', NOW());
+END //
+DELIMITER ;
+
+
+-- Check Existing Triggers
+SELECT 
+    TRIGGER_NAME,
+    EVENT_MANIPULATION AS EVENT,
+    EVENT_OBJECT_TABLE AS TABLE_NAME,
+    ACTION_STATEMENT AS ACTION
+FROM 
+    information_schema.TRIGGERS
+WHERE 
+    TRIGGER_SCHEMA = 'upflux'; 
