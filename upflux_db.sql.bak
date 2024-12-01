@@ -29,7 +29,7 @@ CREATE TABLE Admin_Details (
 -- Create Licences Table
 CREATE TABLE Licences (
     licence_key VARCHAR(255) NOT NULL PRIMARY KEY,
-    machine_id VARCHAR NOT NULL,
+    machine_id VARCHAR(255) NOT NULL,
     validity_status VARCHAR(50) NOT NULL,
     expiration_date TIMESTAMP NOT NULL,
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
@@ -39,12 +39,12 @@ CREATE TABLE Licences (
 CREATE TABLE Credentials (
     credential_id INT AUTO_INCREMENT PRIMARY KEY, 
     user_id INT NOT NULL,                  
-    machine_id VARCHAR NOT NULL,                 
+    machine_id VARCHAR(255) NOT NULL,                 
     access_granted_at TIMESTAMP NOT NULL,   
     expires_at TIMESTAMP NOT NULL,           
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
-    UNIQUE (user_id, machine_id, token_id)   
+    UNIQUE (user_id, machine_id, credential_id)   
 );
 
 -- Create Packages Table
@@ -61,7 +61,7 @@ CREATE TABLE Update_Logs (
     update_id INT AUTO_INCREMENT PRIMARY KEY,
     package_id INT NOT NULL,
     user_id INT NOT NULL,
-    machine_id VARCHAR NOT NULL,
+    machine_id VARCHAR(255) NOT NULL,
     update_status ENUM('Pending', 'Completed', 'Failed') NOT NULL,
     time_applied TIMESTAMP NOT NULL,
     FOREIGN KEY (package_id) REFERENCES Packages(package_id),
@@ -74,6 +74,7 @@ CREATE TABLE Action_Logs (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     action_type ENUM('CREATE', 'UPDATE', 'DELETE') NOT NULL,
+	entity_name VARCHAR(255) NOT NULL,
     time_performed TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
@@ -143,10 +144,10 @@ INSERT INTO Update_Logs (package_id, user_id, machine_id, update_status, time_ap
 SELECT * FROM Update_Logs;
 
 /* Inserting data into Action Logs */
-INSERT INTO Action_Logs (user_id, action_type, time_performed) VALUES
-(1, 'CREATE', '2023-07-01 14:45:00'),
-(2, 'UPDATE', '2023-08-14 15:00:00'),
-(3, 'DELETE', '2023-10-02 10:30:00');
+INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed) VALUES
+(1, 'CREATE', 'Users', '2023-07-01 14:45:00'),
+(2, 'UPDATE', 'Credentials', '2023-08-14 15:00:00'),
+(3, 'DELETE', 'Machines', '2023-10-02 10:30:00');
 
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
@@ -472,6 +473,9 @@ SHOW GRANTS FOR 'mark123'@'%';
 
 -- Triggers
 
+-- For testing triggers as a specific user:
+SET @current_user_id = 1;
+
 -- Trigger for deleting a users associated admin details whenever they are removed from the users table
 DELIMITER //
 CREATE TRIGGER DeleteAdminDetails
@@ -482,7 +486,7 @@ BEGIN
     IF OLD.role = 'Admin' THEN
         -- Delete corresponding entry from Admin_Details
         DELETE FROM Admin_Details
-        WHERE user_id = OLD.id;
+        WHERE user_id = OLD.user_id;
     END IF;
 END //
 DELIMITER ;
@@ -495,7 +499,7 @@ AFTER INSERT ON Users
 FOR EACH ROW
 BEGIN
     INSERT INTO Action_Logs (user_id, action_type, time_performed)
-    VALUES (NEW.user_id, 'CREATE', NOW());
+    VALUES (@current_user_id, 'CREATE', 'Users', NOW());
 END //
 
 DELIMITER ;
@@ -508,7 +512,7 @@ AFTER UPDATE ON Users
 FOR EACH ROW
 BEGIN
     INSERT INTO Action_Logs (user_id, action_type, time_performed)
-    VALUES (NEW.user_id, 'UPDATE', NOW());
+    VALUES (@current_user_id, 'UPDATE', 'Users', NOW());
 END //
 
 DELIMITER ;
@@ -521,10 +525,38 @@ AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
     INSERT INTO Action_Logs (user_id, action_type, time_performed)
-    VALUES (OLD.user_id, 'DELETE', NOW());
+    VALUES (@current_user_id, 'DELETE', 'Users', NOW());
 END //
 
 DELIMITER ;
+
+-- Trigger for updating the status of a licence to 'Expired'
+DELIMITER //
+
+CREATE TRIGGER UpdateLicenseValidity
+BEFORE UPDATE ON Licences
+FOR EACH ROW
+BEGIN
+    -- Check if the expiration date has passed, and update the validity_status
+    IF NEW.expiration_date < NOW() AND OLD.validity_status != 'Expired' THEN
+        SET NEW.validity_status = 'Expired';
+    END IF;
+END //
+
+DELIMITER ;
+
+
+-- Trigger for inserting new credentials (Log in Action_Logs)
+DELIMITER //
+CREATE TRIGGER LogCredentialsInsert
+AFTER INSERT ON Credentials
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, time_performed)
+    VALUES (@current_user_id, 'CREATE', NOW());
+END //
+DELIMITER ;
+
 
 
 -- Check Existing Triggers
