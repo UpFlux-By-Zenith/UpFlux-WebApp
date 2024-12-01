@@ -105,14 +105,14 @@ INSERT INTO Users (name, email, role) VALUES
 -- View Users table data
 SELECT * FROM Users;
 
-/* Inserting data into Licenses */
-INSERT INTO Licenses (licence_key, machine_id, validity_status, expiration_date) VALUES
+/* Inserting data into Licences */
+INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date) VALUES
 ('ABC123', 1, 'Valid', '2025-12-31 23:59:59'),
 ('DEF456', 2, 'Expired', '2023-08-15 12:00:00'),
 ('GHI789', 3, 'Valid', '2026-07-10 10:00:00');
 
--- View Licenses table data
-SELECT * FROM Licenses;
+-- View Licences table data
+SELECT * FROM Licences;
 
 /* Inserting data into Credentials */
 INSERT INTO Credentials (user_id, machine_id, access_granted_at, expires_at) VALUES
@@ -471,3 +471,60 @@ SHOW GRANTS FOR 'john'@'%';
 
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
+
+-- Triggers
+
+-- Trigger for deleting a users associated admin details whenever they are removed from the users table
+DELIMITER //
+CREATE TRIGGER DeleteAdminDetails
+AFTER DELETE ON Users
+FOR EACH ROW
+BEGIN
+    -- Check if the deleted user was an Admin
+    IF OLD.role = 'Admin' THEN
+        -- Delete corresponding entry from Admin_Details
+        DELETE FROM Admin_Details
+        WHERE user_id = OLD.id;
+    END IF;
+END //
+DELIMITER ;
+
+-- Trigger for creating an entry in the action_logs table whenever a user carries out an action on the DB
+DELIMITER //
+
+CREATE TRIGGER LogUserActions
+AFTER INSERT OR UPDATE OR DELETE ON Users
+FOR EACH ROW
+BEGIN
+    -- Log INSERT actions
+    IF (NEW.user_id IS NOT NULL AND OLD.user_id IS NULL) THEN
+        INSERT INTO Action_Logs (user_id, action_type, time_performed)
+        VALUES (NEW.user_id, 'CREATE', NOW());
+    END IF;
+
+    -- Log UPDATE actions
+    IF (NEW.user_id IS NOT NULL AND OLD.user_id IS NOT NULL) THEN
+        INSERT INTO Action_Logs (user_id, action_type, time_performed)
+        VALUES (NEW.user_id, 'UPDATE', NOW());
+    END IF;
+
+    -- Log DELETE actions
+    IF (NEW.user_id IS NULL AND OLD.user_id IS NOT NULL) THEN
+        INSERT INTO Action_Logs (user_id, action_type, time_performed)
+        VALUES (OLD.user_id, 'DELETE', NOW());
+    END IF;
+END //
+
+DELIMITER ;
+
+
+-- Check Existing Triggers
+SELECT 
+    TRIGGER_NAME,
+    EVENT_MANIPULATION AS EVENT,
+    EVENT_OBJECT_TABLE AS TABLE_NAME,
+    ACTION_STATEMENT AS ACTION
+FROM 
+    information_schema.TRIGGERS
+WHERE 
+    TRIGGER_SCHEMA = 'upflux'; 
