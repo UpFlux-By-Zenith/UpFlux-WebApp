@@ -489,34 +489,6 @@ BEGIN
 END //
 DELIMITER ;
 
--- Trigger for creating an entry in the action_logs table whenever a user carries out an action on the DB
-DELIMITER //
-
-CREATE TRIGGER LogUserActions
-AFTER INSERT OR UPDATE OR DELETE ON Users
-FOR EACH ROW
-BEGIN
-    -- Log INSERT actions
-    IF (NEW.user_id IS NOT NULL AND OLD.user_id IS NULL) THEN
-        INSERT INTO Action_Logs (user_id, action_type, time_performed)
-        VALUES (NEW.user_id, 'CREATE', NOW());
-    END IF;
-
-    -- Log UPDATE actions
-    IF (NEW.user_id IS NOT NULL AND OLD.user_id IS NOT NULL) THEN
-        INSERT INTO Action_Logs (user_id, action_type, time_performed)
-        VALUES (NEW.user_id, 'UPDATE', NOW());
-    END IF;
-
-    -- Log DELETE actions
-    IF (NEW.user_id IS NULL AND OLD.user_id IS NOT NULL) THEN
-        INSERT INTO Action_Logs (user_id, action_type, time_performed)
-        VALUES (OLD.user_id, 'DELETE', NOW());
-    END IF;
-END //
-
-DELIMITER ;
-
 
 -- Check Existing Triggers
 SELECT 
