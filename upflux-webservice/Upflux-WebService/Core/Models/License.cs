@@ -8,7 +8,7 @@ namespace Upflux_WebService.Core.Models
 		[Key]
 		[Required]
 		[MaxLength(255)]
-		[Column("license_key")]
+		[Column("licence_key")]
 		public string LicenseKey { get; set; } = null!; 
 
 		[Required]

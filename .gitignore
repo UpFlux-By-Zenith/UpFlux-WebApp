@@ -64,3 +64,4 @@ node_modules/
 # Package directories
 *.nuget/
 packages/
+/upflux-webservice/publish

@@ -5,17 +5,20 @@ using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Services
 {
+	/// <summary>
+	/// Service that deals with licensing
+	/// </summary>
 	public class LicenseManagementService : ILicenseManagementService
 	{
 		#region private members
-		private readonly ILicenseRepository _licenceRepository;
+		private readonly ILicenseRepository _licenseRepository;
 		private readonly IMachineRepository _machineRepository;
 		#endregion
 
 		#region public methods
-		public LicenseManagementService(ILicenseRepository licenceRepository, IMachineRepository machineRepository)
+		public LicenseManagementService(ILicenseRepository licenseRepository, IMachineRepository machineRepository)
 		{
-			_licenceRepository = licenceRepository;
+			_licenseRepository = licenseRepository;
 			_machineRepository = machineRepository;
 		}
 
@@ -32,7 +35,7 @@ namespace Upflux_WebService.Services
 
 			var key = await CreateKmsKeyAsync();
 
-			await _licenceRepository.AddAsync(new Core.Models.License
+			await _licenseRepository.AddAsync(new Core.Models.License
 			{
 				LicenseKey = key.KeyMetadata.KeyId,
 				MachineId = machineId,
@@ -40,15 +43,16 @@ namespace Upflux_WebService.Services
 				ExpirationDate = DateTime.UtcNow.AddYears(1)
 			});
 
-			// Call cloud communication service and send XML file here
+			// Call cloud communication service and send XML file
+			// Call machine relate method to change their status
 
-			await _licenceRepository.SaveChangesAsync();
+			await _licenseRepository.SaveChangesAsync();
 		}
 		#endregion
 
 		#region private methods
 		/// <summary>
-		/// Creates a Asymmetric key using 
+		/// Creates a Asymmetric key using aws user details
 		/// </summary>
 		/// <returns>a key pair that is used for signing and verifying</returns>
 		private async Task<CreateKeyResponse> CreateKmsKeyAsync()
@@ -73,6 +77,12 @@ namespace Upflux_WebService.Services
 			}
 		}
 
+		/// <summary>
+		/// Uses a KMS managed key to sign a hashed item
+		/// </summary>
+		/// <param name="keyId">the id of the key that is to be used</param>
+		/// <param name="hash"></param>
+		/// <returns></returns>
 		private async Task<byte[]> SignDataAsync(string keyId, byte[] hash)
 		{
 			try
