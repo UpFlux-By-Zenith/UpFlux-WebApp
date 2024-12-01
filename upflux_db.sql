@@ -369,15 +369,25 @@ CREATE ROLE 'Admin';
 CREATE ROLE 'Engineer';
 
 -- Admin Role: Full Permissions on All Tables
+GRANT ALL PRIVILEGES ON upflux.* TO 'Admin';
+
+-- Engineer Role: Specific Permissions
+GRANT SELECT, INSERT, UPDATE ON upflux.Machines TO 'Engineer';
+GRANT SELECT, INSERT, UPDATE ON upflux.Update_Logs TO 'Engineer';
+GRANT SELECT, INSERT, UPDATE ON upflux.Packages TO 'Engineer';
+
+-- Create Roles
+CREATE ROLE 'Admin', 'Engineer';
+
+-- Admin Role: Full Permissions on All Tables
 GRANT ALL PRIVILEGES ON upflux_db.* TO 'Admin';
 
 -- Engineer Role: Specific Permissions
-GRANT SELECT, INSERT, UPDATE ON upflux_db.Machines TO 'Engineer';
-GRANT SELECT, INSERT, UPDATE ON upflux_db.Update_Logs TO 'Engineer';
+GRANT SELECT ON upflux_db.Machines TO 'Engineer';
+GRANT SELECT ON upflux_db.Update_Logs TO 'Engineer';
 GRANT SELECT, INSERT, UPDATE ON upflux_db.Packages TO 'Engineer';
 
 DELIMITER //
-
 CREATE PROCEDURE CreateUser(
     IN p_name VARCHAR(255), 
     IN p_email VARCHAR(255), 
@@ -387,6 +397,9 @@ CREATE PROCEDURE CreateUser(
 BEGIN
     DECLARE v_user_id INT;
     DECLARE v_username VARCHAR(255);
+    
+    -- Generate a username based on the email (before '@')
+    SET v_username = SUBSTRING_INDEX(p_email, '@', 1);
 
     -- Insert into Users table
     INSERT INTO Users (name, email, role) 
@@ -394,24 +407,65 @@ BEGIN
 
     -- Get the last inserted user_id
     SET v_user_id = LAST_INSERT_ID();
-    
-    -- Create a MySQL User (for database access) based on email
-    SET v_username = REPLACE(p_email, '@', '_at_');  -- Adjust for valid MySQL user names
-    EXECUTE IMMEDIATE CONCAT('CREATE USER "', v_username, '"@"localhost" IDENTIFIED BY "', p_password, '"');
 
     -- For Admin, insert into Admin_Details with password hash
     IF p_role = 'Admin' THEN
         INSERT INTO Admin_Details (user_id, password_hash) 
         VALUES (v_user_id, SHA2(p_password, 256));
-
-        -- Grant Admin role
-        GRANT 'Admin' TO v_username@'localhost';
-    ELSE
-        -- Grant Engineer role
-        GRANT 'Engineer' TO v_username@'localhost';
     END IF;
 
-END //
+    -- Create a MySQL user for the newly added user
+    SET @create_user_query = CONCAT(
+        'CREATE USER \'', v_username, '\'@\'%\' IDENTIFIED BY \'', p_password, '\';'
+    );
+    PREPARE stmt FROM @create_user_query;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
 
+    -- Grant the appropriate role based on the user's role
+    IF p_role = 'Admin' THEN
+        SET @grant_role_query = CONCAT(
+            'GRANT \'Admin\' TO \'', v_username, '\'@\'%\';'
+        );
+    ELSEIF p_role = 'Engineer' THEN
+        SET @grant_role_query = CONCAT(
+            'GRANT \'Engineer\' TO \'', v_username, '\'@\'%\';'
+        );
+    END IF;
+
+    PREPARE stmt FROM @grant_role_query;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+
+    -- Activate roles for the new user as they will not take effect unless activated
+    SET @activate_role_query = CONCAT(
+        'SET DEFAULT ROLE ALL TO \'', v_username, '\'@\'%\';'
+    );
+    PREPARE stmt FROM @activate_role_query;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+END //
 DELIMITER ;
 
+-- Testing Stored Procedure
+
+-- Example Admin User
+CALL CreateUser('John Doe', 'john@example.com', 'Admin', 'SecurePassword123455');
+
+-- Admin_Details should be populated with john's info
+Select * from Admin_Details;
+
+-- Example Engineer User
+CALL CreateUser('Mark Doe', 'mark123@example.com', 'Engineer', '');
+
+-- Testing RBAC
+
+-- Checking that correct permissions are assigned for each role
+SHOW GRANTS FOR 'Admin';
+SHOW GRANTS FOR 'Engineer';
+
+-- Should show that john has the ADMIN role
+SHOW GRANTS FOR 'john'@'%';
+
+-- Should show that mark has the Engineer role
+SHOW GRANTS FOR 'mark123'@'%';
