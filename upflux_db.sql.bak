@@ -39,12 +39,14 @@ CREATE TABLE Licenses (
 
 -- Create Credentials Table
 CREATE TABLE Credentials (
-    user_id INT NOT NULL,
-    machine_id INT NOT NULL,
-    access_granted_at TIMESTAMP NOT NULL,
-    PRIMARY KEY (user_id, machine_id),
+    credential_id INT AUTO_INCREMENT PRIMARY KEY, 
+    user_id INT NOT NULL,                  
+    machine_id INT NOT NULL,                 
+    access_granted_at TIMESTAMP NOT NULL,   
+    expires_at TIMESTAMP NOT NULL,           
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
+    UNIQUE (user_id, machine_id, token_id)   
 );
 
 -- Create Packages Table

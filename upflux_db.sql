@@ -29,7 +29,7 @@ CREATE TABLE Admin_Details (
 );
 
 -- Create Licenses Table
-CREATE TABLE Licenses (
+CREATE TABLE Licences (
     licence_key VARCHAR(255) NOT NULL PRIMARY KEY,
     machine_id INT NOT NULL,
     validity_status VARCHAR(50) NOT NULL,
@@ -79,7 +79,6 @@ CREATE TABLE Action_Logs (
     time_performed TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
-
 
 
 /*Show all tables present in the database*/
