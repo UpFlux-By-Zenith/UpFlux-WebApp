@@ -28,7 +28,7 @@ CREATE TABLE Admin_Details (
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
--- Create Licenses Table
+-- Create Licences Table
 CREATE TABLE Licences (
     licence_key VARCHAR(255) NOT NULL PRIMARY KEY,
     machine_id INT NOT NULL,
@@ -105,20 +105,21 @@ INSERT INTO Users (name, email, role) VALUES
 -- View Users table data
 SELECT * FROM Users;
 
-/* Inserting data into Licenses */
-INSERT INTO Licenses (licence_key, machine_id, validity_status, expiration_date) VALUES
+/* Inserting data into Licences */
+INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date) VALUES
 ('ABC123', 1, 'Valid', '2025-12-31 23:59:59'),
 ('DEF456', 2, 'Expired', '2023-08-15 12:00:00'),
 ('GHI789', 3, 'Valid', '2026-07-10 10:00:00');
 
--- View Licenses table data
-SELECT * FROM Licenses;
+-- View Licences table data
+SELECT * FROM Licences;
 
 /* Inserting data into Credentials */
-INSERT INTO Credentials (user_id, machine_id, access_granted_at) VALUES
-(1, 1, '2023-01-01 12:00:00'),
-(2, 2, '2023-03-15 09:30:00'),
-(3, 3, '2023-05-20 11:45:00');
+INSERT INTO Credentials (user_id, machine_id, access_granted_at, expires_at) VALUES
+(1, 1, '2023-01-01 12:00:00', '2023-01-31 12:00:00'),
+(2, 2, '2023-03-15 09:30:00', '2023-04-14 09:30:00'),
+(3, 3, '2023-05-20 11:45:00', '2023-06-19 11:45:00');
+
 
 -- View Credentials table data
 SELECT * FROM Credentials;
