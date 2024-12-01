@@ -526,6 +526,22 @@ END //
 
 DELIMITER ;
 
+-- Trigger for updating the status of a licence to 'Expired'
+DELIMITER //
+
+CREATE TRIGGER UpdateLicenseValidity
+BEFORE UPDATE ON Licenses
+FOR EACH ROW
+BEGIN
+    -- Check if the expiration date has passed, and update the validity_status
+    IF NEW.expiration_date < NOW() AND OLD.validity_status != 'Expired' THEN
+        SET NEW.validity_status = 'Expired';
+    END IF;
+END //
+
+DELIMITER ;
+
+
 
 -- Check Existing Triggers
 SELECT 

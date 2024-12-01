@@ -133,11 +133,11 @@ SELECT * FROM Packages;
 
 /* Inserting data into Update Logs */
 INSERT INTO Update_Logs (package_id, user_id, machine_id, update_status, time_applied) VALUES
-(1, 1, 1, 'Completed', '2023-07-02 15:00:00'),
-(2, 2, 2, 'Pending', '2023-08-16 10:00:00'),
-(3, 3, 3, 'Failed', '2023-10-01 13:45:00'),
-(3, 2, 2, 'Completed', '2023-08-16 10:00:00'),
-(2, 3, 3, 'Completed', '2023-10-01 13:45:00');
+(1, 1, '1', 'Completed', '2023-07-02 15:00:00'),
+(2, 2, '2', 'Pending', '2023-08-16 10:00:00'),
+(3, 3, '3', 'Failed', '2023-10-01 13:45:00'),
+(3, 2, '2', 'Completed', '2023-08-16 10:00:00'),
+(2, 3, '3', 'Completed', '2023-10-01 13:45:00');
 
 -- View Update Logs table data
 SELECT * FROM Update_Logs;
