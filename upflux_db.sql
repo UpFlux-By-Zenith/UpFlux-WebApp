@@ -498,7 +498,7 @@ CREATE TRIGGER LogUserInsert
 AFTER INSERT ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, time_performed)
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
     VALUES (@current_user_id, 'CREATE', 'Users', NOW());
 END //
 
@@ -511,7 +511,7 @@ CREATE TRIGGER LogUserUpdate
 AFTER UPDATE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, time_performed)
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
     VALUES (@current_user_id, 'UPDATE', 'Users', NOW());
 END //
 
@@ -524,7 +524,7 @@ CREATE TRIGGER LogUserDelete
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, time_performed)
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
     VALUES (@current_user_id, 'DELETE', 'Users', NOW());
 END //
 
@@ -548,15 +548,40 @@ DELIMITER ;
 
 -- Trigger for inserting new credentials 
 DELIMITER //
+
 CREATE TRIGGER LogCredentialsInsert
 AFTER INSERT ON Credentials
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, time_performed)
-    VALUES (@current_user_id, 'CREATE', NOW());
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (@current_user_id, 'CREATE', 'Credentials', NOW());
 END //
+
 DELIMITER ;
 
+-- Trigger for updating credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialsUpdate
+AFTER UPDATE ON Credentials
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (NEW.user_id, 'UPDATE', 'Credentials', NOW());
+END //
+
+DELIMITER ;
+
+-- Trigger for deleting credentials
+DELIMITER //
+CREATE TRIGGER LogCredentialsDelete
+AFTER DELETE ON Credentials
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (OLD.user_id, 'DELETE', 'Credentials', NOW());
+END //
+DELIMITER ;
 
 
 -- Check Existing Triggers
