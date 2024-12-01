@@ -567,7 +567,7 @@ AFTER UPDATE ON Credentials
 FOR EACH ROW
 BEGIN
     INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (NEW.user_id, 'UPDATE', 'Credentials', NOW());
+    VALUES (@current_user_id, 'UPDATE', 'Credentials', NOW());
 END //
 
 DELIMITER ;
@@ -579,7 +579,7 @@ AFTER DELETE ON Credentials
 FOR EACH ROW
 BEGIN
     INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (OLD.user_id, 'DELETE', 'Credentials', NOW());
+    VALUES (@current_user_id, 'DELETE', 'Credentials', NOW());
 END //
 DELIMITER ;
 
