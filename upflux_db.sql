@@ -502,6 +502,20 @@ END //
 
 DELIMITER ;
 
+-- Trigger for adding entry to action_logs when a user performs an Update
+DELIMITER //
+
+CREATE TRIGGER LogUserUpdate
+AFTER UPDATE ON Users
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, time_performed)
+    VALUES (NEW.user_id, 'UPDATE', NOW());
+END //
+
+DELIMITER ;
+
+
 -- Check Existing Triggers
 SELECT 
     TRIGGER_NAME,
