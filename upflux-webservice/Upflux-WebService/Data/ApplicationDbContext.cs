@@ -1,12 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel;
 using Upflux_WebService.Core.Models;
 
 namespace Upflux_WebService.Data
 {
 	public class ApplicationDbContext : DbContext
 	{
-		public DbSet<Core.Models.License> Licenses { get; set; }
+		public DbSet<Licence> Licences { get; set; }
 		public DbSet<Machine> Machines { get; set; }
 
 		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -17,16 +16,6 @@ namespace Upflux_WebService.Data
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			base.OnModelCreating(modelBuilder);
-
-			modelBuilder.Entity<Machine>(entity =>
-			{
-				// store enum as string
-				entity.Property(e => e.MachineStatus)
-					  .HasConversion<string>(); 
-
-				entity.Property(e => e.ActivityStatus)
-					  .HasConversion<string>(); 
-			});
 		}
 	}
 }

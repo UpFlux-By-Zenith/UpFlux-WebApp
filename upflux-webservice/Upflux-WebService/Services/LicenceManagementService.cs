@@ -8,25 +8,25 @@ namespace Upflux_WebService.Services
 	/// <summary>
 	/// Service that deals with licensing
 	/// </summary>
-	public class LicenseManagementService : ILicenseManagementService
+	public class LicenceManagementService : ILicenceManagementService
 	{
 		#region private members
-		private readonly ILicenseRepository _licenseRepository;
+		private readonly ILicenceRepository _licenceRepository;
 		private readonly IMachineRepository _machineRepository;
 		#endregion
 
 		#region public methods
-		public LicenseManagementService(ILicenseRepository licenseRepository, IMachineRepository machineRepository)
+		public LicenceManagementService(ILicenceRepository licenceRepository, IMachineRepository machineRepository)
 		{
-			_licenseRepository = licenseRepository;
+			_licenceRepository = licenceRepository;
 			_machineRepository = machineRepository;
 		}
 
 		/// <summary>
-		/// Receives machine Id, generate license and store metadata
+		/// Receives machine Id, generate licence and store metadata
 		/// </summary>
 		/// <param name="machineId">the machine id which the licence belong to</param>
-		public async Task CreateLicense(string machineId)
+		public async Task CreateLicence(string machineId)
 		{
 			var machine = await _machineRepository.GetByIdAsync(machineId);
 
@@ -35,9 +35,9 @@ namespace Upflux_WebService.Services
 
 			var key = await CreateKmsKeyAsync();
 
-			await _licenseRepository.AddAsync(new Core.Models.License
+			await _licenceRepository.AddAsync(new Core.Models.Licence
 			{
-				LicenseKey = key.KeyMetadata.KeyId,
+				LicenceKey = key.KeyMetadata.KeyId,
 				MachineId = machineId,
 				ValidityStatus = "Valid",
 				ExpirationDate = DateTime.UtcNow.AddYears(1)
@@ -46,7 +46,7 @@ namespace Upflux_WebService.Services
 			// Call cloud communication service and send XML file
 			// Call machine relate method to change their status
 
-			await _licenseRepository.SaveChangesAsync();
+			await _licenceRepository.SaveChangesAsync();
 		}
 		#endregion
 

@@ -10,30 +10,7 @@ namespace Upflux_WebService.Core.Models
 		public string MachineId { get; set; }
 
 		[Required]
-		[EnumDataType(typeof(MachineStatus))]
-		[Column("machine_status")]
-		public MachineStatus MachineStatus { get; set; }
-
-		[Column("memory_usage")]
-		public float? MemoryUsage { get; set; }
-
-		[Required]
-		[EnumDataType(typeof(ActivityStatus))]
-		[Column("activity_status")]
-		public ActivityStatus ActivityStatus { get; set; }
-	}
-
-	public enum MachineStatus
-	{
-		Alive,
-		Shutdown,
-		Unknown
-	}
-
-	public enum ActivityStatus
-	{
-		Busy,
-		Idle,
-		Offline
+		[Column("date_added")]
+		public DateTime ExpirationDate { get; set; }
 	}
 }

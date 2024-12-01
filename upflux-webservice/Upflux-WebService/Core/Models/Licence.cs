@@ -3,13 +3,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Upflux_WebService.Core.Models
 {
-	public class License
+	public class Licence
 	{
 		[Key]
 		[Required]
 		[MaxLength(255)]
 		[Column("licence_key")]
-		public string LicenseKey { get; set; } = null!; 
+		public string LicenceKey { get; set; } = null!; 
 
 		[Required]
 		[Column("machine_id")]

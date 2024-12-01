@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Upflux_WebService.Core.Models;
+﻿using Upflux_WebService.Core.Models;
 using Upflux_WebService.Data;
 using Upflux_WebService.Repository.Interfaces;
 

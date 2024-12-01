@@ -5,11 +5,11 @@ using Upflux_WebService.Repository.Interfaces;
 namespace Upflux_WebService.Repository
 {
 
-	public class LicenseRepository : Repository<License>, ILicenseRepository
+	public class LicenceRepository : Repository<Licence>, ILicenceRepository
 	{
 		private readonly ApplicationDbContext _context;
 
-		public LicenseRepository(ApplicationDbContext context) : base(context)
+		public LicenceRepository(ApplicationDbContext context) : base(context)
 		{
 			_context = context;
 		}
@@ -20,7 +20,7 @@ namespace Upflux_WebService.Repository
 		/// </summary>
 		/// <returns></returns>
 		/// <exception cref="NotImplementedException"></exception>
-		public Task<IEnumerable<License>> GetValidLicensesAsync()
+		public Task<IEnumerable<Licence>> GetValidLicencesAsync()
 		{
 			throw new NotImplementedException();
 		}

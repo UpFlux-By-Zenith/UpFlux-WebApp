@@ -12,19 +12,19 @@ namespace Upflux_WebService.Controllers
 	/// </summary>
 	[ApiController]
 	[Route("api/[controller]")]
-	public class LicenseController : ControllerBase
+	public class LicenceController : ControllerBase
 	{
 		#region private members
 
-		private readonly ILicenseManagementService _licenseManagementService;
+		private readonly ILicenceManagementService _licenceManagementService;
 
 		#endregion
 
 		#region constructor
 
-		public LicenseController(ILicenseManagementService licenseManagementService)
+		public LicenceController(ILicenceManagementService licenceManagementService)
 		{
-			_licenseManagementService = licenseManagementService;
+			_licenceManagementService = licenceManagementService;
 		}
 
 		#endregion
@@ -32,10 +32,10 @@ namespace Upflux_WebService.Controllers
 		#region endpoints
 
 		/// <summary>
-		/// Admin register a machine and create license for it.
+		/// Admin register a machine and create licence for it.
 		/// </summary>
 		/// <param name="registerMachineDto">the register request containing machineId</param>
-		/// <response code="200">Device is registered and license created</response>
+		/// <response code="200">Device is registered and licence created</response>
 		/// <response code="400">Bad Request if the machine IDs are missing or invalid</response>
 		/// <response code="401">Unauthorized if the admin token is invalid or the admin does not have the correct role</response>
 		/// <response code="500">Internal Server Error in case of unexpected errors</response>
@@ -49,7 +49,7 @@ namespace Upflux_WebService.Controllers
 				if (string.IsNullOrEmpty(adminEmail))
 					return Unauthorized(new { Error = "Invalid admin token." });
 
-				await _licenseManagementService.CreateLicense(registerMachineDto.MachineId);
+				await _licenceManagementService.CreateLicence(registerMachineDto.MachineId);
 				return Ok(new { Message = "Machine Registered Succesfully." });
 			}
 			catch (Exception ex)
