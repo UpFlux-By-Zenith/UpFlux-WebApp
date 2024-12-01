@@ -546,3 +546,16 @@ END //
 DELIMITER ;
 
 
+-- Trigger for inserting new credentials 
+DELIMITER //
+
+CREATE TRIGGER LogCredentialsInsert
+AFTER INSERT ON Credentials
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (@current_user_id, 'CREATE', 'Credentials', NOW());
+END //
+
+DELIMITER ;
+
