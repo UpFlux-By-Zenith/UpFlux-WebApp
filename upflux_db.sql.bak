@@ -517,3 +517,16 @@ END //
 
 DELIMITER ;
 
+-- Trigger for adding entry to action_logs when a user performs a Delete
+DELIMITER //
+
+CREATE TRIGGER LogUserDelete
+AFTER DELETE ON Users
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (@current_user_id, 'DELETE', 'Users', NOW());
+END //
+
+DELIMITER ;
+
