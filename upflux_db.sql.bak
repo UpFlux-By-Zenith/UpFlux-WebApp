@@ -471,3 +471,23 @@ SHOW GRANTS FOR 'john'@'%';
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
 
+-- Triggers
+
+-- For testing triggers as a specific user:
+SET @current_user_id = 1;
+
+-- Trigger for deleting a users associated admin details whenever they are removed from the users table
+DELIMITER //
+CREATE TRIGGER DeleteAdminDetails
+AFTER DELETE ON Users
+FOR EACH ROW
+BEGIN
+    -- Check if the deleted user was an Admin
+    IF OLD.role = 'Admin' THEN
+        -- Delete corresponding entry from Admin_Details
+        DELETE FROM Admin_Details
+        WHERE user_id = OLD.user_id;
+    END IF;
+END //
+DELIMITER ;
+

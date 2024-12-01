@@ -491,3 +491,16 @@ BEGIN
 END //
 DELIMITER ;
 
+-- Trigger for adding entry to action_logs when a user performs an Insert
+DELIMITER //
+
+CREATE TRIGGER LogUserInsert
+AFTER INSERT ON Users
+FOR EACH ROW
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (@current_user_id, 'CREATE', 'Users', NOW());
+END //
+
+DELIMITER ;
+
