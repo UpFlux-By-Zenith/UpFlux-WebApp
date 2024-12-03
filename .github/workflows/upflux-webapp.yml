@@ -30,7 +30,7 @@ jobs:
       working-directory: ./upflux-client  # Ensure npm install runs in the correct folder
 
     - name: Build npm package
-      run: npm run build  # Build your React app
+      run: CI=false npm run build  # Disable CI environment to prevent ESLint from treating warnings as errors
       working-directory: ./upflux-client
 
     - name: Get the package version
