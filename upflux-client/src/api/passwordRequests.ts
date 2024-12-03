@@ -7,12 +7,20 @@ interface PasswordChangePayload {
 }
 
 export const changePassword = async (payload: PasswordChangePayload): Promise<string | null> => {
+    // Retrieve the token from local storage
+  const authToken = localStorage.getItem('authToken');
 
+  if (!authToken) {
+    console.error('No authentication token found in local storage.');
+    return null ;
+  }
+  
   try {
     const response = await fetch(AUTH_API.CHANGE_PASSWORD, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Add the Bearer token
       },
       body: JSON.stringify(payload),
     });
