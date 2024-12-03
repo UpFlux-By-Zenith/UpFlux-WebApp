@@ -1,5 +1,4 @@
 import React from 'react';
-import { useAuth } from './common/authProvider/AuthProvider';
 import { About } from './features/about/About';
 import { ContactUs } from './features/contactUs/ContactUs';
 import { Footer } from './features/footer/Footer';

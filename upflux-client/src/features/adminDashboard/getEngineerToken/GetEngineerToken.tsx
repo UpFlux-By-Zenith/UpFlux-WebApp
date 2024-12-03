@@ -1,7 +1,6 @@
 // src/features/EngineerToken/GetEngineerToken.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { TextInput, Button, Stack, Box, Text } from '@mantine/core';
-import API_BASE_URL, { AUTH_API } from '../../../api/apiConsts';
 import './getEngineerToken.css';
 import { useAuth } from '../../../common/authProvider/AuthProvider';
 import { getEngineerToken } from '../../../api/adminApiActions';
@@ -16,16 +15,6 @@ export const GetEngineerToken: React.FC = () => {
 
   const { authToken } = useAuth();
 
-
-
-  // Function to download the engineer token as a file
-  const downloadToken = (token: string) => {
-    const blob = new Blob([token], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'engineer-token.txt'; // The name of the file
-    link.click(); // Trigger the download
-  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
