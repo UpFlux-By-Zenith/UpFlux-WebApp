@@ -6,6 +6,9 @@ using static GrpcServer.LicenceCommunication;
 
 namespace Upflux_WebService.GrpcServices
 {
+	/// <summary>
+	/// gRPC service to send licence update to gateway
+	/// </summary>
 	public class LicenceCommunicationService : LicenceCommunicationBase, ILicenceCommunicationService
 	{
 		#region private members
@@ -56,10 +59,9 @@ namespace Upflux_WebService.GrpcServices
 		}
 
 		/// <summary>
-		/// Push licence update
+		/// Send licence update to the clients
 		/// </summary>
-		/// <param name="licenceFileUpdate">the licence metadata as load</param>
-		/// <returns></returns>
+		/// <param name="licenceFileUpdate">the licence metadata which will be used as load</param>
 		public async Task PushLicenceUpdateAsync(LicenceFileUpdate licenceFileUpdate)
 		{
 			foreach (var client in _clients.Values)

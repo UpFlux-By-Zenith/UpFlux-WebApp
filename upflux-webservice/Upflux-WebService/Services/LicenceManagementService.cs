@@ -98,7 +98,6 @@ namespace Upflux_WebService.Services
 		/// Renew licence by resetting expiry date
 		/// </summary>
 		/// <param name="existingLicence">the licence being renewed</param>
-		/// <returns></returns>
 		private async Task RenewExistingLicence(Licence existingLicence)
 		{
 			existingLicence.ValidityStatus = "Valid";
@@ -130,8 +129,7 @@ namespace Upflux_WebService.Services
 		/// Uses a KMS managed key to sign a hashed item
 		/// </summary>
 		/// <param name="keyId">the id of the key that is to be used</param>
-		/// <param name="hash"></param>
-		/// <returns></returns>
+		/// <param name="hash">the hash that is to be signed</param>
 		private async Task<byte[]> SignDataAsync(string keyId, byte[] hash)
 		{
 			var kmsClient = new AmazonKeyManagementServiceClient(Amazon.RegionEndpoint.EUNorth1);
