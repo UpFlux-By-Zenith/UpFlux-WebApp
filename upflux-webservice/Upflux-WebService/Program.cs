@@ -10,6 +10,8 @@ using Upflux_WebService.Services;
 using Upflux_WebService.Data;
 using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Repository;
+using Upflux_WebService.GrpcServices;
+using Upflux_WebService.GrpcServices.Interfaces;
 
 namespace Upflux_WebService
 {
@@ -44,10 +46,12 @@ namespace Upflux_WebService
 		private static void ConfigureServices(WebApplicationBuilder builder)
 		{
 			builder.Services.AddScoped<IAuthService, AuthService>()
-				.AddScoped<ILicenceManagementService, LicenceManagementService>()
 				.AddScoped(typeof(IRepository<>), typeof(Repository<>))
+				.AddScoped<ILicenceManagementService, LicenceManagementService>()
 				.AddScoped<ILicenceRepository, LicenceRepository>()
-				.AddScoped<IMachineRepository, MachineRepository>();
+				.AddScoped<IMachineRepository, MachineRepository>()
+				.AddSingleton<LicenceCommunicationService>()
+				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
 
 			// Load JWT settings from configuration
 			var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
@@ -62,6 +66,9 @@ namespace Upflux_WebService
 
 			// Add controllers
 			builder.Services.AddControllers();
+
+			// Add Grpc Services
+			builder.Services.AddGrpc();
 
 			// Add Swagger for API documentation
 			builder.Services.AddEndpointsApiExplorer();
@@ -160,6 +167,9 @@ namespace Upflux_WebService
 
 			// Map controllers
 			app.MapControllers();
+
+			// Map gRPC services
+			app.MapGrpcService<LicenceCommunicationService>();
 
 			// Map SignalR hubs (if applicable)
 			// Example: app.MapHub<MyHub>("/myHub");
