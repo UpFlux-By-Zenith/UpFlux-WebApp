@@ -3,9 +3,8 @@ using Amazon.KeyManagementService.Model;
 using Upflux_WebService.Core.Models;
 using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Services.Interfaces;
-using Upflux_WebService.GrpcServices;
-using GrpcServer;
 using Upflux_WebService.GrpcServices.Interfaces;
+using GrpcServer;
 
 namespace Upflux_WebService.Services
 {
@@ -80,6 +79,12 @@ namespace Upflux_WebService.Services
 
 		#region private methods
 
+		/// <summary>
+		/// Check if machine exists, and get its licence
+		/// </summary>
+		/// <param name="machineId">the id of the machine being checked</param>
+		/// <returns>Licence metadata</returns>
+		/// <exception cref="KeyNotFoundException"></exception>
 		private async Task<Licence?> ValidateMachineAndGetLicence(string machineId)
 		{
 			var machine = await _machineRepository.GetByIdAsync(machineId);
@@ -89,6 +94,11 @@ namespace Upflux_WebService.Services
 			return await _licenceRepository.GetLicenceByMachineId(machineId);
 		}
 
+		/// <summary>
+		/// Renew licence by resetting expiry date
+		/// </summary>
+		/// <param name="existingLicence">the licence being renewed</param>
+		/// <returns></returns>
 		private async Task RenewExistingLicence(Licence existingLicence)
 		{
 			existingLicence.ValidityStatus = "Valid";
@@ -138,6 +148,11 @@ namespace Upflux_WebService.Services
 			return signResponse.Signature.ToArray();
 		}
 
+		/// <summary>
+		/// Create signature using icence data and insert it into the response
+		/// </summary>
+		/// <param name="licence">licence being signed</param>
+		/// <returns>signed licence</returns>
 		private async Task<string> CreateSignedFile(Licence licence)
 		{
 			var xmlContent = $@"

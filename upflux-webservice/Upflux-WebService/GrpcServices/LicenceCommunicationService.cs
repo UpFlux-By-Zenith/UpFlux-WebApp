@@ -8,14 +8,27 @@ namespace Upflux_WebService.GrpcServices
 {
 	public class LicenceCommunicationService : LicenceCommunicationBase, ILicenceCommunicationService
 	{
+		#region private members
+
 		private readonly ConcurrentDictionary<string, IServerStreamWriter<LicenceFileUpdate>> _clients = new();
 		private readonly ILogger<LicenceCommunicationService> _logger;
+
+		#endregion
+
+		#region public methods
 
 		public LicenceCommunicationService(ILogger<LicenceCommunicationService> logger)
 		{
 			_logger = logger;
 		}
 
+		/// <summary>
+		/// Handles client subscription to licence updates
+		/// </summary>
+		/// <param name="request">empty request that triggers subscription process</param>
+		/// <param name="responseStream">stream that is used by the server to send real time data to the client</param>
+		/// <param name="context">gRPC server data</param>
+		/// <returns>task that keeps connection alive until client disconnects</returns>
 		public override async Task SubscribeToLicenceUpdates(EmptyRequest request, IServerStreamWriter<LicenceFileUpdate> responseStream, ServerCallContext context)
 		{
 			// Generate a unique ID for the client
@@ -41,6 +54,12 @@ namespace Upflux_WebService.GrpcServices
 				_logger.LogWarning($"Streaming for client {clientId} was cancelled.");
 			}
 		}
+
+		/// <summary>
+		/// Push licence update
+		/// </summary>
+		/// <param name="licenceFileUpdate">the licence metadata as load</param>
+		/// <returns></returns>
 		public async Task PushLicenceUpdateAsync(LicenceFileUpdate licenceFileUpdate)
 		{
 			foreach (var client in _clients.Values)
@@ -56,5 +75,7 @@ namespace Upflux_WebService.GrpcServices
 				}
 			}
 		}
+
+		#endregion
 	}
 }
