@@ -1,4 +1,6 @@
-﻿using Upflux_WebService.Core.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Reflection.PortableExecutable;
+using Upflux_WebService.Core.Models;
 using Upflux_WebService.Data;
 using Upflux_WebService.Repository.Interfaces;
 
@@ -20,9 +22,10 @@ namespace Upflux_WebService.Repository
 		/// </summary>
 		/// <returns></returns>
 		/// <exception cref="NotImplementedException"></exception>
-		public Task<IEnumerable<Licence>> GetValidLicencesAsync()
+		public async Task<Licence?> GetLicenceByMachineId( string machineId)
 		{
-			throw new NotImplementedException();
+			return await _context.Licences
+				.FirstOrDefaultAsync(l => l.MachineId == machineId);
 		}
 	}
 }
