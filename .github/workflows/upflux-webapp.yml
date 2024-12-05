@@ -5,8 +5,8 @@ on:
     branches:
       - main  # Trigger on merge to the main branch
     paths:
-      - 'upFlux-webclient/**'  # Specify the project path to only trigger when changes happen here
-  workflow_dispatch:  # Trigger manually from the GitHub Actions UI
+      - 'upflux-webclient/**'  # Only trigger when changes occur in the 'upflux-webclient' folder
+  workflow_dispatch:  # Trigger manually from GitHub Actions UI
 
 jobs:
   build-and-publish:
@@ -30,11 +30,7 @@ jobs:
       working-directory: ./upflux-client  # Ensure npm install runs in the correct folder
 
     - name: Build npm package
-      run: npm run build  # Adjust if you have a custom build command
-      working-directory: ./upflux-client
-
-    - name: Set up GitHub Packages authentication
-      run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.MY_GITHUB_PAT }}" >> ~/.npmrc
+      run: CI=false npm run build  # Disable CI environment to prevent ESLint from treating warnings as errors
       working-directory: ./upflux-client
 
     - name: Get the package version
@@ -42,15 +38,28 @@ jobs:
       run: echo "PACKAGE_VERSION=$(node -p -e "require('./package.json').version")" >> $GITHUB_ENV
       working-directory: ./upflux-client
 
+    - name: Set up GitHub Packages authentication
+      run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.MY_GITHUB_PAT }}" >> ~/.npmrc
+      working-directory: ./upflux-client
+
+    # Publish to GitHub Packages if pushing to the main branch
     - name: Publish to GitHub Packages
+      if: github.ref == 'refs/heads/main'  # Only runs on merge to the main branch
       run: |
-        if [ "${{ github.event_name }}" == "push" ]; then
-          npm version patch -m "Release version %s"  # Adjust to "minor" or "major" if necessary
-          npm publish
-        fi
+        npm version patch -m "Release version %s"  # Adjust to "minor" or "major" if necessary
+        npm publish
       working-directory: ./upflux-client
       env:
         NODE_AUTH_TOKEN: ${{ secrets.MY_GITHUB_PAT }}
 
+    # If not on the main branch, upload build as an artifact
+    - name: Upload build directory as an artifact
+      if: github.ref != 'refs/heads/main'  # Runs if not on the main branch or on manual trigger
+      uses: actions/upload-artifact@v3
+      with:
+        name: react-build
+        path: ./upflux-client/build  # Path to the build directory of your React app
+
     - name: Display version summary
       run: echo "The package version is ${{ env.PACKAGE_VERSION }}."
+

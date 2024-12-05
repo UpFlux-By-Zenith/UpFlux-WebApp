@@ -5,7 +5,6 @@ import { Footer } from './features/footer/Footer';
 import { Header } from './features/header/Header';
 import { Navbar } from './features/navbar/Navbar';
 
-
 export const HomeRoute: React.FC = () => {
   return (
     <>

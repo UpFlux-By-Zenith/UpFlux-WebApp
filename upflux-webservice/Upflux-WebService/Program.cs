@@ -24,12 +24,23 @@ namespace Upflux_WebService
 			// Add services to the container
 			ConfigureServices(builder);
 
-			var app = builder.Build();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
+
+            var app = builder.Build();
 
 			// Configure the middleware pipeline
 			ConfigureMiddleware(app);
 
-			app.Run();
+
+            app.Run();
 		}
 
 		private static void ConfigureServices(WebApplicationBuilder builder)
@@ -144,8 +155,11 @@ namespace Upflux_WebService
 				app.UseSwaggerUI();
 			}
 
-			// Enforce HTTPS redirection
-			app.UseHttpsRedirection();
+            // Use CORS
+            app.UseCors("AllowAll");
+
+            //Enforce HTTPS redirection
+            app.UseHttpsRedirection();
 
 			// Add authentication and authorization middleware
 			app.UseAuthentication();

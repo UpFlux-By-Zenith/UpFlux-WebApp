@@ -4,12 +4,16 @@ import { MantineProvider } from '@mantine/core';
 import { HomeRoute } from './HomeRoute';
 import { LoginComponent } from './features/login/Login';
 import { PasswordSettingsRoute } from './features/passwordSettings/PasswordSettingsRoute';
-import { GetEngineerTokenRoute } from './features/getEngineerToken/GetEngineerTokenRoute';
 import { AdminLogin } from './features/adminLogin/AdminLogin';
+import { PrivateRoutes } from './common/authProvider/PrivateRoutes';
+import { AuthProvider, ROLES } from './common/authProvider/AuthProvider';
+import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
 
 export const App = () => {
   return (
     <MantineProvider>
+      <AuthProvider>
+
       <Router>
         <Routes>
           {/* Home route */}
@@ -18,17 +22,21 @@ export const App = () => {
           {/* Login route */}
           <Route path="/login" element={<LoginComponent />} />
 
-          {/* Password settings route */}
-          <Route path="/password-settings" element={<PasswordSettingsRoute />} />
-
           {/* Get Engineer Token route */}
           <Route path="/admin-login" element={<AdminLogin />} />
+          
+          <Route element={<PrivateRoutes role={ROLES.ADMIN} />} >
+            {/* Password settings route */}
+            <Route path="/password-settings" element={<PasswordSettingsRoute />} />
 
-          {/* Get Engineer Token route */}
-          <Route path="/get-engineer-token" element={<GetEngineerTokenRoute />} />
-
+            {/* Get Engineer Token route */}
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          </Route>
+          <Route element={<PrivateRoutes role={ROLES.ENGINEER} />} >
+          </Route>
         </Routes>
       </Router>
+      </AuthProvider>
     </MantineProvider>
   );
 };
