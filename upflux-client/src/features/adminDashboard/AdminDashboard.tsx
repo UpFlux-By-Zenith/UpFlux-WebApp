@@ -4,35 +4,35 @@ import { GetEngineerToken } from "./GetEngineerToken";
 import { PackageFileInput } from "./PackageFileInput";
 import "./admin-dashboard.css";
 import { Stack, Text } from "@mantine/core"; // Ensure this import matches your grid library
-
+import { Grid } from "@mantine/core";
+import "@mantine/core/styles/Grid.css";
 export const AdminDashboard = () => {
-  // ! mantine Grid not working
   return (
     <>
       <Navbar onHomePage={false} />
-      <div className="admin-parent">
-        <div className="div1">
+      <Grid grow className="admin-dashboard">
+        <Grid.Col span={4}>
           <GetEngineerToken />
-        </div>
-        <div className="div2">
+        </Grid.Col>
+        <Grid.Col span={4}>
           <PackageFileInput />
-        </div>
-        <div className="div3">
+        </Grid.Col>
+        <Grid.Col span={4}>
           <Stack align="center" className="form-stack">
             <Text className="form-title">Manage Engineers</Text>
           </Stack>
-        </div>
-        <div className="div4">
+        </Grid.Col>
+        <Grid.Col span={4}>
           <Stack align="center" className="form-stack">
             <Text className="form-title">Manage Machines</Text>
           </Stack>
-        </div>
-        <div className="div5">
+        </Grid.Col>
+        <Grid.Col span={4}>
           <Stack align="center" className="form-stack">
             <Text className="form-title">View Logs</Text>
           </Stack>
-        </div>
-      </div>
+        </Grid.Col>
+      </Grid>
       <Footer />
     </>
   );

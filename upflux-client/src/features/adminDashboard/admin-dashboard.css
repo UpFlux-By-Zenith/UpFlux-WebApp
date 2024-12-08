@@ -38,15 +38,6 @@
     color: red;
   }
 
-.admin-parent {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    gap: 64px;
-    height: 100vh;
-    padding: 36px;
-}
-
-.admin-parent > * {
-    padding: 20px;
+.admin-dashboard{
+    padding: 24px;
 }
