@@ -4,6 +4,7 @@ import logo from "../../assets/logos/logo-light-large.png";
 import { ROLES, useAuth } from "../../common/authProvider/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { adminLogin } from "../../api/adminApiActions";
+import { LoginResponse } from "../../api/apiTypes";
 
 interface AdminLoginFormState {
   email: string;
@@ -24,25 +25,39 @@ export const AdminLogin = () => {
   const handleSubmit = async () => {
     // Reset error message
     setErrorMessage(null);
-
+  
     // Basic validation
     if (!formState.email || !formState.password) {
       setErrorMessage("Both email and password are required.");
       return;
     }
-
-    // Send login request to API
-    const response = await adminLogin({
-      email: formState.email,
-      password: formState.password,
-    });
-
-    // Save the token to local storage
-    localStorage.setItem('authToken', response);
-    login(ROLES.ADMIN, response);
-    // Redirect or handle successful login
-    navigate("/admin-dashboard")
-  }
+  
+    try {
+      // Send login request to API
+      const response : LoginResponse = await adminLogin({
+        email: formState.email,
+        password: formState.password,
+      }) ;
+  
+      // Check if the response has an error field
+      if (response.error) {
+        setErrorMessage(response.error); // Display the error message
+        return; // Stop further execution
+      } else {
+        
+        // Save the token to local storage and proceed
+        login(ROLES.ADMIN, response.token);
+    
+        // Redirect or handle successful login
+        navigate("/admin-dashboard");
+      }
+  
+    } catch (error) {
+      // Handle unexpected errors
+      setErrorMessage("An unexpected error occurred. Please try again later.");
+    }
+  };
+  
 
   return (
     <Container className="login-container">
