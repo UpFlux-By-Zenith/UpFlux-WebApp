@@ -2,12 +2,9 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
   }
   
   .form-stack {
-    width: 100%;
-    max-width: 400px;
     padding: 20px;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -40,3 +37,16 @@
     font-size: 16px;
     color: red;
   }
+
+.admin-parent {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 64px;
+    height: 100vh;
+    padding: 36px;
+}
+
+.admin-parent > * {
+    padding: 20px;
+}
