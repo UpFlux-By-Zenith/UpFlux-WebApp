@@ -96,21 +96,21 @@ export const UpdateManagement: React.FC = () => {
 
         {/* Table Section */}
         <Box>
-          <Table>
-            <thead>
-              <tr>
-                <th>Machine ID</th>
-                <th>Last Update</th>
-                <th>Current Status</th>
-                <th>View</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Machine ID</Table.Th>
+                <Table.Th>Last Update</Table.Th>
+                <Table.Th>Current Status</Table.Th>
+                <Table.Th>View</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {machines.map((machine) => (
-                <tr key={machine.id}>
-                  <td>{machine.id}</td>
-                  <td>{machine.lastUpdate}</td>
-                  <td>
+                <Table.Tr key={machine.id}>
+                  <Table.Td>{machine.id}</Table.Td>
+                  <Table.Td>{machine.lastUpdate}</Table.Td>
+                  <Table.Td>
                     <Badge
                       color={
                         machine.status === "Alive"
@@ -122,13 +122,13 @@ export const UpdateManagement: React.FC = () => {
                     >
                       {machine.status}
                     </Badge>
-                  </td>
-                  <td>
+                  </Table.Td>
+                  <Table.Td>
                     <img src={view} alt="view" className="view" />
-                  </td>
-                </tr>
+                  </Table.Td>
+                </Table.Tr>
               ))}
-            </tbody>
+            </Table.Tbody>
           </Table>
         </Box>
       </Box>
