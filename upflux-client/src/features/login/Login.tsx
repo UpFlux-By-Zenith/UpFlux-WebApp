@@ -66,11 +66,7 @@ export const LoginComponent: React.FC = () => {
           // Call the login function with the payload
           try {
             const result = await engineerLoginSubmit(payload);
-            // Assuming the API returns a token in the response
-              console.log(result)
 
-            // Save the token to local storage
-            localStorage.setItem('authToken', result);
              // Redirect or handle successful login
             setIsLoggedIn(true);
             login(ROLES.ENGINEER, result);
