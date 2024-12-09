@@ -8,6 +8,7 @@ import { AdminLogin } from './features/adminLogin/AdminLogin';
 import { PrivateRoutes } from './common/authProvider/PrivateRoutes';
 import { AuthProvider, ROLES } from './common/authProvider/AuthProvider';
 import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
+import { ClusteringRoute } from './features/clustering/ClusteringRoute';
 
 export const App = () => {
   return (
@@ -33,6 +34,7 @@ export const App = () => {
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
           </Route>
           <Route element={<PrivateRoutes role={ROLES.ENGINEER} />} >
+          <Route path="/clustering" element={<ClusteringRoute />} />
           </Route>
         </Routes>
       </Router>
