@@ -1,16 +1,9 @@
 import React from "react";
 import { Box, Button, Group, Stack, Table, Text, Badge } from "@mantine/core";
-import { Doughnut } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import { DonutChart } from '@mantine/charts';
 import "./updateManagement.css";
 import view from "../../assets/images/view.png";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
 
 export const UpdateManagement: React.FC = () => {
   // Hardcoded data for the table
@@ -45,26 +38,21 @@ export const UpdateManagement: React.FC = () => {
   const pendingMachines = machines.length - updatedMachines;
 
   // Chart data
-  const chartData = {
-    labels: ["Updated", "Pending Updates"],
-    datasets: [
-      {
-        data: [updatedMachines, pendingMachines],
-        backgroundColor: ["#007bff", "#ff0000"], // Blue and Red colors
-        hoverBackgroundColor: ["#0056b3", "#b30000"],
-      },
-    ],
-  };
+  const chartData = [
+    { name: "Updated", value: updatedMachines, color: "#007bff" },
+    { name: "Pending Updates", value: pendingMachines, color: "#ff0000" },
+  ];
+  
 
-  // Chart options
-const chartOptions = {
-    cutout: '60%',
-    plugins: {
-      legend: {
-        display: false, // Disable the default legend
-      },
-    },
-  };
+//   // Chart options
+// const chartOptions = {
+//     cutout: '60%',
+//     plugins: {
+//       legend: {
+//         display: false, // Disable the default legend
+//       },
+//     },
+//   };
 
   return (
     <Stack className="update-management-content">
@@ -80,7 +68,7 @@ const chartOptions = {
         <Group className="overview-section">
           {/* Chart Section */}
           <Box className="chart">
-            <Doughnut data={chartData} options={chartOptions}/>
+            <DonutChart  className="chart" data={chartData} />;
             {/* Custom Text in the center of the doughnut */}
             <Text className="chart-text">
               Machines <br /> <br /> {machines.length}
