@@ -2,6 +2,8 @@ import React from "react";
 import { Box, Text, Group, Select, Switch } from "@mantine/core";
 import { LineChart } from "@mantine/charts"; // Import LineChart
 import "@mantine/core/styles.css";
+import "@mantine/charts/styles.css";
+import "@mantine/dates/styles.css";
 
 import { Calendar } from "@mantine/dates";
 import "./clustering.css";
@@ -53,9 +55,24 @@ export const Clustering: React.FC = () => {
         </Box>
 
         {/* Calendar */}
-        <Box>
-          <Calendar className="calendar" />
-        </Box>
+        <Box className="calendar-wrapper">
+      {/* Calendar with custom styles */}
+      <Calendar
+        className="calendar"
+        styles={{
+            calendarHeader: {
+            marginLeft: '100px', // Adjust month margin
+            },
+          day: {
+            width: '60px',  // Increase width of each day cell
+            height: '60px', // Increase height of each day cell
+          },
+          weekday: {
+            fontSize: '16px', // Adjust weekday font size
+          },
+        }}
+      />
+    </Box>
       </Group>
 
       {/* Network Upload Section */}
@@ -66,7 +83,7 @@ export const Clustering: React.FC = () => {
       Data
     </Text>
         <LineChart
-      h={300}
+      h={180}
       data={dataPoints}
       dataKey="time"
       series={[{ name: 'value', color: 'indigo.6' }]}
