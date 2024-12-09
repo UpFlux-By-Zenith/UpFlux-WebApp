@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, Group, Stack, Table, Text, Badge } from "@mantine/core";
 import { DonutChart } from '@mantine/charts';
-import "./updateManagement.css";
+import "./update-management.css";
 import view from "../../assets/images/view.png";
 
 
