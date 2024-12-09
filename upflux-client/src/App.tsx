@@ -8,6 +8,7 @@ import { AdminLogin } from './features/adminLogin/AdminLogin';
 import { PrivateRoutes } from './common/authProvider/PrivateRoutes';
 import { AuthProvider, ROLES } from './common/authProvider/AuthProvider';
 import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
+import { UpdateManagementRoute } from './features/updateManagement/UpdateManagementRoute';
 
 export const App = () => {
   return (
@@ -33,6 +34,10 @@ export const App = () => {
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
           </Route>
           <Route element={<PrivateRoutes role={ROLES.ENGINEER} />} >
+
+          {/* Update Management route */}
+          <Route path="/update-management" element={<UpdateManagementRoute />} />
+
           </Route>
         </Routes>
       </Router>
