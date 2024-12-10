@@ -9,35 +9,56 @@ import { AuthProvider, ROLES } from './common/authProvider/AuthProvider';
 import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
 import { Clustering } from './features/clustering/Clustering';
 import { PasswordSettingsContent } from './features/passwordSettings/PasswordSettings';
+import Layout from './Layout';
 
 export const App = () => {
   return (
     <MantineProvider>
       <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Home route */}
+            <Route path="/" element={<HomeRoute />} />
 
-      <Router>
-        <Routes>
-          {/* Home route */}
-          <Route path="/" element={<HomeRoute />} />
+            {/* Login route */}
+            <Route path="/login" element={<LoginComponent />} />
 
-          {/* Login route */}
-          <Route path="/login" element={<LoginComponent />} />
+            {/* Admin login route */}
+            <Route path="/admin-login" element={<AdminLogin />} />
 
-          {/* Get Engineer Token route */}
-          <Route path="/admin-login" element={<AdminLogin />} />
-          
-          <Route element={<PrivateRoutes role={ROLES.ADMIN} />} >
-            {/* Password settings route */}
-            <Route path="/password-settings" element={<PasswordSettingsContent />} />
+            {/* Admin protected routes */}
+            <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
+              <Route
+                path="/password-settings"
+                element={
+                  <Layout>
+                    <PasswordSettingsContent />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <Layout>
+                    <AdminDashboard />
+                  </Layout>
+                }
+              />
+            </Route>
 
-            {/* Get Engineer Token route */}
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          </Route>
-          <Route element={<PrivateRoutes role={ROLES.ENGINEER} />} >
-          <Route path="/clustering" element={<Clustering />} />
-          </Route>
-        </Routes>
-      </Router>
+            {/* Engineer protected routes */}
+            <Route element={<PrivateRoutes role={ROLES.ENGINEER} />}>
+              <Route
+                path="/clustering"
+                element={
+                  <Layout>
+                    <Clustering />
+                  </Layout>
+                }
+              />
+            </Route>
+          </Routes>
+        </Router>
       </AuthProvider>
     </MantineProvider>
   );

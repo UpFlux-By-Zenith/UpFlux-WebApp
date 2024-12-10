@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Layout from "../../Layout";
 import { Box, Text, Group, Select, Switch } from "@mantine/core";
 import { LineChart } from "@mantine/charts"; // Import LineChart
 import "@mantine/core/styles.css";
@@ -73,7 +72,6 @@ export const Clustering: React.FC = () => {
   }, []);
 
   return (
-    <Layout>
     <Box className="clustering-container">
       {/* Dropdown Section */}
       <Group align="center" className="dropdown-section">
@@ -140,6 +138,5 @@ export const Clustering: React.FC = () => {
         </Group>
       </Box>
     </Box>
-    </Layout>
   );
 };
