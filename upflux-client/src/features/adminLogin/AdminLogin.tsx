@@ -47,7 +47,7 @@ export const AdminLogin = () => {
   return (
     <Container className="login-container">
       <Box className="main-card">
-        <Image src={logo} alt="UpFlux Logo" className="logo" />
+        <Image src={logo} alt="UpFlux Logo" className="upflux-logo" />
         {errorMessage && <Text className="error-message">{errorMessage}</Text>}
         <Box className="input-field-box">
           <TextInput
