@@ -6,6 +6,7 @@ import "@mantine/charts/styles.css";
 import "@mantine/dates/styles.css";
 
 import { Calendar } from "@mantine/dates";
+import dayjs from "dayjs"; // Import dayjs to compare and format dates
 import "./clustering.css";
 import cluster1 from "../../assets/images/cluster1.png";
 import cluster2 from "../../assets/images/cluster2.png";
@@ -14,36 +15,35 @@ export const Clustering: React.FC = () => {
   // Updated data with 24-hour time format and 'value' instead of 'Apples'
   const dataPoints = {
     "Dec 10, 2024": [
-      { time: "00:00", value: 0 },
-      { time: "03:00", value: 0 },
-      { time: "06:00", value: 80 },
-      { time: "09:00", value: null },
-      { time: "12:00", value: null },
-      { time: "15:00", value: 40 },
-      { time: "18:00", value: 110 },
-      { time: "21:00", value: null },
-    ],
-    "Nov 10, 2024": [
-      { time: "00:00", value: 120 },
-      { time: "03:00", value: 65 },
-      { time: "06:00", value: 90 },
-      { time: "09:00", value: 40 },
-      { time: "12:00", value: 75 },
-      { time: "15:00", value: 50 },
-      { time: "18:00", value: 130 },
-      { time: "21:00", value: null },
-    ],
-    "Oct 10, 2024": [
         { time: "00:00", value: 0 },
         { time: "03:00", value: 0 },
-        { time: "06:00", value: 0 },
-        { time: "09:00", value: 40 },
-        { time: "12:00", value: 60 },
-        { time: "15:00", value: 90 },
-        { time: "18:00", value: 0 },
+        { time: "06:00", value: 80 },
+        { time: "09:00", value: null },
+        { time: "12:00", value: null },
+        { time: "15:00", value: 40 },
+        { time: "18:00", value: 110 },
         { time: "21:00", value: null },
       ],
-
+      "Dec 9, 2024": [
+        { time: "00:00", value: 120 },
+        { time: "03:00", value: 65 },
+        { time: "06:00", value: 90 },
+        { time: "09:00", value: 40 },
+        { time: "12:00", value: 75 },
+        { time: "15:00", value: 50 },
+        { time: "18:00", value: 130 },
+        { time: "21:00", value: null },
+      ],
+      "Dec 6, 2024": [
+          { time: "00:00", value: 0 },
+          { time: "03:00", value: 0 },
+          { time: "06:00", value: 0 },
+          { time: "09:00", value: 40 },
+          { time: "12:00", value: 60 },
+          { time: "15:00", value: 90 },
+          { time: "18:00", value: 0 },
+          { time: "21:00", value: null },
+        ],
   };
 
   // State to store the selected date
@@ -55,12 +55,10 @@ export const Clustering: React.FC = () => {
   };
 
   // Function to handle date selection and update chart data
-  const handleDateChange = (date: Date | null) => {
-    if (date) {
-      const formattedDate = formatDate(date); // Format the selected date
-      setSelectedDate(formattedDate); // Update the selected date in state
-      console.log("Selected date:", formattedDate);
-    }
+  const handleSelect = (date: Date) => {
+    const formattedDate = formatDate(date);
+    setSelectedDate(formattedDate); // Update the selected date in state
+    console.log("Selected date:", formattedDate); 
   };
 
   // Get data for the selected date or use default
@@ -110,7 +108,10 @@ export const Clustering: React.FC = () => {
           <Calendar
             className="calendar"
             highlightToday
-            onDateChange={handleDateChange} 
+            getDayProps={(date) => ({
+              selected: dayjs(date).isSame(selectedDate, 'date'), // Compare selected date using dayjs
+              onClick: () => handleSelect(date), // Capture the date selection
+            })}
             styles={{
               calendarHeader: {
                 marginLeft: '100px',
@@ -135,7 +136,7 @@ export const Clustering: React.FC = () => {
         </Text>
         <LineChart
           h={180}
-          data={chartData} 
+          data={chartData} // Use filtered data based on selected date
           dataKey="time"
           series={[{ name: "value", color: "indigo.6" }]}
           curveType="linear"
