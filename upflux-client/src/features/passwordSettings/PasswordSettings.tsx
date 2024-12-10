@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Layout from '../../Layout';
 import { TextInput, Button, Text, Stack, Box, Group } from '@mantine/core';
 import './passwordSettings.css';
 
@@ -76,6 +77,7 @@ export const PasswordSettingsContent: React.FC = () => {
   };
 
   return (
+    <Layout>
     <Stack className="password-settings-content">
       {/* Account Settings and Password Buttons */}
       <Group className="setting-selector" align="center">
@@ -148,5 +150,6 @@ export const PasswordSettingsContent: React.FC = () => {
         </Button>
       </Box>
     </Stack>
+    </Layout>
   );
 };
