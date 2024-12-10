@@ -69,6 +69,8 @@
 }
 
 .calendar {
+    margin-top: 0px;
+    margin-bottom: auto;
     font-size: 40px;
 }
 
@@ -90,6 +92,7 @@
 .network-upload {
     margin-left: 50px;
     margin-top: -290px;
+    margin-bottom: 40px;
     text-align: center;
     padding: 15px;
     background-color: #fff;
