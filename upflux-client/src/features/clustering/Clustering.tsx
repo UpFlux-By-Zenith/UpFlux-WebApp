@@ -112,18 +112,6 @@ export const Clustering: React.FC = () => {
               selected: dayjs(date).isSame(selectedDate, 'date'), // Compare selected date using dayjs
               onClick: () => handleSelect(date), // Capture the date selection
             })}
-            styles={{
-              calendarHeader: {
-                marginLeft: '100px',
-              },
-              day: {
-                width: '60px',
-                height: '60px',
-              },
-              weekday: {
-                fontSize: '16px',
-              },
-            }}
           />
         </Box>
       </Group>

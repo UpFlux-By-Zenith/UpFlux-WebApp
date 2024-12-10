@@ -74,6 +74,15 @@
     font-size: 40px;
 }
 
+.calendar .mantine-Calendar-day {
+    width: 60px;
+    height: 60px;
+  }
+
+.calendar .mantine-Calendar-calendarHeader {
+    margin-left: 100px;
+}
+
 .calendar-wrapper {
     display: flex;
     justify-content: space-between;
@@ -120,3 +129,39 @@
 .time-label{
     margin-left: 255px;
 }
+
+@media (max-width: 1200px) {
+
+    .cluster-visuals{
+        margin-top: -150px;
+    }
+
+    .network-upload{
+        margin-top: -280px;
+    }
+
+    .calendar .mantine-Calendar-day {
+      width: 40px;
+      height: 40px;
+    }
+
+    .real-time-switch {
+        margin-top: -300px;
+    }
+
+    .calendar-wrapper {
+        margin-top: -130px;
+    }
+
+    .calendar .mantine-Calendar-calendarHeader {
+        margin-left: 50px;
+    }
+
+  }
+
+  @media (max-width: 480px) {
+    .calendar .mantine-Calendar-day {
+      width: 30px;
+      height: 30px;
+    }
+  }
