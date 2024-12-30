@@ -471,6 +471,22 @@ SHOW GRANTS FOR 'john'@'%';
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
 
+--Stored Procedures
+
+DELIMITER //
+
+CREATE PROCEDURE LogAction(
+    IN p_user_id INT,
+    IN p_action_type VARCHAR(10),
+    IN p_entity_name VARCHAR(255)
+)
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (p_user_id, p_action_type, p_entity_name, NOW());
+END //
+
+DELIMITER ;
+
 -- Triggers
 
 -- For testing triggers as a specific user:
@@ -498,8 +514,7 @@ CREATE TRIGGER LogUserInsert
 AFTER INSERT ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'CREATE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'CREATE', 'Users');
 END //
 
 DELIMITER ;
