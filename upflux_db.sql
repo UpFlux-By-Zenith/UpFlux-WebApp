@@ -582,6 +582,43 @@ END //
 
 DELIMITER ;
 
+-- Licences
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Licenses
+DELIMITER //
+
+CREATE TRIGGER LogLicenseInsert
+AFTER INSERT ON Licenses
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Licenses');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Licenses
+DELIMITER //
+
+CREATE TRIGGER LogLicenseUpdate
+AFTER UPDATE ON Licenses
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Licenses');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Licenses
+DELIMITER //
+
+CREATE TRIGGER LogLicenseDelete
+AFTER DELETE ON Licenses
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Licenses');
+END //
+
+DELIMITER ;
 
 -- Trigger for updating the status of a licence to 'Expired'
 DELIMITER //
