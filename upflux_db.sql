@@ -544,6 +544,44 @@ END //
 
 DELIMITER ;
 
+-- Machines Triggers
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineInsert
+AFTER INSERT ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineUpdate
+AFTER UPDATE ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineDelete
+AFTER DELETE ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Machines');
+END //
+
+DELIMITER ;
+
 
 -- Trigger for updating the status of a licence to 'Expired'
 DELIMITER //

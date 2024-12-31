@@ -526,11 +526,11 @@ CREATE TRIGGER LogUserUpdate
 AFTER UPDATE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'UPDATE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'UPDATE', 'Users');
 END //
 
 DELIMITER ;
+
 
 -- Trigger for adding entry to action_logs when a user performs a Delete
 DELIMITER //
@@ -539,11 +539,11 @@ CREATE TRIGGER LogUserDelete
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'DELETE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'DELETE', 'Users');
 END //
 
 DELIMITER ;
+
 
 -- Trigger for updating the status of a licence to 'Expired'
 DELIMITER //
