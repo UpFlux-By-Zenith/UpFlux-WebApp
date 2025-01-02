@@ -471,6 +471,22 @@ SHOW GRANTS FOR 'john'@'%';
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
 
+--Stored Procedures
+
+DELIMITER //
+
+CREATE PROCEDURE LogAction(
+    IN p_user_id INT,
+    IN p_action_type VARCHAR(10),
+    IN p_entity_name VARCHAR(255)
+)
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (p_user_id, p_action_type, p_entity_name, NOW());
+END //
+
+DELIMITER ;
+
 -- Triggers
 
 -- For testing triggers as a specific user:
@@ -498,8 +514,7 @@ CREATE TRIGGER LogUserInsert
 AFTER INSERT ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'CREATE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'CREATE', 'Users');
 END //
 
 DELIMITER ;
@@ -511,11 +526,11 @@ CREATE TRIGGER LogUserUpdate
 AFTER UPDATE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'UPDATE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'UPDATE', 'Users');
 END //
 
 DELIMITER ;
+
 
 -- Trigger for adding entry to action_logs when a user performs a Delete
 DELIMITER //
@@ -524,11 +539,163 @@ CREATE TRIGGER LogUserDelete
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'DELETE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'DELETE', 'Users');
 END //
 
 DELIMITER ;
+
+-- Machines Triggers
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineInsert
+AFTER INSERT ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineUpdate
+AFTER UPDATE ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineDelete
+AFTER DELETE ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Licences
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Licenses
+DELIMITER //
+
+CREATE TRIGGER LogLicenseInsert
+AFTER INSERT ON Licenses
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Licenses');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Licenses
+DELIMITER //
+
+CREATE TRIGGER LogLicenseUpdate
+AFTER UPDATE ON Licenses
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Licenses');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Licenses
+DELIMITER //
+
+CREATE TRIGGER LogLicenseDelete
+AFTER DELETE ON Licenses
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Licenses');
+END //
+
+DELIMITER ;
+
+-- Credentials
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialInsert
+AFTER INSERT ON Credentials
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Credentials');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialUpdate
+AFTER UPDATE ON Credentials
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Credentials');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialDelete
+AFTER DELETE ON Credentials
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Credentials');
+END //
+
+DELIMITER ;
+
+-- Packages 
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageInsert
+AFTER INSERT ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Packages');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageUpdate
+AFTER UPDATE ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Packages');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageDelete
+AFTER DELETE ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Packages');
+END //
+
+DELIMITER ;
+
 
 -- Trigger for updating the status of a licence to 'Expired'
 DELIMITER //
