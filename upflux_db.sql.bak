@@ -584,38 +584,38 @@ DELIMITER ;
 
 -- Licences
 
--- Trigger for adding entry to action_logs when a user performs an Insert on Licenses
+-- Trigger for adding entry to action_logs when a user performs an Insert on Licences
 DELIMITER //
 
-CREATE TRIGGER LogLicenseInsert
-AFTER INSERT ON Licenses
+CREATE TRIGGER LogLicenceInsert
+AFTER INSERT ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Licenses');
+    CALL LogAction(@current_user_id, 'CREATE', 'Licences');
 END //
 
 DELIMITER ;
 
--- Trigger for adding entry to action_logs when a user performs an Update on Licenses
+-- Trigger for adding entry to action_logs when a user performs an Update on Licences
 DELIMITER //
 
-CREATE TRIGGER LogLicenseUpdate
-AFTER UPDATE ON Licenses
+CREATE TRIGGER LogLicenceUpdate
+AFTER UPDATE ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Licenses');
+    CALL LogAction(@current_user_id, 'UPDATE', 'Licences');
 END //
 
 DELIMITER ;
 
--- Trigger for adding entry to action_logs when a user performs a Delete on Licenses
+-- Trigger for adding entry to action_logs when a user performs a Delete on Licences
 DELIMITER //
 
-CREATE TRIGGER LogLicenseDelete
-AFTER DELETE ON Licenses
+CREATE TRIGGER LogLicenceDelete
+AFTER DELETE ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Licenses');
+    CALL LogAction(@current_user_id, 'DELETE', 'Licenes');
 END //
 
 DELIMITER ;
@@ -657,6 +657,45 @@ BEGIN
 END //
 
 DELIMITER ;
+
+-- Packages 
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageInsert
+AFTER INSERT ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Packages');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageUpdate
+AFTER UPDATE ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Packages');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageDelete
+AFTER DELETE ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Packages');
+END //
+
+DELIMITER ;
+
 
 -- Trigger for updating the status of a licence to 'Expired'
 DELIMITER //
@@ -722,3 +761,4 @@ FROM
     information_schema.TRIGGERS
 WHERE 
     TRIGGER_SCHEMA = 'upflux'; 
+	

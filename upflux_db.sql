@@ -584,38 +584,38 @@ DELIMITER ;
 
 -- Licences
 
--- Trigger for adding entry to action_logs when a user performs an Insert on Licenses
+-- Trigger for adding entry to action_logs when a user performs an Insert on Licences
 DELIMITER //
 
-CREATE TRIGGER LogLicenseInsert
-AFTER INSERT ON Licenses
+CREATE TRIGGER LogLicenceInsert
+AFTER INSERT ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Licenses');
+    CALL LogAction(@current_user_id, 'CREATE', 'Licences');
 END //
 
 DELIMITER ;
 
--- Trigger for adding entry to action_logs when a user performs an Update on Licenses
+-- Trigger for adding entry to action_logs when a user performs an Update on Licences
 DELIMITER //
 
-CREATE TRIGGER LogLicenseUpdate
-AFTER UPDATE ON Licenses
+CREATE TRIGGER LogLicenceUpdate
+AFTER UPDATE ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Licenses');
+    CALL LogAction(@current_user_id, 'UPDATE', 'Licences');
 END //
 
 DELIMITER ;
 
--- Trigger for adding entry to action_logs when a user performs a Delete on Licenses
+-- Trigger for adding entry to action_logs when a user performs a Delete on Licences
 DELIMITER //
 
-CREATE TRIGGER LogLicenseDelete
-AFTER DELETE ON Licenses
+CREATE TRIGGER LogLicenceDelete
+AFTER DELETE ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Licenses');
+    CALL LogAction(@current_user_id, 'DELETE', 'Licenes');
 END //
 
 DELIMITER ;
@@ -761,3 +761,26 @@ FROM
     information_schema.TRIGGERS
 WHERE 
     TRIGGER_SCHEMA = 'upflux'; 
+	
+-- Indexes 
+
+-- Index to speed up queries filtering or joining on user_id in the Credentials table
+CREATE INDEX idx_credentials_user_id ON Credentials(user_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Credentials table
+CREATE INDEX idx_credentials_machine_id ON Credentials(machine_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Licences table
+CREATE INDEX idx_licences_machine_id ON Licences(machine_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Update_Logs table
+CREATE INDEX idx_update_logs_machine_id ON Update_Logs(machine_id);
+
+-- Index to speed up queries filtering or joining on package_id in the Update_Logs table
+CREATE INDEX idx_update_logs_package_id ON Update_Logs(package_id);
+
+-- Composite index to optimize queries involving both machine_id and package_id in Update_Logs
+CREATE INDEX idx_update_logs_machine_package ON Update_Logs(machine_id, package_id);
+
+-- Composite index to optimize queries involving both user_id and machine_id in Credentials
+CREATE INDEX idx_credentials_user_machine ON Credentials(user_id, machine_id);
