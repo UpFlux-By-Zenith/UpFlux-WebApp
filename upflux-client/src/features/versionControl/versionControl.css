@@ -1,0 +1,18 @@
+  .softwareDropdown {
+    margin-top: -45px;
+    margin-bottom: 20px;
+    margin-left: auto;
+  }
+  
+  .machine-id-box {
+    display: inline-block;
+    background-color: #f9f9f9;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 40px;
+  }
+  
