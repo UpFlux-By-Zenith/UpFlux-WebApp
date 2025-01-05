@@ -19,21 +19,24 @@ export const ClusterManagement: React.FC = () => {
 
       <Box className="cluster-content-wrapper">
 
-      <Text className="chart-text">
+      <Stack className="select-group">
+      <Text className="cluster-text" style={{fontWeight: "bold"}}>
               Cluster 001
       </Text>
 
       <Select
           data={["Update Status", "No of Devices", "Memory", "Network Status", "Suggested time to update"]}
-          defaultValue="Cluster State"
+          placeholder="Selection"
           rightSection={null}
           className="dropdown"
         />
 
+      </Stack>
+
         {/* Action Buttons */}
-          <Stack className="button-group">
-             <Button className="configure-button">Simulate</Button>
-             <Button className="smart-button">Update Now</Button>
+          <Stack className="cluster-button-group">
+             <Button className="simulate-button">Simulate</Button>
+             <Button className="update-button">Update Now</Button>
           </Stack>
        
       </Box>
