@@ -471,6 +471,22 @@ SHOW GRANTS FOR 'john'@'%';
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
 
+--Stored Procedures
+
+DELIMITER //
+
+CREATE PROCEDURE LogAction(
+    IN p_user_id INT,
+    IN p_action_type VARCHAR(10),
+    IN p_entity_name VARCHAR(255)
+)
+BEGIN
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (p_user_id, p_action_type, p_entity_name, NOW());
+END //
+
+DELIMITER ;
+
 -- Triggers
 
 -- For testing triggers as a specific user:
@@ -498,8 +514,7 @@ CREATE TRIGGER LogUserInsert
 AFTER INSERT ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'CREATE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'CREATE', 'Users');
 END //
 
 DELIMITER ;
@@ -511,11 +526,11 @@ CREATE TRIGGER LogUserUpdate
 AFTER UPDATE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'UPDATE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'UPDATE', 'Users');
 END //
 
 DELIMITER ;
+
 
 -- Trigger for adding entry to action_logs when a user performs a Delete
 DELIMITER //
@@ -524,11 +539,163 @@ CREATE TRIGGER LogUserDelete
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'DELETE', 'Users', NOW());
+    CALL LogAction(@current_user_id, 'DELETE', 'Users');
 END //
 
 DELIMITER ;
+
+-- Machines Triggers
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineInsert
+AFTER INSERT ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineUpdate
+AFTER UPDATE ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Machines
+DELIMITER //
+
+CREATE TRIGGER LogMachineDelete
+AFTER DELETE ON Machines
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Machines');
+END //
+
+DELIMITER ;
+
+-- Licences
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Licences
+DELIMITER //
+
+CREATE TRIGGER LogLicenceInsert
+AFTER INSERT ON Licences
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Licences');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Licences
+DELIMITER //
+
+CREATE TRIGGER LogLicenceUpdate
+AFTER UPDATE ON Licences
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Licences');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Licences
+DELIMITER //
+
+CREATE TRIGGER LogLicenceDelete
+AFTER DELETE ON Licences
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Licenes');
+END //
+
+DELIMITER ;
+
+-- Credentials
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialInsert
+AFTER INSERT ON Credentials
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Credentials');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialUpdate
+AFTER UPDATE ON Credentials
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Credentials');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Credentials
+DELIMITER //
+
+CREATE TRIGGER LogCredentialDelete
+AFTER DELETE ON Credentials
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Credentials');
+END //
+
+DELIMITER ;
+
+-- Packages 
+
+-- Trigger for adding entry to action_logs when a user performs an Insert on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageInsert
+AFTER INSERT ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'CREATE', 'Packages');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs an Update on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageUpdate
+AFTER UPDATE ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'UPDATE', 'Packages');
+END //
+
+DELIMITER ;
+
+-- Trigger for adding entry to action_logs when a user performs a Delete on Packages
+DELIMITER //
+
+CREATE TRIGGER LogPackageDelete
+AFTER DELETE ON Packages
+FOR EACH ROW
+BEGIN
+    CALL LogAction(@current_user_id, 'DELETE', 'Packages');
+END //
+
+DELIMITER ;
+
 
 -- Trigger for updating the status of a licence to 'Expired'
 DELIMITER //
@@ -594,3 +761,26 @@ FROM
     information_schema.TRIGGERS
 WHERE 
     TRIGGER_SCHEMA = 'upflux'; 
+	
+-- Indexes 
+
+-- Index to speed up queries filtering or joining on user_id in the Credentials table
+CREATE INDEX idx_credentials_user_id ON Credentials(user_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Credentials table
+CREATE INDEX idx_credentials_machine_id ON Credentials(machine_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Licences table
+CREATE INDEX idx_licences_machine_id ON Licences(machine_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Update_Logs table
+CREATE INDEX idx_update_logs_machine_id ON Update_Logs(machine_id);
+
+-- Index to speed up queries filtering or joining on package_id in the Update_Logs table
+CREATE INDEX idx_update_logs_package_id ON Update_Logs(package_id);
+
+-- Composite index to optimize queries involving both machine_id and package_id in Update_Logs
+CREATE INDEX idx_update_logs_machine_package ON Update_Logs(machine_id, package_id);
+
+-- Composite index to optimize queries involving both user_id and machine_id in Credentials
+CREATE INDEX idx_credentials_user_machine ON Credentials(user_id, machine_id);

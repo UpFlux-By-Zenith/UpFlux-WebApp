@@ -1,5 +1,5 @@
 import { AUTH_API } from './apiConsts';
-import { AdminLoginPayload, EngineerTokenPayload } from './apiTypes';
+import { AdminLoginPayload, EngineerTokenPayload, LoginResponse } from './apiTypes';
 
 
 
@@ -13,13 +13,12 @@ export const adminLogin = async (payload: AdminLoginPayload) => {
       body: JSON.stringify(payload),
     });
 
-    const data : {token :string } = await response.json();
-    console.log('Admin login successful:', data);
-    return data.token; 
-
+    const data = await response.json() as LoginResponse;
+    return data; 
+    
   } catch (error) {
     console.error('Error during admin login request:', error);
-    return null;
+    return { "error" : error} as LoginResponse;
   }
 };
 

@@ -4,6 +4,7 @@ import logo from "../../assets/logos/logo-light-large.png";
 import './login.css';
 import { engineerLoginSubmit } from '../../api/loginRequests';
 import { ROLES, useAuth } from '../../common/authProvider/AuthProvider';
+import { useNavigate } from 'react-router-dom';
 
 
 interface LoginFormState {
@@ -12,6 +13,7 @@ interface LoginFormState {
 }
 
 export const LoginComponent: React.FC = () => {
+  const navigate = useNavigate();
   const [formState, setFormState] = useState<LoginFormState>({ email: '', tokenFile: null });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -66,17 +68,14 @@ export const LoginComponent: React.FC = () => {
           // Call the login function with the payload
           try {
             const result = await engineerLoginSubmit(payload);
-            // Assuming the API returns a token in the response
-              console.log(result)
 
-            // Save the token to local storage
-            localStorage.setItem('authToken', result);
              // Redirect or handle successful login
             setIsLoggedIn(true);
             login(ROLES.ENGINEER, result);
 
             if (result) {
               console.log('Login successful!');
+              navigate('/update-management');
             } else {
               setErrorMessage('Login failed.');
             }
