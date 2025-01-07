@@ -99,7 +99,7 @@ export const LoginComponent: React.FC = () => {
     <Container className="login-container">
     {isLoggedIn && <h4>You have been logged in sucessfully</h4>}
       <Box className="main-card">
-        <Image src={logo} alt="UpFlux Logo" className="logo" />
+        <Image src={logo} alt="UpFlux Logo" className="upflux-logo" />
         {errorMessage && <Text className="error-message">{errorMessage}</Text>}
         <Box className="input-field-box">
           <TextInput
