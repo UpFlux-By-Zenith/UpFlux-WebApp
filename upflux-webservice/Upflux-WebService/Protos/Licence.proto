@@ -34,4 +34,3 @@ message LicenceResponse {
 	string message = 2;
 	string expiration_date = 3;
 }
-

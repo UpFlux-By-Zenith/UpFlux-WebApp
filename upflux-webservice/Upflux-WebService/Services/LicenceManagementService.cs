@@ -5,6 +5,11 @@ using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Services.Interfaces;
 using Upflux_WebService.GrpcServices.Interfaces;
 using GrpcServer;
+using System.Xml.Linq;
+using System.ComponentModel;
+using System.Security.Cryptography;
+using System.Text;
+using System.Xml;
 
 namespace Upflux_WebService.Services
 {
@@ -75,6 +80,140 @@ namespace Upflux_WebService.Services
 				LicenceFileXml = licenceFile
 			});
 		}
+
+		//public async Task<bool> ValidateLicence(string licenceXml)
+		//{
+		//	using var sha256 = System.Security.Cryptography.SHA256.Create();
+		//	XDocument receivedXml = XDocument.Parse(licenceXml);
+
+		//	// Extract values from the received XML
+		//	string? expirationDate = receivedXml.Root?.Element("ExpirationDate")?.Value;
+		//	string? machineId = receivedXml.Root?.Element("MachineID")?.Value;
+		//	string? signature = receivedXml.Root?.Element("Signature")?.Value;
+
+		//	if (string.IsNullOrEmpty(expirationDate) || string.IsNullOrEmpty(machineId) || string.IsNullOrEmpty(signature))
+		//		return false;
+
+		//	// Retrieve the existing license metadata from the repository
+		//	var existingLicenceMetadata = await _licenceRepository.GetLicenceByMachineId(machineId);
+		//	if (existingLicenceMetadata is null)
+		//		return false;
+
+		//	var existingLicenceXml = new XElement("Licence",
+		//		new XElement("ExpirationDate", existingLicenceMetadata.ExpirationDate),
+		//		new XElement("MachineID", existingLicenceMetadata.MachineId)
+		//	);
+
+		//	var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(existingLicenceXml.ToString()));
+		//	var expectedSignature = await SignDataAsync(existingLicenceMetadata.LicenceKey, hash);
+
+		//	if (DateTime.TryParse(expirationDate, out var expDate) && DateTime.UtcNow > expDate)
+		//		return false;
+
+		//	// Compare the received signature with the expected one
+		//	return signature == Convert.ToBase64String(expectedSignature);
+		//}
+
+		public async Task<bool> ValidateLicence(string licenceXml)
+		{
+			using var sha256 = SHA256.Create();
+
+			// Parse the received XML
+			var receivedXml = XDocument.Parse(licenceXml);
+
+			// Extract values from the received XML
+			string? expirationDate = receivedXml.Root?.Element("ExpirationDate")?.Value;
+			string? machineId = receivedXml.Root?.Element("MachineID")?.Value;
+			string? signature = receivedXml.Root?.Element("Signature")?.Value;
+
+			if (string.IsNullOrEmpty(expirationDate) || string.IsNullOrEmpty(machineId) || string.IsNullOrEmpty(signature))
+			{
+				Console.WriteLine("Invalid XML format.");
+				return false;
+			}
+
+			// Remove the Signature element for consistent hashing
+			receivedXml.Root?.Element("Signature")?.Remove();
+
+			// Normalize the XML for hashing
+			var normalizedXml = NormalizeXml(receivedXml);
+
+			// Compute the hash of the normalized XML
+			var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedXml));
+			var signatureBytes = Convert.FromBase64String(signature);
+
+			// Retrieve the license metadata from the repository
+			var existingLicenceMetadata = await _licenceRepository.GetLicenceByMachineId(machineId);
+			if (existingLicenceMetadata is null)
+			{
+				Console.WriteLine("No matching license found.");
+				return false;
+			}
+
+			// Verify the signature using AWS KMS
+			if (!await VerifyWithKmsAsync(existingLicenceMetadata.LicenceKey, hash, signatureBytes))
+			{
+				Console.WriteLine("Signature validation failed. XML may have been tampered with.");
+				return false;
+			}
+
+			// Compare the verified XML data with the cloud's metadata
+			if (expirationDate != existingLicenceMetadata.ExpirationDate.ToString())
+			{
+				Console.WriteLine("Expiration date mismatch.");
+				return false;
+			}
+
+			if (machineId != existingLicenceMetadata.MachineId)
+			{
+				Console.WriteLine("Machine ID mismatch.");
+				return false;
+			}
+
+			// Check the expiration date
+			if (DateTime.TryParse(expirationDate, out var expDate) && DateTime.UtcNow > expDate)
+			{
+				Console.WriteLine("License has expired.");
+				return false;
+			}
+
+			Console.WriteLine("License is valid.");
+			return true;
+		}
+
+		private async Task<bool> VerifyWithKmsAsync(string keyId, byte[] hash, byte[] signature)
+		{
+			using var kmsClient = new AmazonKeyManagementServiceClient(Amazon.RegionEndpoint.EUNorth1);
+
+			try
+			{
+				var request = new VerifyRequest
+				{
+					KeyId = keyId, // Ensure this matches the KeyId from CreateKeyAsync
+					Message = new MemoryStream(hash),
+					MessageType = MessageType.DIGEST, // Hash is passed as a pre-computed digest
+					Signature = new MemoryStream(signature),
+					SigningAlgorithm = SigningAlgorithmSpec.RSASSA_PSS_SHA_256 // Must match the signing algorithm used
+				};
+
+				var response = await kmsClient.VerifyAsync(request);
+				return response.SignatureValid; // True if the signature is valid
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error during verification: {ex.Message}");
+				return false; // Return false if verification fails
+			}
+		}
+
+		private bool VerifySignature(byte[] hash, byte[] signature, string publicKey)
+		{
+			using var rsa = RSA.Create();
+			rsa.ImportFromPem(publicKey);
+
+			return rsa.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+		}
+
 		#endregion
 
 		#region private methods
@@ -153,28 +292,43 @@ namespace Upflux_WebService.Services
 		/// <returns>signed licence</returns>
 		private async Task<string> CreateSignedFile(Licence licence)
 		{
-			var xmlContent = $@"
-				<Licence>
-					<ExpirationDate>{licence.ExpirationDate}</ExpirationDate>
-					<MachineId>{licence.MachineId}</MachineId>
-				</Licence>";
+			// Create the XML using XDocument
+			var doc = new XDocument(
+				new XElement("Licence",
+					new XElement("ExpirationDate", licence.ExpirationDate),
+					new XElement("MachineID", licence.MachineId) // Consistent capitalization
+				)
+			);
 
-			using var sha256 = System.Security.Cryptography.SHA256.Create();
-			var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(xmlContent));
+			// Normalize the XML to a string for hashing
+			var normalizedXml = NormalizeXml(doc);
 
-			// Sign the hash
+			// Compute the hash of the normalized XML
+			using var sha256 = SHA256.Create();
+			var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedXml));
+
+			// Sign the hash using AWS KMS
 			var signature = await SignDataAsync(licence.LicenceKey, hash);
 
 			// Add the signature to the XML
-			var signedXmlContent = $@"
-				<Licence>
-					<ExpirationDate>{licence.ExpirationDate}</ExpirationDate>
-					<DeviceID>{licence.MachineId}</DeviceID>
-					<Signature>{Convert.ToBase64String(signature)}</Signature>
-				</Licence>";
+			doc.Root?.Add(new XElement("Signature", Convert.ToBase64String(signature)));
 
-			return signedXmlContent;
+			// Return the signed XML as a string
+			return doc.ToString(SaveOptions.DisableFormatting); // Compact formatting for consistency
 		}
+
+		private string NormalizeXml(XDocument doc)
+		{
+			using var stringWriter = new StringWriter();
+			using var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
+			{
+				OmitXmlDeclaration = true, // Remove XML declaration
+				Indent = false // Compact format without extra whitespace
+			});
+			doc.Save(xmlWriter);
+			return stringWriter.ToString();
+		}
+
 		#endregion
 	}
 }

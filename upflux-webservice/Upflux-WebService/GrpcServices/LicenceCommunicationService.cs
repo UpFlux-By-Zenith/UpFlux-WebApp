@@ -1,7 +1,10 @@
 ﻿using Grpc.Core;
 using GrpcServer;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 using Upflux_WebService.GrpcServices.Interfaces;
+using Upflux_WebService.Services;
+using Upflux_WebService.Services.Interfaces;
 using static GrpcServer.LicenceCommunication;
 
 namespace Upflux_WebService.GrpcServices
@@ -15,14 +18,15 @@ namespace Upflux_WebService.GrpcServices
 
 		private readonly ConcurrentDictionary<string, IServerStreamWriter<LicenceFileUpdate>> _clients = new();
 		private readonly ILogger<LicenceCommunicationService> _logger;
+		private readonly IServiceScopeFactory _serviceScopeFactory;
 
 		#endregion
-
 		#region public methods
 
-		public LicenceCommunicationService(ILogger<LicenceCommunicationService> logger)
+		public LicenceCommunicationService(ILogger<LicenceCommunicationService> logger, IServiceScopeFactory serviceScopeFactory)
 		{
 			_logger = logger;
+			_serviceScopeFactory = serviceScopeFactory;
 		}
 
 		/// <summary>
@@ -76,6 +80,24 @@ namespace Upflux_WebService.GrpcServices
 					_logger.LogError(ex, $"Failed to send update to client {client}. Marking client for removal.");
 				}
 			}
+		}
+
+		public override async Task<LicenceResponse> ValidateLicence(LicenceRequest request, ServerCallContext context)
+		{
+			using var scope = _serviceScopeFactory.CreateScope();
+			var licenceManagementService = scope.ServiceProvider.GetRequiredService<ILicenceManagementService>();
+
+			bool valid = await licenceManagementService.ValidateLicence(request.LicenseXml);
+			LicenceResponse response = new();
+			foreach (var client in _clients.Values)
+			{
+				Console.WriteLine();
+			}
+			if (valid)
+			{
+				response.IsValid = true;
+			}
+			return response;
 		}
 
 		#endregion
