@@ -7,21 +7,23 @@ USE upflux;
 -- Create Machines Table
 CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
-    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(15) NOT NULL 
 );
 
 -- Create Users Table
 CREATE TABLE Users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
-    role ENUM('Admin', 'Engineer') NOT NULL
+    role ENUM('Admin', 'Engineer') NOT NULL,
+	last_login TIMESTAMP NOT NULL
 );
 
 -- Create Admin_Details Table 
 CREATE TABLE Admin_Details (
-    admin_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    admin_id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
@@ -38,7 +40,7 @@ CREATE TABLE Licences (
 -- Create Credentials Table
 CREATE TABLE Credentials (
     credential_id INT AUTO_INCREMENT PRIMARY KEY, 
-    user_id INT NOT NULL,                  
+    user_id VARCHAR(50) NOT NULL,                  
     machine_id VARCHAR(255) NOT NULL,                 
     access_granted_at TIMESTAMP NOT NULL,   
     expires_at TIMESTAMP NOT NULL,           
@@ -60,7 +62,7 @@ CREATE TABLE Packages (
 CREATE TABLE Update_Logs (
     update_id INT AUTO_INCREMENT PRIMARY KEY,
     package_id INT NOT NULL,
-    user_id INT NOT NULL,
+    user_id VARCHAR(50) NOT NULL,
     machine_id VARCHAR(255) NOT NULL,
     update_status ENUM('Pending', 'Completed', 'Failed') NOT NULL,
     time_applied TIMESTAMP NOT NULL,
@@ -72,13 +74,34 @@ CREATE TABLE Update_Logs (
 -- Create Action Logs Table
 CREATE TABLE Action_Logs (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id VARCHAR(50) NOT NULL,
     action_type ENUM('CREATE', 'UPDATE', 'DELETE') NOT NULL,
 	entity_name VARCHAR(255) NOT NULL,
     time_performed TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
+-- Create Applications Table
+CREATE TABLE Applications (
+    app_id INT AUTO_INCREMENT PRIMARY KEY,
+	machine_id VARCHAR(255) NOT NULL,
+    app_name VARCHAR(255) NOT NULL,
+    added_by VARCHAR(50) NOT NULL,
+    current_version VARCHAR(50) NOT NULL,
+    FOREIGN KEY (added_by) REFERENCES Users(user_id),
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
+);
+
+-- Create Application_Versions Table
+CREATE TABLE Application_Versions (
+    version_id INT AUTO_INCREMENT PRIMARY KEY,  
+    app_id INT NOT NULL,
+    version_name VARCHAR(50) NOT NULL, 
+    updated_by VARCHAR(50) NOT NULL,
+    date TIMESTAMP NOT NULL,
+    FOREIGN KEY (app_id) REFERENCES Applications(app_id),
+    FOREIGN KEY (updated_by) REFERENCES Users(user_id)
+);
 
 /*Show all tables present in the database*/
 SHOW TABLES;
@@ -114,40 +137,63 @@ INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date)
 SELECT * FROM Licences;
 
 /* Inserting data into Credentials */
-INSERT INTO Credentials (user_id, machine_id, access_granted_at, expires_at) VALUES
-(1, '1', '2023-01-01 12:00:00', '2023-01-31 12:00:00'),
-(2, '2', '2023-03-15 09:30:00', '2023-04-14 09:30:00'),
-(3, '3', '2023-05-20 11:45:00', '2023-06-19 11:45:00');
+-- Insert into Machines
+INSERT INTO Machines (machine_id, date_added) 
+VALUES ('1', '2025-01-01 12:00:00'),
+       ('2', '2025-01-02 14:30:00'),
+       ('3', '2025-01-03 09:45:00');
 
+-- Insert into Users
+INSERT INTO Users (user_id, name, email, role, last_login) 
+VALUES ('a1', 'Alice', 'alice@upflux.com', 'Admin', '2025-01-07 10:00:00'),
+       ('e1', 'Eve', 'eve@upflux.com', 'Engineer', '2025-01-07 11:00:00'),
+       ('e2', 'Eli', 'eli@upflux.com', 'Engineer', '2025-01-06 09:30:00');
 
--- View Credentials table data
-SELECT * FROM Credentials;
+-- Insert into Admin_Details
+INSERT INTO Admin_Details (admin_id, user_id, password_hash)
+VALUES ('a1', 'a1', 'hash_for_alice');
 
-/* Inserting data into Packages */
-INSERT INTO Packages (version_number, package_size, package_signature, release_date) VALUES
-(1.0, 15.5, 'abcde12345', '2023-07-01 14:30:00'),
-(1.1, 20.2, 'fghij67890', '2023-08-15 16:00:00'),
-(1.2, 25.3, 'klmno54321', '2023-09-30 12:15:00');
+-- Insert into Licences
+INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date)
+VALUES ('LIC-12345', '1', 'Valid', '2026-01-01 12:00:00'),
+       ('LIC-23456', '2', 'Expired', '2024-12-31 23:59:59'),
+       ('LIC-34567', '3', 'Revoked', '2025-06-01 00:00:00');
 
--- View Packages table data
-SELECT * FROM Packages;
+-- Insert into Credentials
+INSERT INTO Credentials (user_id, machine_id, access_granted_at, expires_at)
+VALUES ('e1', '1', '2025-01-01 12:30:00', '2025-01-10 12:30:00'),
+       ('e2', '2', '2025-01-02 15:00:00', '2025-01-12 15:00:00'),
+       ('e1', '3', '2025-01-03 10:00:00', '2025-01-13 10:00:00');
 
-/* Inserting data into Update Logs */
-INSERT INTO Update_Logs (package_id, user_id, machine_id, update_status, time_applied) VALUES
-(1, 1, '1', 'Completed', '2023-07-02 15:00:00'),
-(2, 2, '2', 'Pending', '2023-08-16 10:00:00'),
-(3, 3, '3', 'Failed', '2023-10-01 13:45:00'),
-(3, 2, '2', 'Completed', '2023-08-16 10:00:00'),
-(2, 3, '3', 'Completed', '2023-10-01 13:45:00');
+-- Insert into Packages
+INSERT INTO Packages (version_number, package_size, package_signature, release_date)
+VALUES (1.0, 25.5, 'sig123', '2024-12-01 12:00:00'),
+       (1.1, 30.0, 'sig124', '2025-01-01 12:00:00'),
+       (1.2, 35.2, 'sig125', '2025-01-07 12:00:00');
 
--- View Update Logs table data
-SELECT * FROM Update_Logs;
+-- Insert into Update_Logs
+INSERT INTO Update_Logs (package_id, user_id, machine_id, update_status, time_applied)
+VALUES (1, 'e1', '1', 'Completed', '2025-01-01 13:00:00'),
+       (2, 'e2', '2', 'Failed', '2025-01-02 16:00:00'),
+       (3, 'e1', '3', 'Pending', '2025-01-07 14:00:00');
 
-/* Inserting data into Action Logs */
-INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed) VALUES
-(1, 'CREATE', 'Users', '2023-07-01 14:45:00'),
-(2, 'UPDATE', 'Credentials', '2023-08-14 15:00:00'),
-(3, 'DELETE', 'Machines', '2023-10-02 10:30:00');
+-- Insert into Action_Logs
+INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+VALUES ('a1', 'CREATE', 'Machine', '2025-01-01 12:10:00'),
+       ('e1', 'UPDATE', 'Licence', '2025-01-02 16:30:00'),
+       ('e2', 'DELETE', 'Credential', '2025-01-03 11:00:00');
+
+-- Insert into Applications
+INSERT INTO Applications (machine_id, app_name, added_by, current_version)
+VALUES ('1', 'App One', 'a1', '1.0.0'),
+       ('2', 'App Two', 'e1', '2.1.0'),
+       ('3', 'App Three', 'e2', '1.3.5');
+
+-- Insert into Application_Versions
+INSERT INTO Application_Versions (app_id, version_name, updated_by, date)
+VALUES ('1', '1.1.0', 'e1', '2025-01-05 14:00:00'),
+       ('2', '2.2.0', 'a1', '2025-01-06 16:30:00'),
+       ('3', '1.4.0', 'e2', '2025-01-07 11:00:00');
 
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
@@ -396,7 +442,7 @@ CREATE PROCEDURE CreateUser(
     IN p_password VARCHAR(255)
 )
 BEGIN
-    DECLARE v_user_id INT;
+    DECLARE v_user_id VARCHAR(50);
     DECLARE v_username VARCHAR(255);
     
     -- Generate a username based on the email (before '@')
@@ -476,7 +522,7 @@ SHOW GRANTS FOR 'mark123'@'%';
 DELIMITER //
 
 CREATE PROCEDURE LogAction(
-    IN p_user_id INT,
+    IN p_user_id VARCHAR(50),
     IN p_action_type VARCHAR(10),
     IN p_entity_name VARCHAR(255)
 )
@@ -490,7 +536,7 @@ DELIMITER ;
 -- Triggers
 
 -- For testing triggers as a specific user:
-SET @current_user_id = 1;
+SET @current_user_id = a1;
 
 -- Trigger for deleting a users associated admin details whenever they are removed from the users table
 DELIMITER //
@@ -587,7 +633,7 @@ DELIMITER ;
 -- Trigger for adding entry to action_logs when a user performs an Insert on Licences
 DELIMITER //
 
-CREATE TRIGGER LogLicenceInsert
+CREATE TRIGGER LogLicenseInsert
 AFTER INSERT ON Licences
 FOR EACH ROW
 BEGIN
@@ -615,7 +661,7 @@ CREATE TRIGGER LogLicenceDelete
 AFTER DELETE ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Licenes');
+    CALL LogAction(@current_user_id, 'DELETE', 'Licences');
 END //
 
 DELIMITER ;
@@ -761,26 +807,3 @@ FROM
     information_schema.TRIGGERS
 WHERE 
     TRIGGER_SCHEMA = 'upflux'; 
-	
--- Indexes 
-
--- Index to speed up queries filtering or joining on user_id in the Credentials table
-CREATE INDEX idx_credentials_user_id ON Credentials(user_id);
-
--- Index to speed up queries filtering or joining on machine_id in the Credentials table
-CREATE INDEX idx_credentials_machine_id ON Credentials(machine_id);
-
--- Index to speed up queries filtering or joining on machine_id in the Licences table
-CREATE INDEX idx_licences_machine_id ON Licences(machine_id);
-
--- Index to speed up queries filtering or joining on machine_id in the Update_Logs table
-CREATE INDEX idx_update_logs_machine_id ON Update_Logs(machine_id);
-
--- Index to speed up queries filtering or joining on package_id in the Update_Logs table
-CREATE INDEX idx_update_logs_package_id ON Update_Logs(package_id);
-
--- Composite index to optimize queries involving both machine_id and package_id in Update_Logs
-CREATE INDEX idx_update_logs_machine_package ON Update_Logs(machine_id, package_id);
-
--- Composite index to optimize queries involving both user_id and machine_id in Credentials
-CREATE INDEX idx_credentials_user_machine ON Credentials(user_id, machine_id);

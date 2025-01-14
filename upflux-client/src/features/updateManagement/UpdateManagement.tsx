@@ -1,11 +1,15 @@
-import React from "react";
-import { Box, Button, Group, Stack, Table, Text, Badge } from "@mantine/core";
+import React, { useState } from "react";
+import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select } from "@mantine/core";
 import { DonutChart } from '@mantine/charts';
+import { Link } from "react-router-dom";
 import "./update-management.css";
 import view from "../../assets/images/view.png";
 
 
 export const UpdateManagement: React.FC = () => {
+
+    const [modalOpened, setModalOpened] = useState(false);
+
   // Hardcoded data for the table
   const machines = [
     { id: "001", lastUpdate: "02/08/2024", status: "Alive" },
@@ -89,14 +93,14 @@ export const UpdateManagement: React.FC = () => {
 
           {/* Action Buttons */}
           <Stack className="button-group">
-            <Button className="configure-button">Configure Update</Button>
+            <Button className="configure-button" onClick={() => setModalOpened(true)}>Configure Update</Button>
             <Button className="smart-button">Smart Update</Button>
           </Stack>
         </Group>
 
         {/* Table Section */}
         <Box>
-          <Table highlightOnHover>
+          <Table className="machine-table" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Machine ID</Table.Th>
@@ -124,7 +128,9 @@ export const UpdateManagement: React.FC = () => {
                     </Badge>
                   </Table.Td>
                   <Table.Td>
+                  <Link to="/version-control">
                     <img src={view} alt="view" className="view" />
+                  </Link>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -132,6 +138,31 @@ export const UpdateManagement: React.FC = () => {
           </Table>
         </Box>
       </Box>
+
+           {/* Modal for Configure Update */}
+      <Modal
+        opened={modalOpened}
+        onClose={() => setModalOpened(false)}
+        title="Configure Update"
+        centered
+      >
+        <Box>
+          <Text>Select Machines*</Text>
+          <Select
+            data={["Machine 001", "Machine 002", "Machine 003"]}
+            placeholder="Select Machines"
+          />
+          <Text mt="md">Select Software Version*</Text>
+          <Select
+            data={["Version 2.5.0", "Version 1.8.2", "Version 3.1.0"]}
+            placeholder="Select Version"
+          />
+          <Button mt="md" fullWidth>
+            Deploy
+          </Button>
+        </Box>
+      </Modal>
+
     </Stack>
   );
 };

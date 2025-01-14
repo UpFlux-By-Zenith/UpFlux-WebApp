@@ -100,7 +100,10 @@ export const LoginComponent: React.FC = () => {
     {isLoggedIn && <h4>You have been logged in sucessfully</h4>}
       <Box className="main-card">
         <Image src={logo} alt="UpFlux Logo" className="upflux-logo" />
-        {errorMessage && <Text className="error-message">{errorMessage}</Text>}
+        <Box className="error-message-container" style={{ color: 'red', fontWeight: 'bold' }}>
+  {errorMessage && <Text className={`error-message ${errorMessage ? 'active' : ''}`}>{errorMessage}</Text>}
+</Box>
+
         <Box className="input-field-box">
           <TextInput
             placeholder="E-mail"
@@ -119,7 +122,7 @@ export const LoginComponent: React.FC = () => {
               />
           </Box>
         </Box>
-        <Button className="login-button" onClick={handleSubmit}>Log in</Button>
+        <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>
         <Box className="forgot-password">
           <a href="/password-settings" className="forgot-password-link">Forgotten your Password?</a>
         </Box>

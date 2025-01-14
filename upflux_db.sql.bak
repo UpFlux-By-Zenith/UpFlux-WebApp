@@ -762,3 +762,25 @@ FROM
 WHERE 
     TRIGGER_SCHEMA = 'upflux'; 
 	
+-- Indexes 
+
+-- Index to speed up queries filtering or joining on user_id in the Credentials table
+CREATE INDEX idx_credentials_user_id ON Credentials(user_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Credentials table
+CREATE INDEX idx_credentials_machine_id ON Credentials(machine_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Licences table
+CREATE INDEX idx_licences_machine_id ON Licences(machine_id);
+
+-- Index to speed up queries filtering or joining on machine_id in the Update_Logs table
+CREATE INDEX idx_update_logs_machine_id ON Update_Logs(machine_id);
+
+-- Index to speed up queries filtering or joining on package_id in the Update_Logs table
+CREATE INDEX idx_update_logs_package_id ON Update_Logs(package_id);
+
+-- Composite index to optimize queries involving both machine_id and package_id in Update_Logs
+CREATE INDEX idx_update_logs_machine_package ON Update_Logs(machine_id, package_id);
+
+-- Composite index to optimize queries involving both user_id and machine_id in Credentials
+CREATE INDEX idx_credentials_user_machine ON Credentials(user_id, machine_id);
