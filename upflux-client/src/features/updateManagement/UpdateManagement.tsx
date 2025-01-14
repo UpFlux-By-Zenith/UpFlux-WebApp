@@ -9,15 +9,15 @@ export const UpdateManagement: React.FC = () => {
   const [modalOpened, setModalOpened] = useState(false);
   const navigate = useNavigate();
 
-  // Hardcoded data for the table
+  // Hardcoded data for the table with actual names in "Updated By"
   const machines = [
-    { id: "001", ipAddress: "192.168.1.1", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "002", ipAddress: "192.168.1.2", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "003", ipAddress: "192.168.1.3", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "004", ipAddress: "192.168.1.4", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "005", ipAddress: "192.168.1.5", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "006", ipAddress: "192.168.1.6", lastUpdate: "03/08/2024", status: "Shutdown" },
-    { id: "007", ipAddress: "192.168.1.7", lastUpdate: "10/09/2022", status: "Unknown" },
+    { id: "001", ipAddress: "192.168.1.1", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "John Doe" },
+    { id: "002", ipAddress: "192.168.1.2", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "Jane Smith" },
+    { id: "003", ipAddress: "192.168.1.3", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "Michael Johnson" },
+    { id: "004", ipAddress: "192.168.1.4", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "Emily Davis" },
+    { id: "005", ipAddress: "192.168.1.5", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "David Lee" },
+    { id: "006", ipAddress: "192.168.1.6", lastUpdate: "03/08/2024", status: "Shutdown", updatedBy: "Chris Martin" },
+    { id: "007", ipAddress: "192.168.1.7", lastUpdate: "10/09/2022", status: "Unknown", updatedBy: "Jessica Wang" },
   ];
 
   // Count machines based on their status
@@ -84,6 +84,7 @@ export const UpdateManagement: React.FC = () => {
                 <Table.Th>Machine ID</Table.Th>
                 <Table.Th>IP Address</Table.Th>
                 <Table.Th>Last Update</Table.Th>
+                <Table.Th>Updated By</Table.Th> {/* New column */}
                 <Table.Th>Current Status</Table.Th>
                 <Table.Th>View</Table.Th>
               </Table.Tr>
@@ -94,6 +95,7 @@ export const UpdateManagement: React.FC = () => {
                   <Table.Td>{machine.id}</Table.Td>
                   <Table.Td>{machine.ipAddress}</Table.Td>
                   <Table.Td>{machine.lastUpdate}</Table.Td>
+                  <Table.Td>{machine.updatedBy}</Table.Td> {/* Updated column with actual names */}
                   <Table.Td>
                     <Badge
                       color={machine.status === "Alive"
