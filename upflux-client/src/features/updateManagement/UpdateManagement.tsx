@@ -1,62 +1,36 @@
 import React, { useState } from "react";
 import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select } from "@mantine/core";
 import { DonutChart } from '@mantine/charts';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./update-management.css";
 import view from "../../assets/images/view.png";
 
-
 export const UpdateManagement: React.FC = () => {
-
-    const [modalOpened, setModalOpened] = useState(false);
+  const [modalOpened, setModalOpened] = useState(false);
+  const navigate = useNavigate();
 
   // Hardcoded data for the table
   const machines = [
-    { id: "001", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "002", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "003", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "004", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "005", lastUpdate: "02/08/2024", status: "Alive" },
-    { id: "006", lastUpdate: "03/08/2024", status: "Shutdown" },
-    { id: "007", lastUpdate: "10/09/2022", status: "Unknown" },
+    { id: "001", ipAddress: "192.168.1.1", lastUpdate: "02/08/2024", status: "Alive" },
+    { id: "002", ipAddress: "192.168.1.2", lastUpdate: "02/08/2024", status: "Alive" },
+    { id: "003", ipAddress: "192.168.1.3", lastUpdate: "02/08/2024", status: "Alive" },
+    { id: "004", ipAddress: "192.168.1.4", lastUpdate: "02/08/2024", status: "Alive" },
+    { id: "005", ipAddress: "192.168.1.5", lastUpdate: "02/08/2024", status: "Alive" },
+    { id: "006", ipAddress: "192.168.1.6", lastUpdate: "03/08/2024", status: "Shutdown" },
+    { id: "007", ipAddress: "192.168.1.7", lastUpdate: "10/09/2022", status: "Unknown" },
   ];
 
-  // Helper to check if a machine is "up to date" (within last 6 months)
-  const isUpToDate = (dateString: string): boolean => {
-    // Parse the date string manually
-    const [day, month, year] = dateString.split('/').map(Number);
-    const lastUpdate = new Date(year, month - 1, day); // month is 0-indexed
-    const today = new Date();
-    
-    // Subtract 6 months from the current date
-    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
-  
-    return lastUpdate >= sixMonthsAgo;
-  };
-  
+  // Count machines based on their status
+  const aliveMachines = machines.filter((machine) => machine.status === "Alive").length;
+  const shutdownMachines = machines.filter((machine) => machine.status === "Shutdown").length;
+  const unknownMachines = machines.filter((machine) => machine.status === "Unknown").length;
 
-  // Count updated and pending machines
-  const updatedMachines = machines.filter((machine) =>
-    isUpToDate(machine.lastUpdate)
-  ).length;
-  const pendingMachines = machines.length - updatedMachines;
-
-  // Chart data
+  // Chart data for multiple measures
   const chartData = [
-    { name: "Updated", value: updatedMachines, color: "#007bff" },
-    { name: "Pending Updates", value: pendingMachines, color: "#ff0000" },
+    { name: "Alive", value: aliveMachines, color: "#40C057" }, // Green for Alive
+    { name: "Shutdown", value: shutdownMachines, color: "#FA5252" }, // Red for Shutdown
+    { name: "Unknown", value: unknownMachines, color: "#6c757d" }, // Grey for Unknown
   ];
-  
-
-//   // Chart options
-// const chartOptions = {
-//     cutout: '60%',
-//     plugins: {
-//       legend: {
-//         display: false, // Disable the default legend
-//       },
-//     },
-//   };
 
   return (
     <Stack className="update-management-content">
@@ -72,29 +46,33 @@ export const UpdateManagement: React.FC = () => {
         <Group className="overview-section">
           {/* Chart Section */}
           <Box className="chart">
-            <DonutChart  className="chart" data={chartData} />;
+            <DonutChart className="chart" withTooltip={false} data={chartData} />;
             {/* Custom Text in the center of the doughnut */}
             <Text className="chart-text">
-              Machines <br /> <br /> {machines.length}
+              Machines  <br /> {machines.length}
             </Text>
           </Box>
 
           {/* Legend */}
           <Stack className="legend">
             <Group className="legend-item">
-              <Box className="circle blue"></Box>
-              <Text size="sm">{updatedMachines} Updated</Text>
+              <Box className="circle green"></Box>
+              <Text size="sm">{aliveMachines} Alive</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
-              <Text size="sm">{pendingMachines} Pending Updates</Text>
+              <Text size="sm">{shutdownMachines} Shutdown</Text>
+            </Group>
+            <Group className="legend-item">
+              <Box className="circle gray"></Box>
+              <Text size="sm">{unknownMachines} Unknown</Text>
             </Group>
           </Stack>
 
           {/* Action Buttons */}
           <Stack className="button-group">
             <Button className="configure-button" onClick={() => setModalOpened(true)}>Configure Update</Button>
-            <Button className="smart-button">Smart Update</Button>
+            <Button className="smart-button" onClick={() => navigate('/clustering')}>Smart Update</Button>
           </Stack>
         </Group>
 
@@ -104,6 +82,7 @@ export const UpdateManagement: React.FC = () => {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Machine ID</Table.Th>
+                <Table.Th>IP Address</Table.Th>
                 <Table.Th>Last Update</Table.Th>
                 <Table.Th>Current Status</Table.Th>
                 <Table.Th>View</Table.Th>
@@ -113,24 +92,23 @@ export const UpdateManagement: React.FC = () => {
               {machines.map((machine) => (
                 <Table.Tr key={machine.id}>
                   <Table.Td>{machine.id}</Table.Td>
+                  <Table.Td>{machine.ipAddress}</Table.Td>
                   <Table.Td>{machine.lastUpdate}</Table.Td>
                   <Table.Td>
                     <Badge
-                      color={
-                        machine.status === "Alive"
-                          ? "green"
-                          : machine.status === "Shutdown"
-                          ? "red"
-                          : "gray"
-                      }
+                      color={machine.status === "Alive"
+                        ? "green"
+                        : machine.status === "Shutdown"
+                        ? "red"
+                        : "gray"}
                     >
                       {machine.status}
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                  <Link to="/version-control">
-                    <img src={view} alt="view" className="view" />
-                  </Link>
+                    <Link to="/version-control">
+                      <img src={view} alt="view" className="view" />
+                    </Link>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -139,7 +117,7 @@ export const UpdateManagement: React.FC = () => {
         </Box>
       </Box>
 
-           {/* Modal for Configure Update */}
+      {/* Modal for Configure Update */}
       <Modal
         opened={modalOpened}
         onClose={() => setModalOpened(false)}

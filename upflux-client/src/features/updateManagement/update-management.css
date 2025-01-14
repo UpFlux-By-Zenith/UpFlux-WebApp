@@ -46,7 +46,7 @@
 
   .legend{
     position: absolute;
-    margin-top: 75px;
+    margin-top: 10px;
     margin-left: 410px;
   }
 
@@ -56,13 +56,17 @@
     gap: 8px;
   }
   
-  .circle.blue {
-    background-color: #2F3BFF;
+  .circle.green {
+    background-color: #40C057;
 
   }
   
   .circle.red {
-    background-color: #ff0000;
+    background-color: #FA5252;
+  }
+
+  .circle.gray {
+    background-color: #6c757d;
   }
   
   /* Buttons */
@@ -122,8 +126,9 @@
   }
   
   .chart-text {
+    z-index: 1000;
     position: relative;
-    bottom: 64%;
+    bottom: 59%;
     left: 78%;
     transform: translate(-50%, -50%);
     text-align: center;
