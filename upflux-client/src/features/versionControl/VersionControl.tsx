@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import { Box, Button, Group, Stack, Table, Text, Select, Modal } from "@mantine/core";
+import { useLocation } from "react-router-dom";
 import "./versionControl.css";
 
 export const VersionControl: React.FC = () => {
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
+
+  // Retrieve machine ID from the route state
+  const location = useLocation();
+  const machineId = location.state?.machineId || "Unknown Machine";
 
   // Hardcoded data for the table
   const appVersions = [
@@ -26,7 +31,8 @@ export const VersionControl: React.FC = () => {
 
       <Box className="content-wrapper">
         <Box className="machine-id-box">
-          <Text>Machine 001</Text>
+          {/* Display the machine ID */}
+          <Text>{`Machine ${machineId}`}</Text>
         </Box>
 
         {/* Overview Section */}
@@ -74,7 +80,7 @@ export const VersionControl: React.FC = () => {
         <Box>
           <Text>Select App*</Text>
           <Select
-            data={["App 1", "App 2", "App 3", "App 4", "App 5"]}	
+            data={["App 1", "App 2", "App 3", "App 4", "App 5"]} 
             placeholder="Select App"
           />
           <Text mt="md">Select App Version*</Text>

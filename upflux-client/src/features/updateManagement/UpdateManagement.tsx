@@ -108,7 +108,9 @@ export const UpdateManagement: React.FC = () => {
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                    <Link to="/version-control">
+                    <Link 
+                     to="/version-control"
+                     state={{ machineId: machine.id }}>
                       <img src={view} alt="view" className="view" />
                     </Link>
                   </Table.Td>
