@@ -1,4 +1,4 @@
-﻿using GrpcServer;
+﻿using LicenceCommunication;
 
 namespace Upflux_WebService.GrpcServices.Interfaces
 {
@@ -11,6 +11,6 @@ namespace Upflux_WebService.GrpcServices.Interfaces
 		/// Send licence update to the clients
 		/// </summary>
 		/// <param name="licenceFileUpdate">the licence metadata which will be used as load</param>
-		Task PushLicenceUpdateAsync(LicenceFileUpdate licenceFileUpdate);
+		Task PushLicenceUpdateAsync(LicenceUpdateEvent licenceFileUpdate);
 	}
 }

@@ -48,6 +48,8 @@ namespace Upflux_WebService
 			builder.Services.AddScoped<IAuthService, AuthService>()
 				.AddScoped(typeof(IRepository<>), typeof(Repository<>))
 				.AddScoped<ILicenceManagementService, LicenceManagementService>()
+				.AddScoped<IKmsService, KmsService>()
+				.AddScoped<IXmlService, XmlService>()
 				.AddScoped<ILicenceRepository, LicenceRepository>()
 				.AddScoped<IMachineRepository, MachineRepository>()
 				.AddSingleton<LicenceCommunicationService>()

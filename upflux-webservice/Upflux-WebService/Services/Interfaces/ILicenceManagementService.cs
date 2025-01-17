@@ -1,4 +1,6 @@
-﻿namespace Upflux_WebService.Services.Interfaces
+﻿using LicenceCommunication;
+
+namespace Upflux_WebService.Services.Interfaces
 {
 	/// <summary>
 	/// Interface for licence related services.
@@ -18,6 +20,6 @@
 		/// </summary>
 		/// <param name="licenceXml">is the licence file that is received from the gateway</param>
 		/// <returns></returns>
-		Task<bool> ValidateLicence(string licenceXml);
+		Task<LicenceValidationResponse> ValidateLicence(string licenceXml);
 	}
 }

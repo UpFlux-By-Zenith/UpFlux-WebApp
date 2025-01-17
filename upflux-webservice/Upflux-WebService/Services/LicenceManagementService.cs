@@ -1,15 +1,12 @@
-﻿using Amazon.KeyManagementService;
-using Amazon.KeyManagementService.Model;
-using Upflux_WebService.Core.Models;
+﻿using Upflux_WebService.Core.Models;
 using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Services.Interfaces;
 using Upflux_WebService.GrpcServices.Interfaces;
-using GrpcServer;
 using System.Xml.Linq;
-using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text;
-using System.Xml;
+using System.Globalization;
+using LicenceCommunication;
 
 namespace Upflux_WebService.Services
 {
@@ -22,52 +19,66 @@ namespace Upflux_WebService.Services
 		private readonly ILicenceRepository _licenceRepository;
 		private readonly IMachineRepository _machineRepository;
 		private readonly ILicenceCommunicationService _licenceCommunicationService;
+		private readonly IKmsService _kmsService;
+		private readonly IXmlService _xmlService;
 		#endregion
 
 		#region public methods
-		public LicenceManagementService(ILicenceRepository licenceRepository, IMachineRepository machineRepository, ILicenceCommunicationService licenceCommunicationService)
+
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		public LicenceManagementService(
+			ILicenceRepository licenceRepository,
+			IMachineRepository machineRepository,
+			ILicenceCommunicationService licenceCommunicationService,
+			IKmsService kmsService,
+			IXmlService xmlService)
 		{
 			_licenceRepository = licenceRepository;
 			_machineRepository = machineRepository;
 			_licenceCommunicationService = licenceCommunicationService;
+			_kmsService = kmsService;
+			_xmlService = xmlService;
 		}
 
 		/// <summary>
-		/// Receives machineId, generate licence and store metadata. If a licence exists for the machineId it overrides
+		/// Generates a new license or renews an existing one for the specified machine ID.
+		/// If a license already exists for the given machine ID, it is renewed with updated metadata.
+		/// If no license exists, a new license is created, stored, and pushed for communication.
 		/// </summary>
-		/// <param name="machineId">the machine id which the licence belong to</param>
+		/// <param name="machineId">The machine ID to associate with the license.</param>
+		/// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
 		public async Task CreateLicence(string machineId)
 		{
-			// need to check for existing license as well
+			// Check for existing license and renew if available
 			var existingLicence = await ValidateMachineAndGetLicence(machineId);
 
-			// check for existing licence
 			if (existingLicence != null)
 			{
-				// Update the existing licence
 				await RenewExistingLicence(existingLicence);
-
-				// Fetch the updated licence for signing
 				var updatedLicenceFile = await CreateSignedFile(existingLicence);
 
-				// Notify clients
-				await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceFileUpdate
+				await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
 				{
-					LicenceFileXml = updatedLicenceFile
+					LicenceContent = updatedLicenceFile
 				});
 
 				return;
 			}
 
-			//create new licence
-			var key = await CreateKmsKeyAsync();
+			// Create new license
+			var keyId = await _kmsService.CreateKeyAsync();
+
+			var now = DateTime.UtcNow;
+			var truncatedExpirationDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc);
 
 			var licence = new Licence
 			{
-				LicenceKey = key.KeyMetadata.KeyId,
+				LicenceKey = keyId,
 				MachineId = machineId,
 				ValidityStatus = "Valid",
-				ExpirationDate = DateTime.UtcNow.AddYears(1)
+				ExpirationDate = truncatedExpirationDate.AddYears(1)
 			};
 
 			await _licenceRepository.AddAsync(licence);
@@ -75,143 +86,54 @@ namespace Upflux_WebService.Services
 
 			var licenceFile = await CreateSignedFile(licence);
 
-			await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceFileUpdate
+			await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
 			{
-				LicenceFileXml = licenceFile
+				LicenceContent = licenceFile
 			});
 		}
 
-		//public async Task<bool> ValidateLicence(string licenceXml)
-		//{
-		//	using var sha256 = System.Security.Cryptography.SHA256.Create();
-		//	XDocument receivedXml = XDocument.Parse(licenceXml);
-
-		//	// Extract values from the received XML
-		//	string? expirationDate = receivedXml.Root?.Element("ExpirationDate")?.Value;
-		//	string? machineId = receivedXml.Root?.Element("MachineID")?.Value;
-		//	string? signature = receivedXml.Root?.Element("Signature")?.Value;
-
-		//	if (string.IsNullOrEmpty(expirationDate) || string.IsNullOrEmpty(machineId) || string.IsNullOrEmpty(signature))
-		//		return false;
-
-		//	// Retrieve the existing license metadata from the repository
-		//	var existingLicenceMetadata = await _licenceRepository.GetLicenceByMachineId(machineId);
-		//	if (existingLicenceMetadata is null)
-		//		return false;
-
-		//	var existingLicenceXml = new XElement("Licence",
-		//		new XElement("ExpirationDate", existingLicenceMetadata.ExpirationDate),
-		//		new XElement("MachineID", existingLicenceMetadata.MachineId)
-		//	);
-
-		//	var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(existingLicenceXml.ToString()));
-		//	var expectedSignature = await SignDataAsync(existingLicenceMetadata.LicenceKey, hash);
-
-		//	if (DateTime.TryParse(expirationDate, out var expDate) && DateTime.UtcNow > expDate)
-		//		return false;
-
-		//	// Compare the received signature with the expected one
-		//	return signature == Convert.ToBase64String(expectedSignature);
-		//}
-
-		public async Task<bool> ValidateLicence(string licenceXml)
+		/// <summary>
+		/// Validates a license by checking its XML content, signature, and metadata consistency.
+		/// </summary>
+		/// <param name="licenceXml">The XML string representing the license to validate.</param>
+		/// <returns>
+		/// A <see cref="LicenceValidationResponse"/> indicating whether the license is valid, along with an error message if invalid.
+		/// </returns>
+		public async Task<LicenceValidationResponse> ValidateLicence(string licenceXml)
 		{
-			using var sha256 = SHA256.Create();
+			// Parse and normalize XML
+			var receivedXml = _xmlService.ParseXml(licenceXml);
 
-			// Parse the received XML
-			var receivedXml = XDocument.Parse(licenceXml);
-
-			// Extract values from the received XML
-			string? expirationDate = receivedXml.Root?.Element("ExpirationDate")?.Value;
-			string? machineId = receivedXml.Root?.Element("MachineID")?.Value;
-			string? signature = receivedXml.Root?.Element("Signature")?.Value;
-
-			if (string.IsNullOrEmpty(expirationDate) || string.IsNullOrEmpty(machineId) || string.IsNullOrEmpty(signature))
+			if (!TryExtractLicenceValues(receivedXml, out var expirationDate, out var machineId, out var signature))
 			{
-				Console.WriteLine("Invalid XML format.");
-				return false;
+				return new LicenceValidationResponse() { IsValid = false, Message = "Invalid XML Content."};
 			}
-
-			// Remove the Signature element for consistent hashing
 			receivedXml.Root?.Element("Signature")?.Remove();
-
-			// Normalize the XML for hashing
-			var normalizedXml = NormalizeXml(receivedXml);
+			var normalizedXml = _xmlService.NormalizeXml(receivedXml);
 
 			// Compute the hash of the normalized XML
+			using var sha256 = SHA256.Create();
 			var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedXml));
-			var signatureBytes = Convert.FromBase64String(signature);
 
-			// Retrieve the license metadata from the repository
 			var existingLicenceMetadata = await _licenceRepository.GetLicenceByMachineId(machineId);
-			if (existingLicenceMetadata is null)
+			if (existingLicenceMetadata == null)
 			{
-				Console.WriteLine("No matching license found.");
-				return false;
+				return new LicenceValidationResponse() { IsValid = false, Message = "No Matching Licence" };
 			}
 
-			// Verify the signature using AWS KMS
-			if (!await VerifyWithKmsAsync(existingLicenceMetadata.LicenceKey, hash, signatureBytes))
+			// Verify the signature
+			if (!await _kmsService.VerifySignatureAsync(existingLicenceMetadata.LicenceKey, hash, Convert.FromBase64String(signature)))
 			{
-				Console.WriteLine("Signature validation failed. XML may have been tampered with.");
-				return false;
+				return new LicenceValidationResponse() { IsValid = false, Message = "Invalid Signature." };
 			}
 
-			// Compare the verified XML data with the cloud's metadata
-			if (expirationDate != existingLicenceMetadata.ExpirationDate.ToString())
+			// Validate metadata consistency
+			if (!ValidateMetadata(expirationDate, machineId, existingLicenceMetadata))
 			{
-				Console.WriteLine("Expiration date mismatch.");
-				return false;
+				return new LicenceValidationResponse() { IsValid = false, Message = "Invalid Metadata" };
 			}
 
-			if (machineId != existingLicenceMetadata.MachineId)
-			{
-				Console.WriteLine("Machine ID mismatch.");
-				return false;
-			}
-
-			// Check the expiration date
-			if (DateTime.TryParse(expirationDate, out var expDate) && DateTime.UtcNow > expDate)
-			{
-				Console.WriteLine("License has expired.");
-				return false;
-			}
-
-			Console.WriteLine("License is valid.");
-			return true;
-		}
-
-		private async Task<bool> VerifyWithKmsAsync(string keyId, byte[] hash, byte[] signature)
-		{
-			using var kmsClient = new AmazonKeyManagementServiceClient(Amazon.RegionEndpoint.EUNorth1);
-
-			try
-			{
-				var request = new VerifyRequest
-				{
-					KeyId = keyId, // Ensure this matches the KeyId from CreateKeyAsync
-					Message = new MemoryStream(hash),
-					MessageType = MessageType.DIGEST, // Hash is passed as a pre-computed digest
-					Signature = new MemoryStream(signature),
-					SigningAlgorithm = SigningAlgorithmSpec.RSASSA_PSS_SHA_256 // Must match the signing algorithm used
-				};
-
-				var response = await kmsClient.VerifyAsync(request);
-				return response.SignatureValid; // True if the signature is valid
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"Error during verification: {ex.Message}");
-				return false; // Return false if verification fails
-			}
-		}
-
-		private bool VerifySignature(byte[] hash, byte[] signature, string publicKey)
-		{
-			using var rsa = RSA.Create();
-			rsa.ImportFromPem(publicKey);
-
-			return rsa.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+			return new LicenceValidationResponse() { IsValid = true, Message = "Licence is valid." };
 		}
 
 		#endregion
@@ -219,11 +141,80 @@ namespace Upflux_WebService.Services
 		#region private methods
 
 		/// <summary>
-		/// Check if machine exists, and get its licence
+		/// Extracts license-related values (ExpirationDate, MachineID, Signature) from an XML document.
 		/// </summary>
-		/// <param name="machineId">the id of the machine being checked</param>
-		/// <returns>Licence metadata</returns>
-		/// <exception cref="KeyNotFoundException"></exception>
+		/// <param name="doc">The XML document containing license data.</param>
+		/// <param name="expirationDate">The extracted expiration date as a string, if found.</param>
+		/// <param name="machineId">The extracted machine ID as a string, if found.</param>
+		/// <param name="signature">The extracted signature as a string, if found.</param>
+		/// <returns>
+		/// True if all three values (ExpirationDate, MachineID, Signature) are successfully extracted and are non-empty;
+		/// otherwise, false.
+		/// </returns>
+		/// <remarks>
+		/// - The method assumes the XML structure contains the elements "ExpirationDate", "MachineID", and "Signature".
+		/// - If any of these elements are missing or empty, the method returns false.
+		/// </remarks>
+		private bool TryExtractLicenceValues(XDocument doc, out string expirationDate, out string machineId, out string signature)
+		{
+			expirationDate = doc.Root?.Element("ExpirationDate")?.Value;
+			machineId = doc.Root?.Element("MachineID")?.Value;
+			signature = doc.Root?.Element("Signature")?.Value;
+
+			return !string.IsNullOrEmpty(expirationDate) &&
+				   !string.IsNullOrEmpty(machineId) &&
+				   !string.IsNullOrEmpty(signature);
+		}
+
+		/// <summary>
+		/// Parses a date-time string into a <see cref="DateTime"/> object using a specific format.
+		/// </summary>
+		/// <param name="dateTime">The date-time string to parse, expected in the format "yyyy-MM-ddTHH:mm:ss[...]" (ISO 8601).</param>
+		/// <returns>
+		/// A <see cref="DateTime"/> object representing the parsed date and time in UTC format.
+		/// </returns>
+		/// <exception cref="ArgumentNullException">Thrown if the <paramref name="dateTime"/> is null.</exception>
+		/// <exception cref="FormatException">
+		/// Thrown if the <paramref name="dateTime"/> does not match the expected format
+		/// or if the string is shorter than 19 characters.
+		/// </exception>
+		/// <remarks>
+		/// - The method extracts the first 19 characters of the provided string and appends a "Z" to ensure UTC formatting.
+		/// - The format "yyyy-MM-ddTHH:mm:ssZ" is strictly enforced for parsing.
+		/// - This is particularly useful for handling ISO 8601 formatted date-time strings.
+		/// </remarks>
+		private DateTime ParseDateTime(string dateTime)
+		{
+			if (dateTime == null)
+			{
+				throw new ArgumentNullException(nameof(dateTime), "The dateTime parameter cannot be null.");
+			}
+
+			if (dateTime.Length < 19)
+			{
+				throw new FormatException("The dateTime string must be at least 19 characters long.");
+			}
+
+			DateTime output = DateTime.ParseExact(
+				dateTime.Substring(0, 19) + "Z", 
+				"yyyy-MM-ddTHH:mm:ssZ",
+				CultureInfo.InvariantCulture,  
+				DateTimeStyles.AdjustToUniversal 
+			);
+
+			return output;
+		}
+
+		/// <summary>
+		/// Checks if a machine exists in the repository and retrieves its associated license if available.
+		/// </summary>
+		/// <param name="machineId">The ID of the machine to check.</param>
+		/// <returns>
+		/// The <see cref="Licence"/> associated with the machine, or <c>null</c> if no license is found.
+		/// </returns>
+		/// <exception cref="KeyNotFoundException">
+		/// Thrown if the machine with the specified ID does not exist in the repository.
+		/// </exception>
 		private async Task<Licence?> ValidateMachineAndGetLicence(string machineId)
 		{
 			var machine = await _machineRepository.GetByIdAsync(machineId);
@@ -234,101 +225,84 @@ namespace Upflux_WebService.Services
 		}
 
 		/// <summary>
-		/// Renew licence by resetting expiry date
+		/// Renews an existing license by resetting its expiration date and validity status.
 		/// </summary>
-		/// <param name="existingLicence">the licence being renewed</param>
+		/// <param name="existingLicence">The <see cref="Licence"/> to be renewed.</param>
+		/// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
 		private async Task RenewExistingLicence(Licence existingLicence)
 		{
+			var now = DateTime.UtcNow;
+			var truncatedExpirationDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc);
+
 			existingLicence.ValidityStatus = "Valid";
-			existingLicence.ExpirationDate = DateTime.UtcNow.AddYears(1);
+			existingLicence.ExpirationDate = truncatedExpirationDate.AddYears(1);
 
 			_licenceRepository.Update(existingLicence);
 			await _licenceRepository.SaveChangesAsync();
 		}
 
 		/// <summary>
-		/// Creates a Asymmetric key using aws user details
+		/// Generates a signed license file by creating a digital signature using the license data.
 		/// </summary>
-		/// <returns>a key pair that is used for signing and verifying</returns>
-		private async Task<CreateKeyResponse> CreateKmsKeyAsync()
-		{
-			var request = new CreateKeyRequest
-			{
-				Description = "Asymmetric key for signing and verifying messages",
-				KeyUsage = KeyUsageType.SIGN_VERIFY,
-				KeySpec = KeySpec.RSA_2048
-			};
-
-			var kmsClient = new AmazonKeyManagementServiceClient(Amazon.RegionEndpoint.EUNorth1);
-			var response = await kmsClient.CreateKeyAsync(request);
-			return response;
-		}
-
-		/// <summary>
-		/// Uses a KMS managed key to sign a hashed item
-		/// </summary>
-		/// <param name="keyId">the id of the key that is to be used</param>
-		/// <param name="hash">the hash that is to be signed</param>
-		private async Task<byte[]> SignDataAsync(string keyId, byte[] hash)
-		{
-			var kmsClient = new AmazonKeyManagementServiceClient(Amazon.RegionEndpoint.EUNorth1);
-
-			var signRequest = new SignRequest
-			{
-				KeyId = keyId,
-				Message = new MemoryStream(hash),
-				MessageType = MessageType.DIGEST,
-				SigningAlgorithm = SigningAlgorithmSpec.RSASSA_PSS_SHA_256
-			};
-
-			var signResponse = await kmsClient.SignAsync(signRequest);
-			return signResponse.Signature.ToArray();
-		}
-
-		/// <summary>
-		/// Create signature using icence data and insert it into the response
-		/// </summary>
-		/// <param name="licence">licence being signed</param>
-		/// <returns>signed licence</returns>
+		/// <param name="licence">The <see cref="Licence"/> object containing the data to be signed.</param>
+		/// <returns>
+		/// A <see cref="Task{TResult}"/> representing the asynchronous operation, with a string result
+		/// containing the signed license XML.
+		/// </returns>
+		/// <remarks>
+		/// The method performs the following steps:
+		/// 1. Constructs an XML document with the license's expiration date and machine ID.
+		/// 2. Normalizes the XML structure for consistent hashing.
+		/// 3. Computes a SHA-256 hash of the normalized XML content.
+		/// 4. Generates a digital signature for the hash using the KMS service.
+		/// 5. Adds the digital signature as a "Signature" element to the XML document.
+		/// 6. Returns the finalized signed license as a string.
+		/// </remarks>
 		private async Task<string> CreateSignedFile(Licence licence)
 		{
-			// Create the XML using XDocument
 			var doc = new XDocument(
 				new XElement("Licence",
-					new XElement("ExpirationDate", licence.ExpirationDate),
-					new XElement("MachineID", licence.MachineId) // Consistent capitalization
+					new XElement("ExpirationDate", licence.ExpirationDate.ToString("o")),
+					new XElement("MachineID", licence.MachineId)
 				)
 			);
+			var normalizedXml = _xmlService.NormalizeXml(doc);
 
-			// Normalize the XML to a string for hashing
-			var normalizedXml = NormalizeXml(doc);
-
-			// Compute the hash of the normalized XML
 			using var sha256 = SHA256.Create();
 			var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedXml));
 
-			// Sign the hash using AWS KMS
-			var signature = await SignDataAsync(licence.LicenceKey, hash);
-
-			// Add the signature to the XML
+			var signature = await _kmsService.SignDataAsync(licence.LicenceKey, hash);
 			doc.Root?.Add(new XElement("Signature", Convert.ToBase64String(signature)));
 
-			// Return the signed XML as a string
-			return doc.ToString(SaveOptions.DisableFormatting); // Compact formatting for consistency
+			return doc.ToString(SaveOptions.DisableFormatting);
 		}
 
-		private string NormalizeXml(XDocument doc)
+		/// <summary>
+		/// crosscheck licence with the metadata stored in the database
+		/// </summary>
+		/// <param name="expirationDate">licence expiration date</param>
+		/// <param name="machineId">licence id contained in the licence</param>
+		/// <param name="metadata">metadata in the database</param>
+		/// <returns>the validity of the received licence</returns>
+		private bool ValidateMetadata(string expirationDate, string machineId, Licence metadata)
 		{
-			using var stringWriter = new StringWriter();
-			using var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
+			if (ParseDateTime(expirationDate) != metadata.ExpirationDate)
 			{
-				OmitXmlDeclaration = true, // Remove XML declaration
-				Indent = false // Compact format without extra whitespace
-			});
-			doc.Save(xmlWriter);
-			return stringWriter.ToString();
-		}
+				return false;
+			}
 
+			if (machineId != metadata.MachineId)
+			{
+				return false;
+			}
+
+			if (DateTime.TryParse(expirationDate, out var expDate) && DateTime.UtcNow > expDate)
+			{
+				return false;
+			}
+
+			return true;
+		}
 		#endregion
 	}
 }
