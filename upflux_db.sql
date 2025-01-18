@@ -17,7 +17,7 @@ CREATE TABLE Users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     role ENUM('Admin', 'Engineer') NOT NULL,
-	last_login TIMESTAMP NOT NULL
+	last_login TIMESTAMP
 );
 
 -- Create Admin_Details Table 

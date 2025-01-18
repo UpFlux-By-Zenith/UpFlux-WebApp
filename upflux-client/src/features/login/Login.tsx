@@ -101,8 +101,8 @@ export const LoginComponent: React.FC = () => {
       <Box className="main-card">
         <Image src={logo} alt="UpFlux Logo" className="upflux-logo" />
         <Box className="error-message-container" style={{ color: 'red', fontWeight: 'bold' }}>
-  {errorMessage && <Text className={`error-message ${errorMessage ? 'active' : ''}`}>{errorMessage}</Text>}
-</Box>
+          {errorMessage && <Text className={`error-message ${errorMessage ? 'active' : ''}`}>{errorMessage}</Text>}
+        </Box>
 
         <Box className="input-field-box">
           <TextInput
