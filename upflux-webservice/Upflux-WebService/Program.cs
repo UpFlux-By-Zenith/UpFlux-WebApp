@@ -12,6 +12,7 @@ using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Repository;
 using Upflux_WebService.GrpcServices;
 using Upflux_WebService.GrpcServices.Interfaces;
+using Upflux_WebService.Core.Models;
 
 namespace Upflux_WebService
 {
@@ -26,11 +27,15 @@ namespace Upflux_WebService
 
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", policy =>
+                options.AddPolicy("AllowSpecificOrigins", policy =>
                 {
-                    policy.AllowAnyOrigin()
+                    policy.WithOrigins("http://localhost:5000",
+            "http://127.0.0.1:5500",  // Add this
+            "https://localhost:5500"  // And this, if you're using HTTPS
+									  ) // Replace with your client URL(s)
                           .AllowAnyHeader()
-                          .AllowAnyMethod();
+                          .AllowAnyMethod()
+                          .AllowCredentials(); // Necessary for SignalR negotiation
                 });
             });
 
@@ -50,7 +55,9 @@ namespace Upflux_WebService
 				.AddScoped<ILicenceManagementService, LicenceManagementService>()
 				.AddScoped<ILicenceRepository, LicenceRepository>()
 				.AddScoped<IMachineRepository, MachineRepository>()
-				.AddSingleton<LicenceCommunicationService>()
+                .AddScoped<IEntityQueryService,EntityQueryService>()
+                .AddSingleton<LicenceCommunicationService>()
+				.AddScoped<INotificationService,NotificationService>()
 				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
 
 			// Load JWT settings from configuration
@@ -138,8 +145,9 @@ namespace Upflux_WebService
 			builder.Services.AddDbContext<ApplicationDbContext>(options =>
 			options.UseMySql(
 				builder.Configuration.GetConnectionString("DefaultConnection"),
-				new MySqlServerVersion(new Version(8, 0, 39))
-			));
+				new MySqlServerVersion(new Version(8, 0, 39)),
+                mysqlOptions => mysqlOptions.EnableRetryOnFailure()
+            ));
 
 			// Add any other required services here
 			// Example: Dependency Injection for custom services
@@ -156,7 +164,8 @@ namespace Upflux_WebService
 			}
 
             // Use CORS
-            app.UseCors("AllowAll");
+            app.UseCors("AllowSpecificOrigins");
+
 
             //Enforce HTTPS redirection
             app.UseHttpsRedirection();
@@ -171,8 +180,7 @@ namespace Upflux_WebService
 			// Map gRPC services
 			app.MapGrpcService<LicenceCommunicationService>();
 
-			// Map SignalR hubs (if applicable)
-			// Example: app.MapHub<MyHub>("/myHub");
-		}
+            app.MapHub<NotificationHub>("/notificationHub");
+        }
 	}
 }

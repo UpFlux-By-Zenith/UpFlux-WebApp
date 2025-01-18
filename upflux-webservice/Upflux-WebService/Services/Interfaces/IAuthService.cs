@@ -1,4 +1,6 @@
-﻿namespace Upflux_WebService.Services.Interfaces
+﻿using Upflux_WebService.Core.DTOs;
+
+namespace Upflux_WebService.Services.Interfaces
 {
     /// <summary>
     /// Interface for authentication-related services.
@@ -12,13 +14,6 @@
         /// <param name="password">The admin's password.</param>
         /// <returns>A JWT token for the authenticated admin.</returns>
         string AdminLogin(string email, string password);
-
-        /// <summary>
-        /// Authenticates an engineer by email and retrieves machine access information.
-        /// </summary>
-        /// <param name="email">The engineer's email address.</param>
-        /// <returns>A list of machine IDs the engineer has access to.</returns>
-        List<string> EngineerLogin(string email);
 
         /// <summary>
         /// Generates a new token for an engineer with specified machine access.
@@ -44,6 +39,5 @@
         /// <param name="newPassword">The new password to be set for the admin.</param>
         /// <returns>Returns <c>true</c> if the password change was successful, <c>false</c> otherwise.</returns>
         bool ChangeAdminPassword(string email, string oldPassword, string newPassword);
-
     }
 }

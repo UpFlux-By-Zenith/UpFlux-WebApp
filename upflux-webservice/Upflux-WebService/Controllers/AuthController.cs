@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Upflux_WebService.Core.DTOs;
+using Upflux_WebService.Core.Models;
+using Upflux_WebService.Services.Enums;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers
@@ -19,6 +21,7 @@ namespace Upflux_WebService.Controllers
         #region private members
 
         private readonly IAuthService _authService;
+        private readonly IEntityQueryService _entityQueryService;
 
         #endregion
 
@@ -27,9 +30,10 @@ namespace Upflux_WebService.Controllers
         /// Constructor
         /// </summary>
         /// <param name="authService"></param>
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, IEntityQueryService entityQuery)
         {
             _authService = authService;
+            _entityQueryService = entityQuery;
         }
         #endregion
 
@@ -49,7 +53,7 @@ namespace Upflux_WebService.Controllers
         /// <response code="401">Unauthorized if the provided credentials are incorrect</response>
         /// <response code="500">Internal Server Error in case of unexpected errors</response>
         [HttpPost("admin/login")]
-        public IActionResult AdminLogin([FromBody] AdminLoginRequest request)
+        public IActionResult AdminLogin([FromBody] AdminCreateLoginRequest request)
         {
             if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
                 return BadRequest(new { Error = "Email and Password are required." });
@@ -64,6 +68,32 @@ namespace Upflux_WebService.Controllers
                 return Unauthorized(new { Error = ex.Message });
             }
         }
+
+        [HttpPost("admin/create")]
+        public IActionResult AdminCreate([FromBody] AdminCreateRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+                return BadRequest(new { Error = "Email and Password are required." });
+            try
+            {
+
+               DbErrorEnum response = _entityQueryService.CreateAdminAccount(request.Name,request.Email, request.Password).Result;
+                if (response != DbErrorEnum.Success)
+                {
+                    return BadRequest(new { Response = response });
+                }
+                else
+                {
+                    return Ok();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
 
         /// <summary>
         /// Admin password change
@@ -137,7 +167,6 @@ namespace Upflux_WebService.Controllers
         #endregion
 
         #region Engineer APIs    
-
         /// <summary>
         /// Engineer login
         /// </summary>

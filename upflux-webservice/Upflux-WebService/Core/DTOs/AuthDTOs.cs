@@ -3,7 +3,27 @@
     /// <summary>
     /// Represents the request data for admin login.
     /// </summary>
-    public class AdminLoginRequest
+    public class AdminCreateRequest
+    {
+        /// <summary>
+        /// Gets or sets the admin's email address.
+        /// </summary>
+        public string Email { get; set; }
+
+        /// <summary>
+        /// Gets or sets the admin's email address.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the admin's password.
+        /// </summary>
+        public string Password { get; set; }
+    }
+    /// <summary>
+    /// Represents the request data for admin login.
+    /// </summary>
+    public class AdminCreateLoginRequest
     {
         /// <summary>
         /// Gets or sets the admin's email address.
