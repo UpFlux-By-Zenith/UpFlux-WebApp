@@ -10,6 +10,8 @@ export const ClusterManagement: React.FC = () => {
 
   return (
     <Stack className="cluster-management-content">
+
+      <Box className="cluster-content-wrapper">
       {/* Header */}
       <Box className="header">
         <Text size="xl" fw={700}>
@@ -17,7 +19,6 @@ export const ClusterManagement: React.FC = () => {
         </Text>
       </Box>
 
-      <Box className="cluster-content-wrapper">
 
       <Stack className="select-group">
       <Text className="cluster-text" style={{fontWeight: "bold"}}>
