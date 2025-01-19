@@ -20,13 +20,13 @@
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    table-layout: fixed; /* Ensures equal spacing */
+    table-layout: fixed;
   }
   
   .version-table th,
   .version-table td {
-    padding: 15px; /* Adjust for consistent padding */
-    text-align: left; /* Align text consistently */
+    padding: 15px;
+    text-align: left; 
     border-bottom: 1px solid #ddd;
   }
   
@@ -36,10 +36,13 @@
   }
   
   .version-table td {
-    word-wrap: break-word; /* Handles long text gracefully */
+    word-wrap: break-word;
   }
   
   .version-table tr:hover {
     background-color: #f9f9f9;
   }
   
+  .header {
+    margin-top: 10px;
+  }

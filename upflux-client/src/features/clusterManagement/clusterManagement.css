@@ -3,6 +3,8 @@
     max-width: 1000px;
     margin: auto;
     padding: 20px;
+    margin-top: 60px;
+    margin-bottom: 75px;
   }
 
   /* Content Wrapper */
@@ -16,7 +18,6 @@
   }
 
   .header{
-    margin-bottom: 50px;
     padding: 10px;
   }
 
@@ -26,7 +27,7 @@
   }
 
   .cluster-text{
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
 
   .cluster-button-group {
@@ -46,7 +47,7 @@
     margin-left: auto; 
     margin-top: -50px;
   }
-  
 
-
-  
+  .cluster-dropdown{
+    width: 100%;
+  }

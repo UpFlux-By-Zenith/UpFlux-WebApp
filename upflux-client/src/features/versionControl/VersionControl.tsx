@@ -21,7 +21,7 @@ export const VersionControl: React.FC = () => {
   ];
 
   return (
-    <Stack className="update-management-content">
+    <Stack className="version-control-content">
       {/* Header */}
       <Box className="header">
         <Text size="xl" fw={700}>

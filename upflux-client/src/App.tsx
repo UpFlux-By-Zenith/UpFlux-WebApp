@@ -12,6 +12,7 @@ import { PasswordSettingsContent } from './features/passwordSettings/PasswordSet
 import Layout from './Layout';
 import { UpdateManagement } from './features/updateManagement/UpdateManagement';
 import { VersionControl } from './features/versionControl/VersionControl';
+import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
 
 export const App = () => {
   return (
@@ -74,6 +75,16 @@ export const App = () => {
                   </Layout>
                 }
               />
+
+              <Route
+                path="/cluster-management"
+                element={
+                  <Layout>
+                    <ClusterManagement />
+                  </Layout>
+                }
+              />
+
             </Route>
 
           </Routes>

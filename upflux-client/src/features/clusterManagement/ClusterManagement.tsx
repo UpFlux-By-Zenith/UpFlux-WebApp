@@ -29,7 +29,7 @@ export const ClusterManagement: React.FC = () => {
           data={["Update Status", "Number of Devices", "Memory", "Network Status", "Suggested time to update"]}
           placeholder="Selection"
           rightSection={null}
-          className="dropdown"
+          className="cluster-dropdown"
         />
 
       </Stack>
