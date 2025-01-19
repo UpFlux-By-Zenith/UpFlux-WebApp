@@ -26,7 +26,7 @@ export const ClusterManagement: React.FC = () => {
       </Text>
 
       <Select
-          data={["Update Status", "No of Devices", "Memory", "Network Status", "Suggested time to update"]}
+          data={["Update Status", "Number of Devices", "Memory", "Network Status", "Suggested time to update"]}
           placeholder="Selection"
           rightSection={null}
           className="dropdown"
