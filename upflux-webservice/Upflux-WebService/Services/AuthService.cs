@@ -113,21 +113,12 @@ namespace Upflux_WebService.Services
         /// </remarks>
         public string GenerateEngineerToken(string engineerEmail,List<string> machineIds, string engineerName = "Engineer")
         {
-            string userId = _entityQueryService.CreateUser(engineerEmail,engineerName,Core.Models.Enums.UserRole.Engineer).Result.Item1;
-            
-            if (userId != null) { 
+           
             string token = GenerateToken(engineerEmail, machineIds, "Engineer");
             
                 // Generate a token for the engineer
-            _entityQueryService.AddCredentials(userId, machineIds, DateTime.UtcNow , DateTime.UtcNow.AddMinutes(30));
+            var res =_entityQueryService.CreateEngineerCredentials(engineerEmail,engineerName, machineIds, DateTime.UtcNow , DateTime.UtcNow.AddMinutes(30)).Result;
             return token;
-
-            }
-            else
-            {
-                return null;
-            }
-
         }
 
         /// <summary>

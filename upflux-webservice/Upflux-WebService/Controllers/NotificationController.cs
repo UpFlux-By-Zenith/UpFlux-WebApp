@@ -8,7 +8,7 @@ namespace Upflux_WebService.Controllers
 
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     public class NotificationController : ControllerBase
     {
         private readonly INotificationService _notificationService;
@@ -21,7 +21,7 @@ namespace Upflux_WebService.Controllers
         [HttpPost("create-group")]
         public async Task<IActionResult> CreateGroup([FromBody] GroupRequest request)
         {
-            await _notificationService.CreateGroupAsync(request.GroupId);
+            await _notificationService.CreateGroupWithTokenAsync(request.GroupId);
             return Ok(new { Message = $"Group '{request.GroupId}' created successfully." });
         }
 

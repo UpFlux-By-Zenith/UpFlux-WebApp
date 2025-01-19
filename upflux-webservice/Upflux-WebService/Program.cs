@@ -142,19 +142,20 @@ namespace Upflux_WebService
 				options.AddPolicy("AdminOrEngineer", policy => policy.RequireRole("Admin", "Engineer"));
 			});
 
-			builder.Services.AddDbContext<ApplicationDbContext>(options =>
-			options.UseMySql(
-				builder.Configuration.GetConnectionString("DefaultConnection"),
-				new MySqlServerVersion(new Version(8, 0, 39)),
-                mysqlOptions => mysqlOptions.EnableRetryOnFailure()
-            ));
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseMySql(
+                    builder.Configuration.GetConnectionString("DefaultConnection"),
+                    new MySqlServerVersion("8.0.39"), // Specify the MySQL version
+                    mysqlOptions =>
+                    {
+                        mysqlOptions.EnableRetryOnFailure(); // Enable retry for transient failures
+                    }
+                )
+            );
 
-			// Add any other required services here
-			// Example: Dependency Injection for custom services
-			// builder.Services.AddScoped<IMyService, MyService>();
-		}
+        }
 
-		private static void ConfigureMiddleware(WebApplication app)
+        private static void ConfigureMiddleware(WebApplication app)
 		{
 			// Enable Swagger in development environment
 			if (app.Environment.IsDevelopment())

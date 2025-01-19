@@ -6,6 +6,7 @@ using Upflux_WebService.Data;
 using Upflux_WebService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Upflux_WebService.Services.Enums;
+using System.Data;
 
 namespace Upflux_WebService.Services
 {
@@ -124,6 +125,55 @@ namespace Upflux_WebService.Services
             return (userId,DbErrorEnum.Success);
         }
 
+        public async Task<DbErrorEnum> CreateEngineerCredentials(string email, string name, List<string> machineIds, DateTime accessGranted, DateTime expiry)
+        {
+            string userId = CreateUser(email, name).Result.Item1;
+            Console.WriteLine($"User with userId '{userId}' found.");
+
+            // Validate that all machine IDs in the input list exist in the database
+            var existingMachineIds = await _context.Machines
+                .Where(m => machineIds.Contains(m.MachineId))
+                .Select(m => m.MachineId)
+                .ToListAsync();
+
+            var invalidMachineIds = machineIds.Except(existingMachineIds).ToList();
+
+            if (invalidMachineIds.Any())
+            {
+                Console.WriteLine("Invalid machineIds: " + string.Join(", ", invalidMachineIds));
+                return DbErrorEnum.MachineNotFound; // Return error if any machineIds are invalid
+            }
+
+            // Check for duplicate credentials in a single query
+            var existingCredentials = await _context.Credentials
+                .Where(c => c.UserId == userId && machineIds.Contains(c.MachineId))
+                .Select(c => c.MachineId)
+                .ToListAsync();
+
+            if (existingCredentials.Any())
+            {
+                Console.WriteLine("Duplicate credentials for machineIds: " + string.Join(", ", existingCredentials));
+                return DbErrorEnum.GeneralError; // Return error if duplicates are found
+            }
+
+            // Prepare credentials to add
+            var credentialsList = machineIds.Select(machineId => new Credentials
+            {
+                UserId = userId,
+                MachineId = machineId,
+                AccessGrantedAt = accessGranted,
+                ExpiresAt = expiry
+            }).ToList();
+            await _context.Database.ExecuteSqlRawAsync($"SET @current_user_id = 'e1'");
+
+            // Add credentials to the database
+            await _context.Credentials.AddRangeAsync(credentialsList);
+            await _context.SaveChangesAsync();
+            Console.WriteLine("Credentials added successfully.");
+            return DbErrorEnum.Success;
+        }
+
+
         public async Task<DbErrorEnum> AddCredentials(string userId, List<string> machineIds, DateTime accessGranted, DateTime expiry)
         {
             try
@@ -135,12 +185,15 @@ namespace Upflux_WebService.Services
                     Console.WriteLine($"User with userId '{userId}' not found.");
                     return DbErrorEnum.UserNotFound; // Return error if userId is not found
                 }
+                Console.WriteLine($"User with userId '{userId}' found.");
 
                 // Check if all machineIds exist in the Machines table
                 var existingMachineIds = await _context.Machines
                     .Where(m => machineIds.Contains(m.MachineId))
                     .Select(m => m.MachineId)
                     .ToListAsync();
+
+                Console.WriteLine($"exisitng MachinesIds {existingMachineIds}");
 
                 // Find missing machineIds
                 var missingMachineIds = machineIds.Except(existingMachineIds).ToList();
@@ -186,10 +239,6 @@ namespace Upflux_WebService.Services
                 return DbErrorEnum.GeneralError; // Return a general error code for unexpected errors
             }
         }
-
-
-
-
 
         #endregion
 
@@ -244,6 +293,11 @@ namespace Upflux_WebService.Services
         {
             string hashedInput = HashPassword(plainTextPassword);
             return hashedPassword == hashedInput;
+        }
+
+        public Task<List<Machine>> GetListOfMachines()
+        {
+            return _context.Machines.ToListAsync();
         }
         #endregion
     }

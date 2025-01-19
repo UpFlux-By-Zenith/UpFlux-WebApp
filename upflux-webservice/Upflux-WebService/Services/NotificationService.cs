@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.IdentityModel.Tokens;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Services
@@ -7,7 +11,8 @@ namespace Upflux_WebService.Services
     {
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly MockDataGenerator _dataGenerator;
-        // Local mapping for group URIs (could be moved to a shared store like Redis for scaling)
+
+        // Local mapping for group machine IDs and URIs
         private static readonly Dictionary<string, List<string>> GroupUriMapping = new();
         private readonly Dictionary<string, AggregatedData> _mockDataStorage = new();
 
@@ -17,11 +22,27 @@ namespace Upflux_WebService.Services
             _dataGenerator = new MockDataGenerator();
         }
 
-        public async Task CreateGroupAsync(string groupId)
+        public async Task CreateGroupWithTokenAsync(string token)
         {
+            var claims = ParseToken(token);
+
+            if (!claims.TryGetValue(ClaimTypes.Email, out var email) || !claims.TryGetValue("MachineIds", out var machineIdsClaim))
+            {
+                throw new ArgumentException("Invalid token: Missing required claims.");
+            }
+
+            string groupId = token;
+            var machineIds = machineIdsClaim.Split(',').ToList();
+
+            // Create the group if it doesn't exist
             if (!GroupUriMapping.ContainsKey(groupId))
             {
                 GroupUriMapping[groupId] = new List<string>();
+
+                foreach (var machineId in machineIds)
+                {
+                    await AddUriToGroupAsync(groupId, machineId);
+                }
             }
         }
 
@@ -35,6 +56,9 @@ namespace Upflux_WebService.Services
             if (!GroupUriMapping[groupId].Contains(uri))
             {
                 GroupUriMapping[groupId].Add(uri);
+                Console.WriteLine($"Added URI: {uri}");
+
+                //Remove this when gRPC is implemented
                 // Create a new mock object for this URI
                 var mockData = _dataGenerator.GenerateMockData(uri);
                 _mockDataStorage[uri] = mockData;
@@ -48,7 +72,7 @@ namespace Upflux_WebService.Services
                         _dataGenerator.UpdateMockData(mockData);
 
                         // Send the updated data to the group
-                        await _hubContext.Clients.Group(groupId).SendAsync("ReceiveData",uri, mockData);
+                        await _hubContext.Clients.Group(groupId).SendAsync("ReceiveData", uri, mockData);
 
                         // Wait for 1 second
                         await Task.Delay(1000);
@@ -61,7 +85,6 @@ namespace Upflux_WebService.Services
         {
             if (GroupUriMapping.TryGetValue(groupId, out var uris))
             {
-                // Remove from the mock storage
                 _mockDataStorage.Remove(uri);
                 uris.Remove(uri);
             }
@@ -73,6 +96,14 @@ namespace Upflux_WebService.Services
             {
                 await _hubContext.Clients.Group(groupId).SendAsync("ReceiveMessage", uri, message);
             }
+        }
+
+        private Dictionary<string, string> ParseToken(string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+
+            return jwtToken.Claims.ToDictionary(c => c.Type, c => c.Value);
         }
     }
 }

@@ -243,6 +243,20 @@ namespace Upflux_WebService.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        [HttpGet("admin/get-all-machines")]
+        public IActionResult GetAllMachines()
+        {
+            try
+            {
+                return Ok(new { AccessibleMachines = _entityQueryService.GetListOfMachines() });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
         /// <summary>
         /// Parse and verify a token
         /// </summary>
