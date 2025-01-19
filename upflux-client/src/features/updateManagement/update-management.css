@@ -46,7 +46,7 @@
 
   .legend{
     position: absolute;
-    margin-top: 75px;
+    margin-top: 10px;
     margin-left: 410px;
   }
 
@@ -56,13 +56,17 @@
     gap: 8px;
   }
   
-  .circle.blue {
-    background-color: #2F3BFF;
+  .circle.green {
+    background-color: #40C057;
 
   }
   
   .circle.red {
-    background-color: #ff0000;
+    background-color: #FA5252;
+  }
+
+  .circle.gray {
+    background-color: #6c757d;
   }
   
   /* Buttons */
@@ -71,7 +75,6 @@
     flex-direction: column; 
     gap: 16px;
     margin-right: 90px;
-    margin-bottom: 40px;
   }
   
   .configure-button,
@@ -79,7 +82,8 @@
     background-color: #0052cc; 
     color: white; 
     font-weight: bold;
-    padding: 10px 50px;
+    padding-left: 30px;
+    padding-right: 30px;
     border-radius: 6px;
     border: none;
     cursor: pointer;
@@ -94,24 +98,24 @@
   }
   
   /* Table */
-  table {
+  .machine-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
   }
   
-  th,
+  .machine-table th,
   td {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
   }
   
-  th {
+  .machine-table th {
     background-color: #f5f5f5;
   }
   
-  tr:hover {
+  .machine-table tr:hover {
     background-color: #f9f9f9;
   }
   
@@ -121,8 +125,9 @@
   }
   
   .chart-text {
+    z-index: 1000;
     position: relative;
-    bottom: 64%;
+    bottom: 59%;
     left: 78%;
     transform: translate(-50%, -50%);
     text-align: center;
