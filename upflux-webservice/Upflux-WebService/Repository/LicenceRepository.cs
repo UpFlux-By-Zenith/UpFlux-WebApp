@@ -26,5 +26,10 @@ namespace Upflux_WebService.Repository
 			return await _context.Licences
 				.FirstOrDefaultAsync(l => l.MachineId == machineId);
 		}
-	}
+
+        public Task<IEnumerable<Licence>> GetValidLicencesAsync()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

@@ -11,6 +11,11 @@ namespace Upflux_WebService.Core.Models
 
 		[Required]
 		[Column("date_added")]
-		public DateTime ExpirationDate { get; set; }
+		public DateTime dateAddedOn { get; set; }
+
+		[Required]
+		[Column("ip_address")]
+		public string ipAddress { get; set; }
+
 	}
 }

@@ -1,9 +1,13 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Upflux_WebService.Core.Models;
+using Upflux_WebService.Data;
+using Upflux_WebService.Services.Enums;
 using Upflux_WebService.Services.Interfaces;
+
 
 namespace Upflux_WebService.Services
 {
@@ -13,10 +17,8 @@ namespace Upflux_WebService.Services
     public class AuthService : IAuthService
     {
         #region private members
-        private readonly List<Admin> _admins;
-        private readonly List<Engineer> _engineers;
-
         private readonly IConfiguration _configuration;
+        private readonly IEntityQueryService _entityQueryService;
         #endregion
 
         #region public methods
@@ -24,20 +26,11 @@ namespace Upflux_WebService.Services
         /// Constructor
         /// </summary>
         /// <param name="configuration"></param>
-        public AuthService(IConfiguration configuration)
+        public AuthService(IConfiguration configuration,IEntityQueryService entityQueryService)
         {
             _configuration = configuration;
+            _entityQueryService = entityQueryService;
 
-            // Sample data for demonstration
-            _admins = new List<Admin>
-            {
-                new Admin(Guid.NewGuid(), "Admin User", "admin@upflux.com", "hashedpassword123")
-            };
-
-            _engineers = new List<Engineer>
-            {
-                new Engineer(Guid.NewGuid(), "Engineer User", "engineer@upflux.com", new List<string> { "M1", "M2" })
-            };
         }
 
         /// <summary>
@@ -53,13 +46,29 @@ namespace Upflux_WebService.Services
         /// </remarks>
         public string AdminLogin(string email, string password)
         {
-            var admin = _admins.FirstOrDefault(a => a.Email == email && a.HashedPassword == password);
-            if (admin == null)
-                throw new UnauthorizedAccessException("Invalid admin credentials");
+            var loginResult = _entityQueryService.CheckAdminLogin(email, password).Result; // Ensures async call is awaited properly
 
-            // Generate a token for the admin
-            return GenerateToken(admin.Email, new List<string>(), "Admin");
+            // Return error message based on login result
+            switch (loginResult)
+            {
+                case DbErrorEnum.Success:
+                    // Generate a token for the admin
+                    return GenerateToken(email, new List<string>(), "Admin");
+
+                case DbErrorEnum.UserNotFound:
+                    throw new Exception("User not found.");
+
+                case DbErrorEnum.AdminNotFound:
+                    throw new Exception("Admin not found.");
+
+                case DbErrorEnum.InvalidPassword:
+                    throw new Exception("Invalid password.");
+
+                default:
+                    throw new Exception("An error occurred during login.");
+            }
         }
+
 
         /// <summary>
         /// Changes the password for an admin user.
@@ -77,36 +86,17 @@ namespace Upflux_WebService.Services
 
         public bool ChangeAdminPassword(string email, string oldPassword, string newPassword)
         {
-            var admin = _admins.FirstOrDefault(a => a.Email == email);
-            if (admin == null)
-                throw new UnauthorizedAccessException("Admin not found.");
+            return false;
+            //var admin = _admins.FirstOrDefault(a => a.Email == email);
+            //if (admin == null)
+            //    throw new UnauthorizedAccessException("Admin not found.");
 
-            if (admin.HashedPassword != oldPassword)  // Use hashed password comparison
-                return false;
+            //if (admin.HashedPassword != oldPassword)  // Use hashed password comparison
+            //    return false;
 
-            // Update the password (ensure new password is hashed)
-            admin.HashedPassword = newPassword;  // Replace this with proper password hashing
-            return true;
-        }
-
-        /// <summary>
-        /// Authenticates an engineer based on the provided email and retrieves the list of machine IDs they have access to.
-        /// </summary>
-        /// <param name="email">The email address of the engineer.</param>
-        /// <returns>A list of machine IDs the engineer has access to.</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown when the engineer with the provided email is not found.</exception>
-        /// <remarks>
-        /// This method verifies if the engineer exists by checking the provided email. If found, it returns a list of machine IDs that the engineer is authorized to access.
-        /// If the engineer is not found, an exception is thrown indicating invalid credentials.
-        /// </remarks>
-
-        public List<string> EngineerLogin(string email)
-        {
-            var engineer = _engineers.FirstOrDefault(e => e.Email == email);
-            if (engineer == null)
-                throw new UnauthorizedAccessException("Invalid engineer credentials");
-
-            return engineer.MachineIds;
+            //// Update the password (ensure new password is hashed)
+            //admin.HashedPassword = newPassword;  // Replace this with proper password hashing
+            //return true;
         }
 
         /// <summary>
@@ -121,24 +111,30 @@ namespace Upflux_WebService.Services
         /// If the engineer already exists, their machine IDs are updated. After ensuring the engineer’s details are up-to-date, a token is generated and returned.
         /// The generated token allows the engineer to access the specified machines.
         /// </remarks>
-
-        public string GenerateEngineerToken(string engineerEmail,List<string> machineIds, string engineerName = "Engineer")
+        public string GenerateEngineerToken(string adminEmail, string engineerEmail,List<string> machineIds, string engineerName = "Engineer")
         {
-            // Ensure the engineer does not already exist
-            var existingEngineer = _engineers.FirstOrDefault(e => e.Email == engineerEmail);
-            if (existingEngineer == null)
-            {
-                // Add the new engineer to the list
-                _engineers.Add(new Engineer(Guid.NewGuid(), engineerName, engineerEmail, machineIds));
-            }
-            else
-            {
-                // Update the machine IDs if the engineer already exists
-                existingEngineer.MachineIds = machineIds;
-            }
+           
+            string token = GenerateToken(engineerEmail, machineIds, "Engineer");
+            
+                // Generate a token for the engineer
+            var res =_entityQueryService.CreateEngineerCredentials(adminEmail, engineerEmail,engineerName, machineIds, DateTime.UtcNow , DateTime.UtcNow.AddMinutes(30)).Result;
+            return token;
+        }
+
+        public string ParseLoginToken(string engineerEmail, List<string> machineIds, string engineerName = "Engineer")
+        {
+
+            string token = GenerateToken(engineerEmail, machineIds, "Engineer");
 
             // Generate a token for the engineer
-            return GenerateToken(engineerEmail, machineIds, "Engineer");
+            DbErrorEnum res = _entityQueryService.CheckEngineerLogin(engineerEmail).Result;
+            if (res == DbErrorEnum.Success)
+            {
+                return token;
+            }else
+            {
+                throw new Exception("Invalid User");
+            }
         }
 
         /// <summary>

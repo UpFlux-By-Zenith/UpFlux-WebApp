@@ -10,8 +10,8 @@ import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
 import { Clustering } from './features/clustering/Clustering';
 import { PasswordSettingsContent } from './features/passwordSettings/PasswordSettings';
 import Layout from './Layout';
-import { UpdateManagementRoute } from './features/updateManagement/UpdateManagementRoute';
-
+import { UpdateManagement } from './features/updateManagement/UpdateManagement';
+import { VersionControl } from './features/versionControl/VersionControl';
 
 export const App = () => {
   return (
@@ -48,15 +48,17 @@ export const App = () => {
               />
             </Route>
 
-            {/* Get Engineer Token route */}
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          </Route>
-          <Route element={<PrivateRoutes role={ROLES.ENGINEER} />} >
-
-          {/* Update Management route */}
-          <Route path="/update-management" element={<UpdateManagementRoute />} />
-
-               <Route
+            {/* Engineer protected routes */}
+            <Route element={<PrivateRoutes role={ROLES.ENGINEER} />}>
+              <Route
+                path="/update-management"
+                element={
+                  <Layout>
+                    <UpdateManagement />
+                  </Layout>
+                }
+              />
+              <Route
                 path="/clustering"
                 element={
                   <Layout>
@@ -64,10 +66,18 @@ export const App = () => {
                   </Layout>
                 }
               />
-              
-          </Route>
-        </Routes>
-      </Router>
+              <Route
+                path="/version-control"
+                element={
+                  <Layout>
+                    <VersionControl />
+                  </Layout>
+                }
+              />
+            </Route>
+
+          </Routes>
+        </Router>
       </AuthProvider>
     </MantineProvider>
   );

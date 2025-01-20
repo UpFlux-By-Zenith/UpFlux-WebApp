@@ -1,15 +1,24 @@
-﻿using Upflux_WebService.Core.Models.Enums;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace Upflux_WebService.Core.Models
 {
-    public class Admin : UserBase
+    public class Admin 
     {
-        public string HashedPassword { get; set; }
-        public Admin(Guid id, string name, string email, string hashedPassword)
-            : base(id, name, email, Role.Admin)
-        {
-            HashedPassword = hashedPassword;
-        }
-    }
+        [Key]
+        [Required]
+        [Column("admin_id")]
+        public string AdminId { get; set; }
 
+        [ForeignKey(nameof(UserId))]
+        [Required]
+        [Column("user_id")]
+        public string UserId { get; set; }
+
+        [Required]
+        [Column("password_hash")]
+        public string HashedPassword { get; set; }
+
+    }
 }
