@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select } from "@mantine/core";
-import { DonutChart } from '@mantine/charts';
+import { DonutChart } from "@mantine/charts";
 import { Link, useNavigate } from "react-router-dom";
 import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import "./update-management.css";
 import view from "../../assets/images/view.png";
+import updateIcon from "../../assets/images/updateIcon.jpg";	
 
-export const UpdateManagement: React.FC = () => {
+export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotification }) => {
   const [modalOpened, setModalOpened] = useState(false);
   const [machines, setMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Fetch accessible machines on component load
@@ -27,26 +30,37 @@ export const UpdateManagement: React.FC = () => {
     fetchMachines();
   }, []);
 
-  // Count machines based on their status (mocked for now)
-  var aliveMachines = machines.filter((machine) => machine.status === "Alive").length;
-  var shutdownMachines = machines.filter((machine) => machine.status === "Shutdown").length;
-  var unknownMachines = machines.filter((machine) => machine.status === "Unknown").length;
+  // Handle Deploy Button Click
+  const handleDeploy = () => {
+    if (!selectedMachine || !selectedVersion) {
+      alert("Please select both a machine and a version.");
+      return;
+    }
 
-  //For simulation purposes
-  aliveMachines = 2;
-  shutdownMachines = 0;
-  unknownMachines = 0;
+    // Create a new notification
+    const newNotification = {
+      id: Date.now(),
+      message: `Update started for ${selectedMachine} to ${selectedVersion}`,
+      image: updateIcon,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    // Add the new notification via the passed down addNotification function
+    addNotification(newNotification);
+
+    // Close modal
+    setModalOpened(false);
+  };
 
   // Chart data for multiple measures
   const chartData = [
-    { name: "Alive", value: aliveMachines, color: "#40C057" }, // Green for Alive
-    { name: "Shutdown", value: shutdownMachines, color: "#FA5252" }, // Red for Shutdown
-    { name: "Unknown", value: unknownMachines, color: "#6c757d" }, // Grey for Unknown
+    { name: "Alive", value: 2, color: "#40C057" },
+    { name: "Shutdown", value: 0, color: "#FA5252" },
+    { name: "Unknown", value: 0, color: "#6c757d" },
   ];
 
   return (
     <Stack className="update-management-content">
-      {/* Header */}
       <Box className="header">
         <Text size="xl" fw={700}>
           Update Management
@@ -54,41 +68,39 @@ export const UpdateManagement: React.FC = () => {
       </Box>
 
       <Box className="content-wrapper">
-        {/* Overview Section */}
         <Group className="overview-section">
-          {/* Chart Section */}
           <Box className="chart">
             <DonutChart className="chart" withTooltip={false} data={chartData} />;
-            {/* Custom Text in the center of the doughnut */}
             <Text className="chart-text">
-              Machines  <br /> {machines.length}
+              Machines <br /> {machines.length}
             </Text>
           </Box>
 
-          {/* Legend */}
           <Stack className="legend">
             <Group className="legend-item">
               <Box className="circle green"></Box>
-              <Text size="sm">{aliveMachines} Alive</Text>
+              <Text size="sm">{2} Alive</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
-              <Text size="sm">{shutdownMachines} Shutdown</Text>
+              <Text size="sm">{0} Shutdown</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle gray"></Box>
-              <Text size="sm">{unknownMachines} Unknown</Text>
+              <Text size="sm">{0} Unknown</Text>
             </Group>
           </Stack>
 
-          {/* Action Buttons */}
           <Stack className="button-group">
-            <Button className="configure-button" onClick={() => setModalOpened(true)}>Configure Update</Button>
-            <Button className="smart-button" onClick={() => navigate('/clustering')}>Smart Update</Button>
+            <Button className="configure-button" onClick={() => setModalOpened(true)}>
+              Configure Update
+            </Button>
+            <Button className="smart-button" onClick={() => navigate("/clustering")}>
+              Smart Update
+            </Button>
           </Stack>
         </Group>
 
-        {/* Table Section */}
         <Box>
           {loading ? (
             <Text>Loading machines...</Text>
@@ -99,7 +111,7 @@ export const UpdateManagement: React.FC = () => {
                   <Table.Th>Machine ID</Table.Th>
                   <Table.Th>IP Address</Table.Th>
                   <Table.Th>Last Update</Table.Th>
-                  <Table.Th>Updated By</Table.Th> {/* New column */}
+                  <Table.Th>Updated By</Table.Th>
                   <Table.Th>Current Status</Table.Th>
                   <Table.Th>View</Table.Th>
                 </Table.Tr>
@@ -109,24 +121,13 @@ export const UpdateManagement: React.FC = () => {
                   <Table.Tr key={machine.machineId}>
                     <Table.Td>{machine.machineId}</Table.Td>
                     <Table.Td>{machine.ipAddress || "N/A"}</Table.Td>
-                    <Table.Td>{"02/08/2024"}</Table.Td> {/* Hardcoded */}
-                    <Table.Td>{"John Doe"}</Table.Td> {/* Hardcoded */}
+                    <Table.Td>{"02/08/2024"}</Table.Td>
+                    <Table.Td>{"John Doe"}</Table.Td>
                     <Table.Td>
-                      <Badge
-                        color = "green"
-                        // color={machine.status === "Alive"
-                        //   ? "green"
-                        //   : machine.status === "Shutdown"
-                        //   ? "red"
-                        //   : "gray"}
-                      >
-                        {machine.status || "Alive"}
-                      </Badge>
+                      <Badge color="green">{machine.status || "Alive"}</Badge>
                     </Table.Td>
                     <Table.Td>
-                      <Link 
-                       to="/version-control"
-                       state={{ machineId: machine.machineId }}>
+                      <Link to="/version-control" state={{ machineId: machine.machineId }}>
                         <img src={view} alt="view" className="view" />
                       </Link>
                     </Table.Td>
@@ -138,30 +139,25 @@ export const UpdateManagement: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Modal for Configure Update */}
-      <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title="Configure Update"
-        centered
-      >
+      <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Configure Update" centered>
         <Box>
           <Text>Select Machines*</Text>
           <Select
-            data={machines.map(machine => `Machine ${machine.machineId}`)}
+            data={machines.map((machine) => `Machine ${machine.machineId}`)}
             placeholder="Select Machines"
+            onChange={(value) => setSelectedMachine(value || null)}
           />
           <Text mt="md">Select Software Version*</Text>
           <Select
             data={["Version 2.5.0", "Version 1.8.2", "Version 3.1.0"]}
             placeholder="Select Version"
+            onChange={(value) => setSelectedVersion(value || null)}
           />
-          <Button mt="md" fullWidth>
+          <Button mt="md" fullWidth onClick={handleDeploy}>
             Deploy
           </Button>
         </Box>
       </Modal>
-
     </Stack>
   );
 };

@@ -6,8 +6,7 @@ import { Footer } from '../footer/Footer';
 export const UpdateManagementRoute: React.FC = () => {
   return (
     <>
-      <Navbar onHomePage={false} />
-      <UpdateManagement/>
+
       <Footer />
     </>
   );

@@ -1,38 +1,25 @@
-import React from 'react';
-import { Container, Image, Menu, Text, Group, Avatar } from '@mantine/core';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Container, Image, Menu, Text, Group, Avatar } from "@mantine/core";
+import { Link } from "react-router-dom";
 import notifBell from "../../assets/images/notif_bell.png";
 import logo from "../../assets/logos/logo-no-name.png";
-import './navbar.css';
+import "./navbar.css";
 
 interface NavbarProps {
   onHomePage: boolean;
+  notifications: any[];
 }
 
-export const Navbar: React.FC<NavbarProps> = (props: NavbarProps) => {
-  const { onHomePage } = props;
+interface Notification {
+  id: number;
+  message: string;
+  image: string;
+  timestamp: string;
+}
 
-  // Hardcoded notification data
-  const notifications = [
-    {
-      id: 1,
-      message: "New update available for Cluster 001",
-      image: "https://via.placeholder.com/32",
-      timestamp: "2h ago",
-    },
-    {
-      id: 2,
-      message: "Cluster 002 needs attention",
-      image: "https://via.placeholder.com/32",
-      timestamp: "5h ago",
-    },
-    {
-      id: 3,
-      message: "System maintenance scheduled for Jan 20th",
-      image: "https://via.placeholder.com/32",
-      timestamp: "1d ago",
-    },
-  ];
+export const Navbar: React.FC<NavbarProps> = ({ onHomePage, notifications }) => {
+  // Check if there are unread notifications
+  const hasUnreadNotifications = notifications.length > 0;
 
   return (
     <Container fluid className="navbar">
@@ -45,7 +32,6 @@ export const Navbar: React.FC<NavbarProps> = (props: NavbarProps) => {
           </Link>
         )}
       </div>
-
       <ul className="navbar-links">
         {onHomePage ? (
           <>
@@ -58,25 +44,30 @@ export const Navbar: React.FC<NavbarProps> = (props: NavbarProps) => {
           <>
             <li className="notification-icon">
               {/* Notifications Menu */}
-              <Menu width={450} shadow="md" position="bottom-end" trigger="hover">
+              <Menu width={500} shadow="md" position="bottom-end" trigger="hover">
                 <Menu.Target>
-                  <Image src={notifBell} alt="Notifications" className="notif-bell" />
+                  <div className="notif-bell-wrapper">
+                    <Image src={notifBell} alt="Notifications" className="notif-bell" />
+                    {/* Blue Circle Indicator */}
+                    {hasUnreadNotifications && <div className="notif-indicator"></div>}
+                  </div>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  {notifications.map((notification) => (
-                    <Menu.Item key={notification.id}>
-                      <Group align="center">
-                        <Group>
-                          <Avatar src={notification.image} size={32} radius="xl" />
-                          <Text>{notification.message}</Text>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <Menu.Item key={notification.id}>
+                        <Group align="center">
+                          <Group>
+                            <Avatar src={notification.image} size={32} radius="xl" />
+                            <Text>{notification.message}</Text>
+                          </Group>
+                          <Text size="xs" color="dimmed">
+                            {notification.timestamp}
+                          </Text>
                         </Group>
-                        <Text size="xs" color="dimmed">
-                          {notification.timestamp}
-                        </Text>
-                      </Group>
-                    </Menu.Item>
-                  ))}
-                  {notifications.length === 0 && (
+                      </Menu.Item>
+                    ))
+                  ) : (
                     <Menu.Item disabled>No notifications</Menu.Item>
                   )}
                 </Menu.Dropdown>
