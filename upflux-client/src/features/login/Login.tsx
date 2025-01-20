@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Box, Image, Button, TextInput, Text, Notification, Blockquote } from '@mantine/core';
+import { Container, Box, Image, Button, Text, Notification } from '@mantine/core';
 import logo from "../../assets/logos/logo-light-large.png";
 import './login.css';
 import { engineerLoginSubmit } from '../../api/loginRequests';
@@ -7,13 +7,12 @@ import { ROLES, useAuth } from '../../common/authProvider/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 
 interface LoginFormState {
-  email: string;
   tokenFile: File | null | string;
 }
 
 export const LoginComponent: React.FC = () => {
   const navigate = useNavigate();
-  const [formState, setFormState] = useState<LoginFormState>({ email: '', tokenFile: null });
+  const [formState, setFormState] = useState<LoginFormState>({ tokenFile: null });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
@@ -30,16 +29,13 @@ export const LoginComponent: React.FC = () => {
         setFormState({ ...formState, [field]: file });
         setErrorMessage(null);
       }
-    } else {
-      setFormState({ ...formState, [field]: event.target.value });
-      setErrorMessage(null);
     }
   };
 
   const validateForm = (): boolean => {
     const { tokenFile } = formState;
     if (!tokenFile) {
-      setErrorMessage('Token file not recognised.');
+      setErrorMessage('Token file not recognized.');
       return false;
     }
     return true;
@@ -48,21 +44,21 @@ export const LoginComponent: React.FC = () => {
   const handleSubmit = async (): Promise<void> => {
     if (validateForm() && formState.tokenFile) {
       const reader = new FileReader();
-  
+
       reader.onload = async () => {
         try {
           // Parse the JSON content from the file
           const tokenContent = JSON.parse(reader.result as string);
-  
+
           // Ensure the JSON contains the "engineerToken" property
           if (!tokenContent.engineerToken) {
             setErrorMessage('Invalid token file. "engineerToken" property is missing.');
             return;
           }
-  
+
           // Prepare the payload, only send the token
           const payload = { engineerToken: tokenContent.engineerToken };
-  
+
           // Call the login function with the payload
           try {
             const result = await engineerLoginSubmit(payload);
@@ -86,12 +82,11 @@ export const LoginComponent: React.FC = () => {
           setErrorMessage('The uploaded file is not a valid JSON file.');
         }
       };
-  
+
       // Read the uploaded file as text
       reader.readAsText(formState.tokenFile as File);
     }
   };
-  
 
   return (
     <>
@@ -104,12 +99,6 @@ export const LoginComponent: React.FC = () => {
           </Box>
 
           <Box className="input-field-box">
-            <TextInput
-              placeholder="E-mail"
-              value={formState.email}
-              onChange={handleInputChange('email')}
-              className="input-card"
-            />
             <Box className="file-input-box">
               <label htmlFor="tokenFile" className="file-label">Token File</label>
               <input
