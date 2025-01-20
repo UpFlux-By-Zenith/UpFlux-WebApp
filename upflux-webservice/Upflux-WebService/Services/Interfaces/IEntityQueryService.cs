@@ -14,9 +14,15 @@ namespace Upflux_WebService.Services.Interfaces
 
       Task<DbErrorEnum> CheckAdminLogin(string email, string password);
       Task<(string,DbErrorEnum)> CreateUser(string email, string name, UserRole role = UserRole.Engineer);
-
-      Task<DbErrorEnum> AddCredentials(string userId, List<string> machineIds, DateTime accessGranted, DateTime expiry);
-      Task<DbErrorEnum> CreateEngineerCredentials(string email, string name, List<string> machineIds, DateTime accessGranted, DateTime expiry);
+      Task<DbErrorEnum> CreateEngineerCredentials(string adminEmail,string enginneerEmail, string name, List<string> machineIds, DateTime accessGranted, DateTime expiry);
       Task<List<Machine>> GetListOfMachines();
+
+        Task<DbErrorEnum> CheckEngineerLogin(string email);
+
+        /// <summary>
+        /// Retrieves all applications with their versions.
+        /// </summary>
+        /// <returns>A list of applications along with their versions.</returns>
+        Task<List<Application>> GetApplicationsWithVersionsAsync();
     }
 }

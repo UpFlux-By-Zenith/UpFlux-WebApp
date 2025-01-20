@@ -73,11 +73,6 @@
     public class EngineerLoginRequest
     {
         /// <summary>
-        /// Gets or sets the email address of the engineer.
-        /// </summary>
-        public string Email { get; set; }
-
-        /// <summary>
         /// Gets or sets the token associated with the engineer, which is used for authentication.
         /// </summary>
         public string EngineerToken { get; set; }

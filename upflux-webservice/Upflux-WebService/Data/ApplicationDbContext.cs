@@ -15,6 +15,8 @@ namespace Upflux_WebService.Data
 
 		public DbSet<Credentials> Credentials { get; set; }
 
+		public DbSet<Application> Applications{ get; set; }
+
 		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
 		: base(options)
 		{
@@ -29,6 +31,17 @@ namespace Upflux_WebService.Data
                     v => v.ToString(),       // Enum to string for the database
                     v => (UserRole)Enum.Parse(typeof(UserRole), v) // String to enum for C#
                 );
+            modelBuilder.Entity<ApplicationVersion>()
+       .ToTable("Application_Versions"); // Map the entity to the correct table name
+
+            modelBuilder.Entity<Application>()
+        .HasMany(a => a.Versions) // Application has many versions (one-to-many)
+        .WithOne(av => av.Application) // Each ApplicationVersion has one application
+        .HasForeignKey(av => av.AppId); // The foreign key is on the ApplicationVersion side
+
+
+
+
             base.OnModelCreating(modelBuilder);
 		}
 	}

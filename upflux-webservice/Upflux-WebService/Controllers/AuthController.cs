@@ -155,7 +155,7 @@ namespace Upflux_WebService.Controllers
                 if (string.IsNullOrEmpty(adminEmail))
                     return Unauthorized(new { Error = "Invalid admin token." });
 
-                var engineerToken = _authService.GenerateEngineerToken(request.EngineerEmail, request.MachineIds);
+                var engineerToken = _authService.GenerateEngineerToken(adminEmail,request.EngineerEmail, request.MachineIds);
                 return Ok(new { EngineerToken = engineerToken });
             }
             catch (Exception ex)
@@ -185,7 +185,7 @@ namespace Upflux_WebService.Controllers
         [HttpPost("engineer/login")]
         public IActionResult EngineerLogin([FromBody] EngineerLoginRequest request)
         {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.EngineerToken))
+            if ( string.IsNullOrEmpty(request.EngineerToken))
                 return BadRequest(new { Error = "Email and token are required." });
 
             try
@@ -194,7 +194,7 @@ namespace Upflux_WebService.Controllers
                 var tokenData = _authService.ParseToken(request.EngineerToken);
 
                 // Ensure the token's email matches the provided email
-                if (!tokenData.TryGetValue(ClaimTypes.Email, out var tokenEmail) || tokenEmail != request.Email)
+                if (!tokenData.TryGetValue(ClaimTypes.Email, out var tokenEmail))
                     return Unauthorized(new { Error = "Invalid token for the provided email." });
 
                 // Retrieve machine IDs from the token
@@ -202,9 +202,9 @@ namespace Upflux_WebService.Controllers
                     return Unauthorized(new { Error = "Invalid token: no machine IDs found." });
 
                 // Generate a new authorization token for the engineer
-                var authToken = _authService.GenerateEngineerToken(request.Email, machineIds.Split(',').ToList());
+                var authToken = _authService.ParseLoginToken(tokenEmail, machineIds.Split(',').ToList());
 
-                return Ok(new { Token = authToken });
+                return Ok(new { Token = request.EngineerToken });
             }
             catch (SecurityTokenException ex)
             {
@@ -219,30 +219,6 @@ namespace Upflux_WebService.Controllers
         #endregion
 
         #region Example APIs
-        /// <summary>
-        /// Engineer retrieves accessible machines
-        /// </summary>
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
-        [HttpGet("engineer/access-machines")]
-        public IActionResult GetAccessibleMachines()
-        {
-            try
-            {
-                var engineerEmail = GetClaimValue(ClaimTypes.Email);
-                var machineIds = GetClaimValue("MachineIds");
-
-                if (string.IsNullOrEmpty(engineerEmail) || string.IsNullOrEmpty(machineIds))
-                    return Unauthorized(new { Error = "Invalid engineer token." });
-
-                var machines = machineIds.Split(',').ToList();
-                return Ok(new { EngineerEmail = engineerEmail, AccessibleMachines = machines });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-        }
-
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
         [HttpGet("admin/get-all-machines")]
         public IActionResult GetAllMachines()

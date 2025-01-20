@@ -22,7 +22,16 @@ namespace Upflux_WebService.Services.Interfaces
         /// <param name="machineIds">The list of machine IDs the engineer will have access to.</param>
         /// <param name="engineerName">Optional engineer's name, default is "Engineer".</param>
         /// <returns>A JWT token for the engineer with machine access information.</returns>
-        string GenerateEngineerToken(string engineerEmail, List<string> machineIds, string engineerName = "Engineer");
+        string GenerateEngineerToken(string adminEmail,string engineerEmail, List<string> machineIds, string engineerName = "Engineer");
+
+        /// <summary>
+        /// Generates a new token for an engineer with specified machine access.
+        /// </summary>
+        /// <param name="engineerEmail">The email address of the engineer.</param>
+        /// <param name="machineIds">The list of machine IDs the engineer will have access to.</param>
+        /// <param name="engineerName">Optional engineer's name, default is "Engineer".</param>
+        /// <returns>A JWT token for the engineer with machine access information.</returns>
+        string ParseLoginToken( string engineerEmail, List<string> machineIds, string engineerName = "Engineer");
 
         /// <summary>
         /// Parses a JWT token and extracts the claims as a dictionary.

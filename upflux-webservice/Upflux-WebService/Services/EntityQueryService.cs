@@ -27,6 +27,21 @@ namespace Upflux_WebService.Services
             _context = context;
         }
 
+
+        /// <summary>
+        /// Retrieves a list of applications along with their versions.
+        /// </summary>
+        /// <returns>A list of applications with their versions.</returns>
+        public async Task<List<Application>> GetApplicationsWithVersionsAsync()
+        {
+            var applicationsWithVersions = await _context.Applications
+                .Include(a => a.Versions) // Includes related ApplicationVersion records
+                .ToListAsync();
+
+            return applicationsWithVersions;
+        }
+
+
         public async Task<DbErrorEnum> CheckAdminLogin(string email, string password)
         {
             // Find the user base entry by email (since email is in UserBases table)
@@ -125,9 +140,17 @@ namespace Upflux_WebService.Services
             return (userId,DbErrorEnum.Success);
         }
 
-        public async Task<DbErrorEnum> CreateEngineerCredentials(string email, string name, List<string> machineIds, DateTime accessGranted, DateTime expiry)
+        public async Task<DbErrorEnum> CreateEngineerCredentials(string adminEmail, string engineerEmail, string name, List<string> machineIds, DateTime accessGranted, DateTime expiry)
         {
-            string userId = CreateUser(email, name).Result.Item1;
+            string userId = CreateUser(engineerEmail, name).Result.Item1;
+
+            string adminId = _context.Admin_Details
+            .Join(_context.Users, a => a.UserId, u => u.UserId, (a, u) => new { a.AdminId, u.Email })
+            .Where(x => x.Email.ToLower() == adminEmail.ToLower())
+            .Select(x => x.AdminId)
+            .FirstOrDefault();
+
+
             Console.WriteLine($"User with userId '{userId}' found.");
 
             // Validate that all machine IDs in the input list exist in the database
@@ -162,7 +185,8 @@ namespace Upflux_WebService.Services
                 UserId = userId,
                 MachineId = machineId,
                 AccessGrantedAt = accessGranted,
-                ExpiresAt = expiry
+                ExpiresAt = expiry,
+                AdminId = adminId
             }).ToList();
             await _context.Database.ExecuteSqlRawAsync($"SET @current_user_id = 'e1'");
 
@@ -173,72 +197,37 @@ namespace Upflux_WebService.Services
             return DbErrorEnum.Success;
         }
 
-
-        public async Task<DbErrorEnum> AddCredentials(string userId, List<string> machineIds, DateTime accessGranted, DateTime expiry)
+        public async Task<DbErrorEnum> CheckEngineerLogin(string email)
         {
             try
             {
-                // Check if the user exists in the Users table
-                var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
-                if (!userExists)
+                // Find the user by email
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+                // Check if the user exists
+                if (user == null)
                 {
-                    Console.WriteLine($"User with userId '{userId}' not found.");
-                    return DbErrorEnum.UserNotFound; // Return error if userId is not found
-                }
-                Console.WriteLine($"User with userId '{userId}' found.");
-
-                // Check if all machineIds exist in the Machines table
-                var existingMachineIds = await _context.Machines
-                    .Where(m => machineIds.Contains(m.MachineId))
-                    .Select(m => m.MachineId)
-                    .ToListAsync();
-
-                Console.WriteLine($"exisitng MachinesIds {existingMachineIds}");
-
-                // Find missing machineIds
-                var missingMachineIds = machineIds.Except(existingMachineIds).ToList();
-                if (missingMachineIds.Any())
-                {
-                    Console.WriteLine("Missing machineIds: " + string.Join(", ", missingMachineIds));
-                    return DbErrorEnum.MachineNotFound; // Return error if any machineIds are missing
+                    return DbErrorEnum.UserNotFound;
                 }
 
-                // Prepare credentials to add
-                var credentialsList = machineIds.Select(machineId => new Credentials
-                {
-                    UserId = userId,
-                    MachineId = machineId,
-                    AccessGrantedAt = accessGranted,
-                    ExpiresAt = expiry
-                }).ToList();
+                // Update last_login timestamp
+                user.LastLogin = DateTime.UtcNow;
+                _context.Users.Update(user);
 
-                // Check for duplicates before adding
-                foreach (var credential in credentialsList)
-                {
-                    bool exists = await _context.Credentials.AnyAsync(c =>
-                        c.UserId == credential.UserId &&
-                        c.MachineId == credential.MachineId);
-
-                    if (exists)
-                    {
-                        Console.WriteLine($"Credential already exists for userId '{credential.UserId}' and machineId '{credential.MachineId}'.");
-                        return DbErrorEnum.GeneralError; // Return error if duplicate credential exists
-                    }
-                }
-
-                // Add credentials to the database
-                await _context.Credentials.AddRangeAsync(credentialsList);
+                // Save changes to the database
                 await _context.SaveChangesAsync();
-                Console.WriteLine("Credentials added successfully.");
+
                 return DbErrorEnum.Success;
             }
             catch (Exception ex)
             {
-                // Log the exception details
-                Console.WriteLine($"Error in AddCredentials: {ex.Message}\nStackTrace: {ex.StackTrace}");
-                return DbErrorEnum.GeneralError; // Return a general error code for unexpected errors
+                // Log exception (if a logging framework is in place)
+                // LogError(ex);
+
+                return DbErrorEnum.GeneralError;
             }
         }
+
 
         #endregion
 

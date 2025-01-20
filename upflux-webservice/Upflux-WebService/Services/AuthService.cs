@@ -111,14 +111,30 @@ namespace Upflux_WebService.Services
         /// If the engineer already exists, their machine IDs are updated. After ensuring the engineer’s details are up-to-date, a token is generated and returned.
         /// The generated token allows the engineer to access the specified machines.
         /// </remarks>
-        public string GenerateEngineerToken(string engineerEmail,List<string> machineIds, string engineerName = "Engineer")
+        public string GenerateEngineerToken(string adminEmail, string engineerEmail,List<string> machineIds, string engineerName = "Engineer")
         {
            
             string token = GenerateToken(engineerEmail, machineIds, "Engineer");
             
                 // Generate a token for the engineer
-            var res =_entityQueryService.CreateEngineerCredentials(engineerEmail,engineerName, machineIds, DateTime.UtcNow , DateTime.UtcNow.AddMinutes(30)).Result;
+            var res =_entityQueryService.CreateEngineerCredentials(adminEmail, engineerEmail,engineerName, machineIds, DateTime.UtcNow , DateTime.UtcNow.AddMinutes(30)).Result;
             return token;
+        }
+
+        public string ParseLoginToken(string engineerEmail, List<string> machineIds, string engineerName = "Engineer")
+        {
+
+            string token = GenerateToken(engineerEmail, machineIds, "Engineer");
+
+            // Generate a token for the engineer
+            DbErrorEnum res = _entityQueryService.CheckEngineerLogin(engineerEmail).Result;
+            if (res == DbErrorEnum.Success)
+            {
+                return token;
+            }else
+            {
+                throw new Exception("Invalid User");
+            }
         }
 
         /// <summary>
