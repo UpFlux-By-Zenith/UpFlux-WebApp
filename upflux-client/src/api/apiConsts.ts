@@ -17,6 +17,7 @@ export const AUTH_API = {
 //DataRequest-related endpoints
 export const DATA_REQUEST_API = {
   GET_ACCESS_MACHINES: `${API_BASE_URL}/api/DataRequest/engineer/access-machines`,
+  GET_APPLICATIONS: `${API_BASE_URL}/api/DataRequest/engineer/machine-details`,
 };
 
 
