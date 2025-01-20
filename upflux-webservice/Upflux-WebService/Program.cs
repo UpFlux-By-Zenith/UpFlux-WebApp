@@ -59,10 +59,12 @@ namespace Upflux_WebService
 				.AddScoped<IGeneratedMachineIdRepository, GeneratedMachineIdRepository>()
 				.AddScoped<ILicenceRepository, LicenceRepository>()
 				.AddScoped<IMachineRepository, MachineRepository>()
-                .AddScoped<IEntityQueryService,EntityQueryService>()
-                .AddSingleton<LicenceCommunicationService>()
-				.AddScoped<INotificationService,NotificationService>()
+				.AddScoped<IEntityQueryService, EntityQueryService>()
+				.AddScoped<INotificationService, NotificationService>()
+				.AddScoped<MonitoringService>()
+				.AddSingleton<LicenceCommunicationService>()
 				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
+
 
 			// Load JWT settings from configuration
 			var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
@@ -184,8 +186,9 @@ namespace Upflux_WebService
 
 			// Map gRPC services
 			app.MapGrpcService<LicenceCommunicationService>();
+			app.MapGrpcService<MonitoringService>();
 
-            app.MapHub<NotificationHub>("/notificationHub");
+			app.MapHub<NotificationHub>("/notificationHub");
         }
 	}
 }

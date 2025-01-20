@@ -1,16 +1,24 @@
 ﻿using Grpc.Core;
 using Monitoring;
 using Upflux_WebService.GrpcServices.Interfaces;
+using Upflux_WebService.Services.Interfaces;
 using static Monitoring.MonitoringService;
 namespace Upflux_WebService.GrpcServices
 {
 	public class MonitoringService: MonitoringServiceBase, IMonitoringService
 	{
+		private readonly INotificationService _notificationService;
+
+		public MonitoringService(INotificationService notificationService)
+		{
+			_notificationService = notificationService;
+		}
 
 		public override async Task<AggregatedDataResponse> SendAggregatedData(AggregatedDataRequest request, ServerCallContext context)
 		{
 			foreach (var aggregatedData in request.AggregatedDataList)
 			{
+				// Prepare the data to send
 				var dataToSend = new
 				{
 					Uuid = aggregatedData.Uuid,
@@ -36,11 +44,10 @@ namespace Upflux_WebService.GrpcServices
 					}
 				};
 
-				// Use SignalR to send data to connected clients
-				// signalFunction.Send();
+				// Use SendMessageToUriAsync to send data to groups
+				await _notificationService.SendMessageToUriAsync(aggregatedData.Uuid, dataToSend.ToString());
 			}
 
-			// Return a success response to the gRPC client
 			return new AggregatedDataResponse
 			{
 				Success = true,

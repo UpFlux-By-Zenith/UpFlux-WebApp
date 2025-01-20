@@ -1,7 +1,9 @@
 ﻿using Grpc.Core;
 using LicenceCommunication;
 using System.Collections.Concurrent;
+using Upflux_WebService.Core.Models;
 using Upflux_WebService.GrpcServices.Interfaces;
+using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Services.Interfaces;
 using static LicenceCommunication.LicenceCommunicationService;
 
@@ -18,13 +20,17 @@ namespace Upflux_WebService.GrpcServices
 		private readonly ILogger<LicenceCommunicationService> _logger;
 		private readonly IServiceScopeFactory _serviceScopeFactory;
 
+
 		#endregion
 		#region public methods
 
-		public LicenceCommunicationService(ILogger<LicenceCommunicationService> logger, IServiceScopeFactory serviceScopeFactory)
+		public LicenceCommunicationService(
+			ILogger<LicenceCommunicationService> logger,
+			IServiceScopeFactory serviceScopeFactory)
 		{
 			_logger = logger;
 			_serviceScopeFactory = serviceScopeFactory;
+
 		}
 
 		/// <summary>
@@ -119,11 +125,40 @@ namespace Upflux_WebService.GrpcServices
 			return response;
 		}
 
-		public override Task<AddUnregisteredDeviceResponse> AddUnregisteredDevice(AddUnregisteredDeviceRequest request, ServerCallContext context)
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="request"></param>
+		/// <param name="context"></param>
+		/// <returns></returns>
+		public override async Task<AddUnregisteredDeviceResponse> AddUnregisteredDevice(AddUnregisteredDeviceRequest request, ServerCallContext context)
 		{
-			// check if id exist in generatedID table
-			// store to machine database
-			return base.AddUnregisteredDevice(request, context);
+			using var scope = _serviceScopeFactory.CreateScope();
+			var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+			var generatedMachineIdRepository = scope.ServiceProvider.GetRequiredService<IGeneratedMachineIdRepository>();
+
+			var generatedId = await generatedMachineIdRepository.GetByMachineId(request.DeviceUuid);
+			if (generatedId is null)
+				return new AddUnregisteredDeviceResponse
+				{
+					IsSuccesful = false,
+					Message = "Device UUID Unrecognized."
+				};
+
+			Machine newMachine = new() 
+			{ 
+				MachineId = request.DeviceUuid, 
+				dateAddedOn = DateTime.UtcNow,
+				ipAddress = "NA" 
+			};
+			await machineRepository.AddAsync(newMachine);
+			await machineRepository.SaveChangesAsync();
+
+			return new AddUnregisteredDeviceResponse
+			{
+				IsSuccesful = true,
+				Message = "Saved Unregistered Device."
+			};
 		}
 
 		#endregion

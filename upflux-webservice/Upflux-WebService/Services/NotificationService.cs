@@ -57,27 +57,6 @@ namespace Upflux_WebService.Services
             {
                 GroupUriMapping[groupId].Add(uri);
                 Console.WriteLine($"Added URI: {uri}");
-
-                //Remove this when gRPC is implemented
-                // Create a new mock object for this URI
-                var mockData = _dataGenerator.GenerateMockData(uri);
-                _mockDataStorage[uri] = mockData;
-
-                // Start sending updates for this URI
-                _ = Task.Run(async () =>
-                {
-                    while (_mockDataStorage.ContainsKey(uri))
-                    {
-                        // Update the mock data
-                        _dataGenerator.UpdateMockData(mockData);
-
-                        // Send the updated data to the group
-                        await _hubContext.Clients.Group(groupId).SendAsync("ReceiveData", uri, mockData);
-
-                        // Wait for 1 second
-                        await Task.Delay(1000);
-                    }
-                });
             }
         }
 

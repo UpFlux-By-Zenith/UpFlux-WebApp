@@ -29,9 +29,6 @@ namespace Upflux_WebService.Services
 		/// <remarks>
 		/// This method performs the following steps:
 		/// 1. Constructs a request to create a new key in KMS with the following attributes:
-		///    - A description indicating its purpose (signing and verifying).
-		///    - Key usage set to <see cref="KeyUsageType.SIGN_VERIFY"/>.
-		///    - Key specification set to <see cref="KeySpec.RSA_2048"/>.
 		/// 2. Sends the request to the KMS client to create the key.
 		/// 3. Retrieves the unique key identifier from the response.
 		/// </remarks>
@@ -59,8 +56,6 @@ namespace Upflux_WebService.Services
 		/// <remarks>
 		/// This method performs the following steps:
 		/// 1. Constructs a request to KMS with the provided key ID and hash.
-		///    - The hash is sent as a `MemoryStream` and is specified as a digest using <see cref="MessageType.DIGEST"/>.
-		///    - The signing algorithm used is RSA with PSS padding and SHA-256 (<see cref="SigningAlgorithmSpec.RSASSA_PSS_SHA_256"/>).
 		/// 2. Sends the request to the KMS client to generate the digital signature.
 		/// 3. Extracts and returns the signature as a byte array.
 		/// </remarks>
@@ -90,9 +85,6 @@ namespace Upflux_WebService.Services
 		/// <remarks>
 		/// This method performs the following steps:
 		/// 1. Constructs a verification request to KMS with the provided key ID, message hash, and signature.
-		///    - The hash is sent as a `MemoryStream` and is specified as a digest using <see cref="MessageType.DIGEST"/>.
-		///    - The signature is sent as a `MemoryStream`.
-		///    - The verification algorithm used is RSA with PSS padding and SHA-256 (<see cref="SigningAlgorithmSpec.RSASSA_PSS_SHA_256"/>).
 		/// 2. Sends the verification request to the KMS client.
 		/// 3. Returns <c>true</c> if the signature is valid, or <c>false</c> if the signature is invalid or an error occurs.
 		/// </remarks>

@@ -2,5 +2,6 @@
 {
 	public interface IGeneratedMachineIdRepository : IRepository<GeneratedMachineId>
 	{
+		Task<GeneratedMachineId?> GetByMachineId(string machineId);
 	}
 }
