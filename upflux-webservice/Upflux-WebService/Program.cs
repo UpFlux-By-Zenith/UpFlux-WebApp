@@ -61,7 +61,9 @@ namespace Upflux_WebService
 				.AddScoped<IMachineRepository, MachineRepository>()
 				.AddScoped<IEntityQueryService, EntityQueryService>()
 				.AddScoped<INotificationService, NotificationService>()
-				.AddScoped<MonitoringService>()
+				.AddScoped<IMonitoringService,MonitoringService>()
+				.AddScoped<IAlertService, AlertService>()
+				.AddScoped<ICloudLogService, CloudLogService>()
 				.AddSingleton<LicenceCommunicationService>()
 				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
 
@@ -187,6 +189,8 @@ namespace Upflux_WebService
 			// Map gRPC services
 			app.MapGrpcService<LicenceCommunicationService>();
 			app.MapGrpcService<MonitoringService>();
+			app.MapGrpcService<AlertService>();
+			app.MapGrpcService<CloudLogService>();
 
 			app.MapHub<NotificationHub>("/notificationHub");
         }
