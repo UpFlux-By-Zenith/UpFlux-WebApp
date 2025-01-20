@@ -53,12 +53,20 @@ namespace Upflux_WebService
 			builder.Services.AddScoped<IAuthService, AuthService>()
 				.AddScoped(typeof(IRepository<>), typeof(Repository<>))
 				.AddScoped<ILicenceManagementService, LicenceManagementService>()
+				.AddScoped<IKmsService, KmsService>()
+				.AddScoped<IXmlService, XmlService>()
+				.AddScoped<IGeneratedMachineIdService, GeneratedMachineIdService>()
+				.AddScoped<IGeneratedMachineIdRepository, GeneratedMachineIdRepository>()
 				.AddScoped<ILicenceRepository, LicenceRepository>()
 				.AddScoped<IMachineRepository, MachineRepository>()
-                .AddScoped<IEntityQueryService,EntityQueryService>()
-                .AddSingleton<LicenceCommunicationService>()
-				.AddScoped<INotificationService,NotificationService>()
+				.AddScoped<IEntityQueryService, EntityQueryService>()
+				.AddScoped<INotificationService, NotificationService>()
+				.AddScoped<IMonitoringService,MonitoringService>()
+				.AddScoped<IAlertService, AlertService>()
+				.AddScoped<ICloudLogService, CloudLogService>()
+				.AddSingleton<LicenceCommunicationService>()
 				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
+
 
 			// Load JWT settings from configuration
 			var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
@@ -180,8 +188,11 @@ namespace Upflux_WebService
 
 			// Map gRPC services
 			app.MapGrpcService<LicenceCommunicationService>();
+			app.MapGrpcService<MonitoringService>();
+			app.MapGrpcService<AlertService>();
+			app.MapGrpcService<CloudLogService>();
 
-            app.MapHub<NotificationHub>("/notificationHub");
+			app.MapHub<NotificationHub>("/notificationHub");
         }
 	}
 }

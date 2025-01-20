@@ -16,7 +16,6 @@ namespace Upflux_WebService.Repository
 			_context = context;
 		}
 
-
 		/// <summary>
 		/// Example use of the Table specific repository
 		/// </summary>

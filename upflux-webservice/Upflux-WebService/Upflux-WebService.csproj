@@ -10,7 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Protos\Alert.proto" />
+    <None Remove="Protos\CloudLogs.proto" />
     <None Remove="Protos\Licence.proto" />
+    <None Remove="Protos\Monitoring.proto" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,9 +38,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Protobuf Include="Protos\Alert.proto" GrpcServices="Server" />
+    <Protobuf Include="Protos\CloudLogs.proto" GrpcServices="Server" />
     <Protobuf Include="Protos\Licence.proto">
       <GrpcServices>Server</GrpcServices>
     </Protobuf>
+    <Protobuf Include="Protos\Monitoring.proto" />
   </ItemGroup>
 
 </Project>

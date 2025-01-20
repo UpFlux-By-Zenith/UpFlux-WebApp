@@ -1,37 +1,35 @@
 syntax = "proto3";
 
-option csharp_namespace = "GrpcServer";
+option csharp_namespace = "LicenceCommunication";
 
-package licensecommunication;
+package licencecommunication;
 
-service LicenceCommunication {
-	rpc SubscribeToLicenceUpdates(EmptyRequest) returns (stream LicenceFileUpdate);
+service LicenceCommunicationService {
+	rpc SubscribeToLicenceUpdates(EmptyRequest) returns (stream LicenceUpdateEvent);
 	rpc AddUnregisteredDevice(AddUnregisteredDeviceRequest) returns (AddUnregisteredDeviceResponse);
-	rpc ValidateLicence(LicenceRequest) returns (LicenceResponse);
+	rpc ValidateLicence(LicenceValidationRequest) returns (LicenceValidationResponse);
 }
 
 message EmptyRequest {}
 
-message LicenceFileUpdate {
-	string licence_file_xml = 1;
+message LicenceUpdateEvent {
+	string licenceContent = 1;
 }
 
 message AddUnregisteredDeviceRequest {
-	string device_uuid = 1;
+	string deviceUuid = 1;
 }
 
 message AddUnregisteredDeviceResponse {
-	bool success = 1;
+	bool isSuccesful = 1;
 	string message = 2;
 }
 
-message LicenceRequest {
-	string license_xml = 1;
+message LicenceValidationRequest {
+	string licenseContent = 1;
 }
 
-message LicenceResponse {
-	bool is_valid = 1;
+message LicenceValidationResponse {
+	bool isValid = 1;
 	string message = 2;
-	string expiration_date = 3;
 }
-

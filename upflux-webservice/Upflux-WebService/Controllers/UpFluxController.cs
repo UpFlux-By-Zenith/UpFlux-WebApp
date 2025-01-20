@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 
@@ -8,7 +10,8 @@ namespace Upflux_WebService.Controllers
     public class UpFluxController : ControllerBase
     {
 
-        [HttpGet("about", Name = "About")]
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+		[HttpGet("about", Name = "About")]
         public string About()
         {
             var appName = Assembly.GetExecutingAssembly().GetName().Name;

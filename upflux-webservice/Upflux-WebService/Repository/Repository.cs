@@ -49,7 +49,35 @@ namespace Upflux_WebService.Repository
 
 		public async Task SaveChangesAsync()
 		{
-			await _context.SaveChangesAsync();
+			try
+			{
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException ex)
+			{
+				// Log the exception
+				Console.WriteLine($"DbUpdateException: {ex.Message}");
+
+				// Check inner exception
+				if (ex.InnerException != null)
+				{
+					Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+				}
+
+				// Rethrow the exception if needed
+				throw;
+			}
+			catch (Exception ex)
+			{
+				// Log any other exceptions
+				Console.WriteLine($"Exception: {ex.Message}");
+				if (ex.InnerException != null)
+				{
+					Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+				}
+
+				throw;
+			}
 		}
 	}
 
