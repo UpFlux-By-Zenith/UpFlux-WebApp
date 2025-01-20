@@ -46,3 +46,11 @@
   .header {
     margin-top: 10px;
   }
+
+  .version-control-content {
+    flex: 1; /* Allows this component to take up available space */
+    display: flex;
+    flex-direction: column;
+    min-height: 70vh;
+  }
+  

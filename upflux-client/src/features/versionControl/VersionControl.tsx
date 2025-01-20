@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Button, Group, Stack, Table, Text, Select, Modal } from "@mantine/core";
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
+import { getMachineDetails } from "../../api/applicationsRequest"; 
 
 export const VersionControl: React.FC = () => {
   // State for Modal visibility
@@ -11,14 +12,40 @@ export const VersionControl: React.FC = () => {
   const location = useLocation();
   const machineId = location.state?.machineId || "Unknown Machine";
 
-  // Hardcoded data for the table
-  const appVersions = [
-    { appName: "App 1", appVersion: "2.5.0", addedBy: "John Doe", lastUpdate: "2025-01-10 12:30:00", updatedBy: "John Doe" },
-    { appName: "App 2", appVersion: "1.8.2", addedBy: "Jane Smith", lastUpdate: "2024-12-15 09:45:00", updatedBy: "Mark Johnson" },
-    { appName: "App 3", appVersion: "3.1.0", addedBy: "Emily Davis", lastUpdate: "2025-01-05 16:20:00", updatedBy: "John Doe" },
-    { appName: "App 4", appVersion: "4.0.1", addedBy: "Chris Wilson", lastUpdate: "2025-01-01 14:00:00", updatedBy: "Jane Smith" },
-    { appName: "App 5", appVersion: "2.9.7", addedBy: "Alex Brown", lastUpdate: "2024-11-20 10:30:00", updatedBy: "Emily Davis" },
-  ];
+  // State for app versions and loading status
+  const [appVersions, setAppVersions] = useState<
+    { appName: string; appVersion: string; lastUpdate: string }[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchMachineDetails = async () => {
+      try {
+        const data = await getMachineDetails();
+        if (data && typeof data !== "string" && data.applications) {
+          // Filter applications for the current machineId
+          const filteredApps = data.applications
+            .filter((app) => app.machineId === machineId)
+            .map((app) => ({
+              appName: app.appName,
+              appVersion: app.currentVersion,
+              lastUpdate: app.versions?.[0]?.date || "N/A",
+            }));
+
+          setAppVersions(filteredApps);
+        } else {
+          console.error("Failed to fetch or parse machine details.");
+        }
+      } catch (error) {
+        console.error("Error fetching machine details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMachineDetails();
+  }, [machineId]);
 
   return (
     <Stack className="version-control-content">
@@ -45,28 +72,32 @@ export const VersionControl: React.FC = () => {
 
         {/* Table Section */}
         <Box>
-          <Table className="version-table" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>App Name</Table.Th>
-                <Table.Th>Version</Table.Th>
-                <Table.Th>Added By</Table.Th>
-                <Table.Th>Last Updated</Table.Th>
-                <Table.Th>Updated By</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {appVersions.map((appVersion) => (
-                <Table.Tr key={appVersion.appVersion}>
-                  <Table.Td>{appVersion.appName}</Table.Td>
-                  <Table.Td>{appVersion.appVersion}</Table.Td>
-                  <Table.Td>{appVersion.addedBy}</Table.Td>
-                  <Table.Td>{appVersion.lastUpdate}</Table.Td>
-                  <Table.Td>{appVersion.updatedBy}</Table.Td>
+          {isLoading ? (
+            <Text>Loading app versions...</Text>
+          ) : (
+            <Table className="version-table" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>App Name</Table.Th>
+                  <Table.Th>Version</Table.Th>
+                  <Table.Th>Added By</Table.Th>
+                  <Table.Th>Last Updated</Table.Th>
+                  <Table.Th>Updated By</Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {appVersions.map((appVersion, index) => (
+                  <Table.Tr key={index}>
+                    <Table.Td>{appVersion.appName}</Table.Td>
+                    <Table.Td>{appVersion.appVersion}</Table.Td>
+                    <Table.Td>Jane Smith</Table.Td>
+                    <Table.Td>{appVersion.lastUpdate}</Table.Td>
+                    <Table.Td>Alice Cole</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          )}
         </Box>
       </Box>
 
@@ -80,12 +111,12 @@ export const VersionControl: React.FC = () => {
         <Box>
           <Text>Select App*</Text>
           <Select
-            data={["App 1", "App 2", "App 3", "App 4", "App 5"]} 
+            data={appVersions.map((app) => app.appName)}
             placeholder="Select App"
           />
           <Text mt="md">Select App Version*</Text>
           <Select
-            data={["Version 2.5.0", "Version 1.8.2", "Version 3.1.0"]}
+            data={appVersions.map((app) => app.appVersion)}
             placeholder="Select App Version"
           />
           <Button mt="md" fullWidth>
