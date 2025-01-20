@@ -50,6 +50,8 @@ namespace Upflux_WebService
 				.AddScoped<ILicenceManagementService, LicenceManagementService>()
 				.AddScoped<IKmsService, KmsService>()
 				.AddScoped<IXmlService, XmlService>()
+				.AddScoped<IGeneratedMachineIdService, GeneratedMachineIdService>()
+				.AddScoped<IGeneratedMachineIdRepository, GeneratedMachineIdRepository>()
 				.AddScoped<ILicenceRepository, LicenceRepository>()
 				.AddScoped<IMachineRepository, MachineRepository>()
 				.AddSingleton<LicenceCommunicationService>()

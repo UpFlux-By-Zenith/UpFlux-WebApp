@@ -6,7 +6,10 @@ namespace Upflux_WebService.Data
 	public class ApplicationDbContext : DbContext
 	{
 		public DbSet<Licence> Licences { get; set; }
+
 		public DbSet<Machine> Machines { get; set; }
+
+		public DbSet<GeneratedMachineId> Generated_Machine_Ids { get; set; }
 
 		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
 		: base(options)

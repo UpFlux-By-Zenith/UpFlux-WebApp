@@ -119,6 +119,13 @@ namespace Upflux_WebService.GrpcServices
 			return response;
 		}
 
+		public override Task<AddUnregisteredDeviceResponse> AddUnregisteredDevice(AddUnregisteredDeviceRequest request, ServerCallContext context)
+		{
+			// check if id exist in generatedID table
+			// store to machine database
+			return base.AddUnregisteredDevice(request, context);
+		}
+
 		#endregion
 	}
 }

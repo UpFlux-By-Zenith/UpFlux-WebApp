@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Upflux_WebService.Core.DTOs;
+using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers
@@ -17,14 +18,16 @@ namespace Upflux_WebService.Controllers
 		#region private members
 
 		private readonly ILicenceManagementService _licenceManagementService;
+		private readonly IGeneratedMachineIdService _generatedMachineIdService;
 
 		#endregion
 
 		#region constructor
 
-		public LicenceController(ILicenceManagementService licenceManagementService)
+		public LicenceController(ILicenceManagementService licenceManagementService, IGeneratedMachineIdService generatedMachineIdService)
 		{
 			_licenceManagementService = licenceManagementService;
+			_generatedMachineIdService = generatedMachineIdService;
 		}
 
 		#endregion
@@ -65,7 +68,7 @@ namespace Upflux_WebService.Controllers
 		/// <response code="500">Internal Server Error in case of unexpected errors</response>
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
 		[HttpGet("admin/generateId")]
-		public IActionResult GenerateMachineId()
+		public async Task<IActionResult> GenerateMachineId()
 		{
 			try
 			{
@@ -74,6 +77,8 @@ namespace Upflux_WebService.Controllers
 					return Unauthorized(new { Error = "Invalid admin token." });
 
 				var machineId = Guid.NewGuid().ToString();
+				await _generatedMachineIdService.SaveGeneratedMachineId(machineId);
+
 				return Ok(new { MachineId = machineId });
 			}
 			catch (Exception ex)

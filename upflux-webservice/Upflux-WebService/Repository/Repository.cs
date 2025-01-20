@@ -79,7 +79,6 @@ namespace Upflux_WebService.Repository
 				throw;
 			}
 		}
-
 	}
 
 }

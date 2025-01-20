@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <None Remove="Protos\Licence.proto" />
+    <None Remove="Protos\Monitoring.proto" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,6 +39,7 @@
     <Protobuf Include="Protos\Licence.proto">
       <GrpcServices>Server</GrpcServices>
     </Protobuf>
+    <Protobuf Include="Protos\Monitoring.proto" />
   </ItemGroup>
 
 </Project>
