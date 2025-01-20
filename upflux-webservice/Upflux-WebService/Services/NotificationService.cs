@@ -89,14 +89,20 @@ namespace Upflux_WebService.Services
                 uris.Remove(uri);
             }
         }
-
-        public async Task SendMessageToUriAsync(string groupId, string uri, string message)
+        public async Task SendMessageToUriAsync(string uri, string message)
         {
-            if (GroupUriMapping.TryGetValue(groupId, out var uris) && uris.Contains(uri))
+            // Loop through all groups
+            foreach (var groupId in GroupUriMapping.Keys)
             {
-                await _hubContext.Clients.Group(groupId).SendAsync("ReceiveMessage", uri, message);
+                // Check if the group contains the uri
+                if (GroupUriMapping[groupId].Contains(uri))
+                {
+                    // Send message to the group if the uri is found
+                    await _hubContext.Clients.Group(groupId).SendAsync("ReceiveMessage", uri, message);
+                }
             }
         }
+
 
         private Dictionary<string, string> ParseToken(string token)
         {

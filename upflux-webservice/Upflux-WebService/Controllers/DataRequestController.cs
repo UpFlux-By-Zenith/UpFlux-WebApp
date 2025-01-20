@@ -58,7 +58,7 @@ namespace Upflux_WebService.Controllers
                     return Unauthorized(new { Error = "Invalid engineer token." });
 
                 var machines = machineIds.Split(',').ToList();
-                return Ok(new { EngineerEmail = engineerEmail, AccessibleMachines = machines });
+                return Ok(new { EngineerEmail = engineerEmail, AccessibleMachines = _entityQueryService.GetListOfMachines(machines) });
             }
             catch (Exception ex)
             {

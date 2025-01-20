@@ -17,6 +17,8 @@ namespace Upflux_WebService.Services.Interfaces
       Task<DbErrorEnum> CreateEngineerCredentials(string adminEmail,string enginneerEmail, string name, List<string> machineIds, DateTime accessGranted, DateTime expiry);
       Task<List<Machine>> GetListOfMachines();
 
+        Task<List<Machine>> GetListOfMachines(List<string> machineIds);
+
         Task<DbErrorEnum> CheckEngineerLogin(string email);
 
         /// <summary>

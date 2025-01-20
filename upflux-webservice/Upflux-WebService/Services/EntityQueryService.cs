@@ -288,6 +288,13 @@ namespace Upflux_WebService.Services
         {
             return _context.Machines.ToListAsync();
         }
+        public Task<List<Machine>> GetListOfMachines(List<string> machineIds)
+        {
+            return _context.Machines
+                           .Where(m => machineIds.Contains(m.MachineId)) // Assuming MachineId is the property you're filtering by
+                           .ToListAsync();
+        }
+
         #endregion
     }
 }

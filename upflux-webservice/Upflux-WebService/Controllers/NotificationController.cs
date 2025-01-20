@@ -38,13 +38,6 @@ namespace Upflux_WebService.Controllers
             await _notificationService.RemoveUriFromGroupAsync(request.GroupId, request.Uri);
             return Ok(new { Message = $"URI '{request.Uri}' removed from group '{request.GroupId}'." });
         }
-
-        [HttpPost("send-message")]
-        public async Task<IActionResult> SendMessage([FromBody] UriMessageRequest request)
-        {
-            await _notificationService.SendMessageToUriAsync(request.GroupId, request.Uri, request.Message);
-            return Ok(new { Message = "Message sent successfully." });
-        }
     }
 
     public class GroupRequest

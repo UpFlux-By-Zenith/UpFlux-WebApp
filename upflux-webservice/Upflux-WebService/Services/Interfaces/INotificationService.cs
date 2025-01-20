@@ -5,6 +5,6 @@
         Task CreateGroupWithTokenAsync(string token);
         Task AddUriToGroupAsync(string groupId, string uri);
         Task RemoveUriFromGroupAsync(string groupId, string uri);
-        Task SendMessageToUriAsync(string groupId, string uri, string message);
+        Task SendMessageToUriAsync(string uri, string message);
     }
 }
