@@ -67,11 +67,9 @@ export const LoginComponent: React.FC = () => {
           try {
             const result = await engineerLoginSubmit(payload);
 
-            console.log('login result:', result);
-
             // Redirect or handle successful login
             setIsLoggedIn(true);
-            login(ROLES.ENGINEER, result);
+            login(ROLES.ENGINEER, result.token);
 
             if (result) {
               console.log('Login successful!');

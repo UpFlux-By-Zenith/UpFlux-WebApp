@@ -1,29 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select } from "@mantine/core";
 import { DonutChart } from '@mantine/charts';
 import { Link, useNavigate } from "react-router-dom";
+import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import "./update-management.css";
 import view from "../../assets/images/view.png";
 
 export const UpdateManagement: React.FC = () => {
   const [modalOpened, setModalOpened] = useState(false);
+  const [machines, setMachines] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Hardcoded data for the table with actual names in "Updated By"
-  const machines = [
-    { id: "001", ipAddress: "192.168.1.1", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "John Doe" },
-    { id: "002", ipAddress: "192.168.1.2", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "Jane Smith" },
-    { id: "003", ipAddress: "192.168.1.3", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "Michael Johnson" },
-    { id: "004", ipAddress: "192.168.1.4", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "Emily Davis" },
-    { id: "005", ipAddress: "192.168.1.5", lastUpdate: "02/08/2024", status: "Alive", updatedBy: "David Lee" },
-    { id: "006", ipAddress: "192.168.1.6", lastUpdate: "03/08/2024", status: "Shutdown", updatedBy: "Chris Martin" },
-    { id: "007", ipAddress: "192.168.1.7", lastUpdate: "10/09/2022", status: "Unknown", updatedBy: "Jessica Wang" },
-  ];
+  // Fetch accessible machines on component load
+  useEffect(() => {
+    const fetchMachines = async () => {
+      const result = await getAccessibleMachines();
+      if (typeof result === "object" && result?.accessibleMachines?.result) {
+        setMachines(result.accessibleMachines.result);
+      } else {
+        console.error("Failed to fetch machines:", result);
+        setMachines([]); // Clear machines in case of failure
+      }
+      setLoading(false);
+    };
+    fetchMachines();
+  }, []);
 
-  // Count machines based on their status
-  const aliveMachines = machines.filter((machine) => machine.status === "Alive").length;
-  const shutdownMachines = machines.filter((machine) => machine.status === "Shutdown").length;
-  const unknownMachines = machines.filter((machine) => machine.status === "Unknown").length;
+  // Count machines based on their status (mocked for now)
+  var aliveMachines = machines.filter((machine) => machine.status === "Alive").length;
+  var shutdownMachines = machines.filter((machine) => machine.status === "Shutdown").length;
+  var unknownMachines = machines.filter((machine) => machine.status === "Unknown").length;
+
+  //For simulation purposes
+  aliveMachines = 2;
+  shutdownMachines = 0;
+  unknownMachines = 0;
 
   // Chart data for multiple measures
   const chartData = [
@@ -78,46 +90,51 @@ export const UpdateManagement: React.FC = () => {
 
         {/* Table Section */}
         <Box>
-          <Table className="machine-table" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Machine ID</Table.Th>
-                <Table.Th>IP Address</Table.Th>
-                <Table.Th>Last Update</Table.Th>
-                <Table.Th>Updated By</Table.Th> {/* New column */}
-                <Table.Th>Current Status</Table.Th>
-                <Table.Th>View</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {machines.map((machine) => (
-                <Table.Tr key={machine.id}>
-                  <Table.Td>{machine.id}</Table.Td>
-                  <Table.Td>{machine.ipAddress}</Table.Td>
-                  <Table.Td>{machine.lastUpdate}</Table.Td>
-                  <Table.Td>{machine.updatedBy}</Table.Td> {/* Updated column with actual names */}
-                  <Table.Td>
-                    <Badge
-                      color={machine.status === "Alive"
-                        ? "green"
-                        : machine.status === "Shutdown"
-                        ? "red"
-                        : "gray"}
-                    >
-                      {machine.status}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Link 
-                     to="/version-control"
-                     state={{ machineId: machine.id }}>
-                      <img src={view} alt="view" className="view" />
-                    </Link>
-                  </Table.Td>
+          {loading ? (
+            <Text>Loading machines...</Text>
+          ) : (
+            <Table className="machine-table" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Machine ID</Table.Th>
+                  <Table.Th>IP Address</Table.Th>
+                  <Table.Th>Last Update</Table.Th>
+                  <Table.Th>Updated By</Table.Th> {/* New column */}
+                  <Table.Th>Current Status</Table.Th>
+                  <Table.Th>View</Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {machines.map((machine) => (
+                  <Table.Tr key={machine.machineId}>
+                    <Table.Td>{machine.machineId}</Table.Td>
+                    <Table.Td>{machine.ipAddress || "N/A"}</Table.Td>
+                    <Table.Td>{"02/08/2024"}</Table.Td> {/* Hardcoded */}
+                    <Table.Td>{"John Doe"}</Table.Td> {/* Hardcoded */}
+                    <Table.Td>
+                      <Badge
+                        color = "green"
+                        // color={machine.status === "Alive"
+                        //   ? "green"
+                        //   : machine.status === "Shutdown"
+                        //   ? "red"
+                        //   : "gray"}
+                      >
+                        {machine.status || "Alive"}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Link 
+                       to="/version-control"
+                       state={{ machineId: machine.machineId }}>
+                        <img src={view} alt="view" className="view" />
+                      </Link>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          )}
         </Box>
       </Box>
 
@@ -131,7 +148,7 @@ export const UpdateManagement: React.FC = () => {
         <Box>
           <Text>Select Machines*</Text>
           <Select
-            data={["Machine 001", "Machine 002", "Machine 003"]}
+            data={machines.map(machine => `Machine ${machine.machineId}`)}
             placeholder="Select Machines"
           />
           <Text mt="md">Select Software Version*</Text>
