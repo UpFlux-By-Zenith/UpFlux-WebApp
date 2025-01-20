@@ -14,4 +14,9 @@ export const AUTH_API = {
   VERIFY_TOKEN: `${API_BASE_URL}/api/Auth/parse-token`,
 };
 
+//DataRequest-related endpoints
+export const DATA_REQUEST_API = {
+  GET_ACCESS_MACHINES: `${API_BASE_URL}/api/DataRequest/engineer/access-machines`,
+};
+
 
