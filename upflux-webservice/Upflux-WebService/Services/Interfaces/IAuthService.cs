@@ -1,4 +1,6 @@
-﻿namespace Upflux_WebService.Services.Interfaces
+﻿using Upflux_WebService.Core.DTOs;
+
+namespace Upflux_WebService.Services.Interfaces
 {
     /// <summary>
     /// Interface for authentication-related services.
@@ -14,11 +16,13 @@
         string AdminLogin(string email, string password);
 
         /// <summary>
-        /// Authenticates an engineer by email and retrieves machine access information.
+        /// Generates a new token for an engineer with specified machine access.
         /// </summary>
-        /// <param name="email">The engineer's email address.</param>
-        /// <returns>A list of machine IDs the engineer has access to.</returns>
-        List<string> EngineerLogin(string email);
+        /// <param name="engineerEmail">The email address of the engineer.</param>
+        /// <param name="machineIds">The list of machine IDs the engineer will have access to.</param>
+        /// <param name="engineerName">Optional engineer's name, default is "Engineer".</param>
+        /// <returns>A JWT token for the engineer with machine access information.</returns>
+        string GenerateEngineerToken(string adminEmail,string engineerEmail, List<string> machineIds, string engineerName = "Engineer");
 
         /// <summary>
         /// Generates a new token for an engineer with specified machine access.
@@ -27,7 +31,7 @@
         /// <param name="machineIds">The list of machine IDs the engineer will have access to.</param>
         /// <param name="engineerName">Optional engineer's name, default is "Engineer".</param>
         /// <returns>A JWT token for the engineer with machine access information.</returns>
-        string GenerateEngineerToken(string engineerEmail, List<string> machineIds, string engineerName = "Engineer");
+        string ParseLoginToken( string engineerEmail, List<string> machineIds, string engineerName = "Engineer");
 
         /// <summary>
         /// Parses a JWT token and extracts the claims as a dictionary.
@@ -44,6 +48,5 @@
         /// <param name="newPassword">The new password to be set for the admin.</param>
         /// <returns>Returns <c>true</c> if the password change was successful, <c>false</c> otherwise.</returns>
         bool ChangeAdminPassword(string email, string oldPassword, string newPassword);
-
     }
 }
