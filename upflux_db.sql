@@ -103,6 +103,12 @@ CREATE TABLE Application_Versions (
     FOREIGN KEY (updated_by) REFERENCES Users(user_id)
 );
 
+CREATE TABLE Generated_Machine_Ids (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    machine_id VARCHAR(36) NOT NULL UNIQUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 /*Show all tables present in the database*/
 SHOW TABLES;
 
