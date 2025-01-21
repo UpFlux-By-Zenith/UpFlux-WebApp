@@ -9,7 +9,6 @@ import "@mantine/core/styles/Grid.css";
 export const AdminDashboard = () => {
   return (
     <>
-      <Navbar onHomePage={false} />
       <Grid grow className="admin-dashboard">
         <Grid.Col span={4}>
           <GetEngineerToken />
@@ -33,7 +32,6 @@ export const AdminDashboard = () => {
           </Stack>
         </Grid.Col>
       </Grid>
-      <Footer />
     </>
   );
 };

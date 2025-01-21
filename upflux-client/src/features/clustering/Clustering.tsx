@@ -10,6 +10,7 @@ import dayjs from "dayjs"; // Import dayjs to compare and format dates
 import "./clustering.css";
 import cluster1 from "../../assets/images/cluster1.png";
 import cluster2 from "../../assets/images/cluster2.png";
+import { Link } from "react-router-dom";
 
 export const Clustering: React.FC = () => {
   // Updated data with 24-hour time format and 'value' instead of 'Apples'
@@ -92,16 +93,15 @@ export const Clustering: React.FC = () => {
       <Group align="flex-start" className="main-content">
         {/* Cluster Visuals */}
         <Box className="cluster-visuals">
-          {/* Small Cluster */}
-          <Box className="cluster-circle small-circle">
+        {/* Small Cluster */}
+          <Link to="/cluster-management" className="cluster-circle small-circle">
             <img src={cluster1} alt="Small Cluster" className="cluster-icon" />
-          </Box>
+          </Link>
           {/* Large Cluster */}
-          <Box className="cluster-circle large-circle">
+          <Link to="/cluster-management" className="cluster-circle large-circle">
             <img src={cluster2} alt="Large Cluster" className="cluster-icon" />
-          </Box>
+          </Link>
         </Box>
-
         {/* Calendar */}
         <Box className="calendar-wrapper">
           {/* Calendar with custom styles */}

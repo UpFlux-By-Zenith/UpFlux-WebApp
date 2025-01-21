@@ -12,8 +12,11 @@ import { PasswordSettingsContent } from './features/passwordSettings/PasswordSet
 import Layout from './Layout';
 import { UpdateManagement } from './features/updateManagement/UpdateManagement';
 import { VersionControl } from './features/versionControl/VersionControl';
+import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
+import { useState } from 'react';
 
 export const App = () => {
+  const [notifications, setNotifications] = useState<any[]>([]);
   return (
     <MantineProvider>
       <AuthProvider>
@@ -54,7 +57,7 @@ export const App = () => {
                 path="/update-management"
                 element={
                   <Layout>
-                    <UpdateManagement />
+                    <UpdateManagement addNotification={notifications}/>
                   </Layout>
                 }
               />
@@ -74,6 +77,16 @@ export const App = () => {
                   </Layout>
                 }
               />
+
+              <Route
+                path="/cluster-management"
+                element={
+                  <Layout>
+                    <ClusterManagement />
+                  </Layout>
+                }
+              />
+
             </Route>
 
           </Routes>

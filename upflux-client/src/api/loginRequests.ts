@@ -1,7 +1,6 @@
 import { AUTH_API } from './apiConsts';
 
 interface LoginPayload {
-  email: string;
   engineerToken: string;
 }
 
@@ -13,6 +12,9 @@ interface AdminLoginPayload {
 export const engineerLoginSubmit = async (payload: LoginPayload)=> {
 
   try {
+
+    console.log('Stringified Payload:', JSON.stringify(payload));
+
     const response = await fetch(AUTH_API.LOGIN, {
       method: 'POST',
       headers: {
