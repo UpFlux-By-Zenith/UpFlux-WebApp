@@ -20,9 +20,10 @@ namespace Upflux_WebService.Controllers
 		/// Constructor
 		/// </summary>
 		/// <param name="logFileService"></param>
-		public LogFileController(ILogFileService logFileService)
+		public LogFileController(ILogFileService logFileService, IConfiguration configuration)
 		{
 			_logFileService = logFileService;
+			_logDirectoryPath = configuration["Logging:LogsDirectory"];
 		}
 
 		/// <summary>
