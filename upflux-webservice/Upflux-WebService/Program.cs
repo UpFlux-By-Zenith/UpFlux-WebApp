@@ -1,6 +1,7 @@
 using System.Text;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -39,6 +40,18 @@ namespace Upflux_WebService
                 });
             });
 
+            // Increase the max request body size (in bytes)
+            builder.Services.Configure<IISServerOptions>(options =>
+            {
+	            options.MaxRequestBodySize = 100_000_000; // 100 MB (adjust as needed)
+            });
+
+            builder.Services.Configure<KestrelServerOptions>(options =>
+            {
+	            options.Limits.MaxRequestBodySize = 100_000_000; // 100 MB (adjust as needed)
+            });
+            
+            
             var app = builder.Build();
 
 			// Configure the middleware pipeline
