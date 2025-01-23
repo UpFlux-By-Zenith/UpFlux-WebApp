@@ -10,12 +10,14 @@ namespace Upflux_WebService.Services
 	public class KmsService : IKmsService
 	{
 		private readonly AmazonKeyManagementServiceClient _kmsClient;
+		private readonly ILogger<KmsService> _logger;
 
 		/// <summary>
 		/// Constructor
 		/// </summary>
-		public KmsService()
+		public KmsService(ILogger<KmsService> logger)
 		{
+			_logger = logger;
 			_kmsClient = new AmazonKeyManagementServiceClient(Amazon.RegionEndpoint.EUNorth1); 
 		}
 
@@ -34,14 +36,26 @@ namespace Upflux_WebService.Services
 		/// </remarks>
 		public async Task<string> CreateKeyAsync()
 		{
-			var request = new CreateKeyRequest
+			_logger.LogInformation("Starting key creation in KMS.");
+
+			try
 			{
-				Description = "Key for signing and verifying",
-				KeyUsage = KeyUsageType.SIGN_VERIFY,
-				KeySpec = KeySpec.RSA_2048
-			};
-			var response = await _kmsClient.CreateKeyAsync(request);
-			return response.KeyMetadata.KeyId;
+				var request = new CreateKeyRequest
+				{
+					Description = "Key for signing and verifying",
+					KeyUsage = KeyUsageType.SIGN_VERIFY,
+					KeySpec = KeySpec.RSA_2048
+				};
+				var response = await _kmsClient.CreateKeyAsync(request);
+
+				_logger.LogInformation("Successfully created key in KMS with KeyId: {KeyId}", response.KeyMetadata.KeyId);
+				return response.KeyMetadata.KeyId;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error occurred while creating key in KMS.");
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -61,15 +75,27 @@ namespace Upflux_WebService.Services
 		/// </remarks>
 		public async Task<byte[]> SignDataAsync(string keyId, byte[] hash)
 		{
-			var request = new SignRequest
+			_logger.LogInformation("Starting data signing with KeyId: {KeyId}", keyId);
+
+			try
 			{
-				KeyId = keyId,
-				Message = new MemoryStream(hash),
-				MessageType = MessageType.DIGEST,
-				SigningAlgorithm = SigningAlgorithmSpec.RSASSA_PSS_SHA_256
-			};
-			var response = await _kmsClient.SignAsync(request);
-			return response.Signature.ToArray();
+				var request = new SignRequest
+				{
+					KeyId = keyId,
+					Message = new MemoryStream(hash),
+					MessageType = MessageType.DIGEST,
+					SigningAlgorithm = SigningAlgorithmSpec.RSASSA_PSS_SHA_256
+				};
+				var response = await _kmsClient.SignAsync(request);
+
+				_logger.LogInformation("Successfully signed data with KeyId: {KeyId}", keyId);
+				return response.Signature.ToArray();
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error occurred while signing data with KeyId: {KeyId}", keyId);
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -90,6 +116,8 @@ namespace Upflux_WebService.Services
 		/// </remarks>
 		public async Task<bool> VerifySignatureAsync(string keyId, byte[] hash, byte[] signature)
 		{
+			_logger.LogInformation("Starting signature verification with KeyId: {KeyId}", keyId);
+
 			try
 			{
 				var request = new VerifyRequest
@@ -101,10 +129,13 @@ namespace Upflux_WebService.Services
 					SigningAlgorithm = SigningAlgorithmSpec.RSASSA_PSS_SHA_256
 				};
 				var response = await _kmsClient.VerifyAsync(request);
+
+				_logger.LogInformation("Signature verification result for KeyId: {KeyId} is {IsValid}", keyId, response.SignatureValid);
 				return response.SignatureValid;
 			}
-			catch
+			catch(Exception ex)
 			{
+				_logger.LogError(ex, "Error occurred while verifying signature with KeyId: {KeyId}", keyId);
 				return false;
 			}
 		}

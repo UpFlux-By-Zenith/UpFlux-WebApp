@@ -13,7 +13,7 @@ using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Repository;
 using Upflux_WebService.GrpcServices;
 using Upflux_WebService.GrpcServices.Interfaces;
-using Upflux_WebService.Core.Models;
+using Serilog;
 
 namespace Upflux_WebService
 {
@@ -26,13 +26,20 @@ namespace Upflux_WebService
 			// Add services to the container
 			ConfigureServices(builder);
 
-            builder.Services.AddCors(options =>
+			Log.Logger = new LoggerConfiguration()
+				.ReadFrom.Configuration(builder.Configuration)
+				.CreateLogger();
+
+			// serilog as default logger
+			builder.Host.UseSerilog();
+
+			builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowSpecificOrigins", policy =>
                 {
                     policy.WithOrigins("http://localhost:5000",
-            "http://127.0.0.1:5500",  // Add this
-            "https://localhost:5500"  // And this, if you're using HTTPS
+						"http://127.0.0.1:5500",  // Add this
+						"https://localhost:5500"  // And this, if you're using HTTPS
 									  ) // Replace with your client URL(s)
                           .AllowAnyHeader()
                           .AllowAnyMethod()
@@ -77,6 +84,7 @@ namespace Upflux_WebService
 				.AddScoped<IMonitoringService,MonitoringService>()
 				.AddScoped<IAlertService, AlertService>()
 				.AddScoped<ICloudLogService, CloudLogService>()
+				.AddScoped<ILogFileService, LogFileService>()
 				.AddSingleton<LicenceCommunicationService>()
 				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
 
