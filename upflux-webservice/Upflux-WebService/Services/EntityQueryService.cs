@@ -13,8 +13,9 @@ namespace Upflux_WebService.Services
     public class EntityQueryService : IEntityQueryService
     {
         private readonly ApplicationDbContext _context;
+		private readonly ILogger<EntityQueryService> _logger;
 
-        private enum DbGenerateId
+		private enum DbGenerateId
         {
             ADMIN,
             ENGINEER,
@@ -22,24 +23,35 @@ namespace Upflux_WebService.Services
         }
 
         #region public methods  
-        public EntityQueryService(ApplicationDbContext context)
+        public EntityQueryService(ApplicationDbContext context, ILogger<EntityQueryService> logger)
         {
             _context = context;
-        }
+			_logger = logger;
+		}
 
-
-        /// <summary>
-        /// Retrieves a list of applications along with their versions.
-        /// </summary>
-        /// <returns>A list of applications with their versions.</returns>
-        public async Task<List<Application>> GetApplicationsWithVersionsAsync()
+		/// <summary>
+		/// Retrieves a list of applications along with their versions.
+		/// </summary>
+		/// <returns>A list of applications with their versions.</returns>
+		public async Task<List<Application>> GetApplicationsWithVersionsAsync()
         {
-            var applicationsWithVersions = await _context.Applications
-                .Include(a => a.Versions) // Includes related ApplicationVersion records
-                .ToListAsync();
+			_logger.LogInformation("Fetching applications with versions.");
 
-            return applicationsWithVersions;
-        }
+			try
+			{
+				var applicationsWithVersions = await _context.Applications
+					.Include(a => a.Versions)
+					.ToListAsync();
+
+				_logger.LogInformation("Successfully fetched {Count} applications with versions.", applicationsWithVersions.Count);
+				return applicationsWithVersions;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error occurred while fetching applications with versions.");
+				throw;
+			}
+		}
 
 
         public async Task<DbErrorEnum> CheckAdminLogin(string email, string password)
@@ -71,12 +83,17 @@ namespace Upflux_WebService.Services
 
         public async Task<DbErrorEnum> CreateAdminAccount(string name,string email, string password)
         {
-            // Check if the email already exists in the UserBase table
-            var existingUser = await _context.Users
+			_logger.LogInformation("Creating admin account for email: {Email}", email);
+        
+			// Check if the email already exists in the UserBase table
+			var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == email);
 
             if (existingUser != null)
+            {
+                _logger.LogWarning("Admin account creation failed: Email {Email} is already in use.", email);
                 return DbErrorEnum.UserNotFound; // Return UserNotFound if email is already taken
+            }
 
             string userId = CreateUser(email, name).Result.Item1;
 
@@ -100,23 +117,30 @@ namespace Upflux_WebService.Services
             }
             catch (Exception ex)
             {
-                // If an error occurs during saving to the database, return a general error
-                // You could log the exception for further debugging.
-                return DbErrorEnum.GeneralError;
+				// If an error occurs during saving to the database, return a general error
+				// You could log the exception for further debugging.
+				_logger.LogError(ex, "Error occurred while creating admin account for email: {Email}", email);
+				return DbErrorEnum.GeneralError;
             }
 
-            // If everything is successful, return success
-            return DbErrorEnum.Success;
+			// If everything is successful, return success
+			_logger.LogInformation("Admin account successfully created for email: {Email}", email);
+			return DbErrorEnum.Success;
         }
 
-        public async Task<(string,DbErrorEnum)> CreateUser(string email, string name, UserRole role = UserRole.Engineer)
+        public async Task<(string, DbErrorEnum)> CreateUser(string email, string name, UserRole role = UserRole.Engineer)
         {
-            // Check if the email already exists in the UserBases table
-            var existingUser = await _context.Users
+			_logger.LogInformation("Starting user creation for email: {Email}, role: {Role}", email, role);
+
+			// Check if the email already exists in the UserBases table
+			var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == email);
 
             if (existingUser != null)
-                return (null,DbErrorEnum.UserNotFound); // Return error if email is already taken
+            {
+                _logger.LogWarning("User creation failed: Email {Email} is already in use.", email);
+                return (null, DbErrorEnum.UserNotFound); // Return error if email is already taken
+            }
 
             // Generate a new userId
             string userId = GenerateUserId(DbGenerateId.ENGINEER);
@@ -136,13 +160,16 @@ namespace Upflux_WebService.Services
             await _context.Users.AddAsync(newUser);
             await _context.SaveChangesAsync();
 
-            // Return the generated userId on success
-            return (userId,DbErrorEnum.Success);
+			// Return the generated userId on success
+			_logger.LogInformation("User created successfully: UserId={UserId}, Email={Email}, Role={Role}", userId, email, role);
+			return (userId,DbErrorEnum.Success);
         }
 
         public async Task<DbErrorEnum> CreateEngineerCredentials(string adminEmail, string engineerEmail, string name, List<string> machineIds, DateTime accessGranted, DateTime expiry)
         {
-            string userId = CreateUser(engineerEmail, name).Result.Item1;
+			_logger.LogInformation("Creating engineer credentials for engineer: {EngineerEmail} by admin: {AdminEmail}", engineerEmail, adminEmail);
+
+			string userId = CreateUser(engineerEmail, name).Result.Item1;
 
             string adminId = _context.Admin_Details
             .Join(_context.Users, a => a.UserId, u => u.UserId, (a, u) => new { a.AdminId, u.Email })
@@ -163,8 +190,8 @@ namespace Upflux_WebService.Services
 
             if (invalidMachineIds.Any())
             {
-                Console.WriteLine("Invalid machineIds: " + string.Join(", ", invalidMachineIds));
-                return DbErrorEnum.MachineNotFound; // Return error if any machineIds are invalid
+				_logger.LogWarning("Engineer credential creation failed: Invalid machine IDs provided: {InvalidMachineIds}", string.Join(", ", invalidMachineIds));
+				return DbErrorEnum.MachineNotFound; // Return error if any machineIds are invalid
             }
 
             // Check for duplicate credentials in a single query
@@ -175,8 +202,8 @@ namespace Upflux_WebService.Services
 
             if (existingCredentials.Any())
             {
-                Console.WriteLine("Duplicate credentials for machineIds: " + string.Join(", ", existingCredentials));
-                return DbErrorEnum.GeneralError; // Return error if duplicates are found
+				_logger.LogWarning("Engineer credential creation failed: Duplicate credentials for machine IDs: {MachineIds}", string.Join(", ", existingCredentials));
+				return DbErrorEnum.GeneralError; // Return error if duplicates are found
             }
 
             // Prepare credentials to add
@@ -193,21 +220,25 @@ namespace Upflux_WebService.Services
             // Add credentials to the database
             await _context.Credentials.AddRangeAsync(credentialsList);
             await _context.SaveChangesAsync();
-            Console.WriteLine("Credentials added successfully.");
-            return DbErrorEnum.Success;
+
+			_logger.LogInformation("Engineer credentials successfully created for engineer: {EngineerEmail}", engineerEmail);
+			return DbErrorEnum.Success;
         }
 
         public async Task<DbErrorEnum> CheckEngineerLogin(string email)
         {
-            try
-            {
+			_logger.LogInformation("Checking engineer login for email: {Email}", email);
+
+			try
+			{
                 // Find the user by email
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
                 // Check if the user exists
                 if (user == null)
                 {
-                    return DbErrorEnum.UserNotFound;
+					_logger.LogWarning("Engineer login failed: User not found for email: {Email}", email);
+					return DbErrorEnum.UserNotFound;
                 }
 
                 // Update last_login timestamp
@@ -217,14 +248,13 @@ namespace Upflux_WebService.Services
                 // Save changes to the database
                 await _context.SaveChangesAsync();
 
-                return DbErrorEnum.Success;
+				_logger.LogInformation("Engineer login successful for email: {Email}", email);
+				return DbErrorEnum.Success;
             }
             catch (Exception ex)
             {
-                // Log exception (if a logging framework is in place)
-                // LogError(ex);
-
-                return DbErrorEnum.GeneralError;
+				_logger.LogError(ex, "Error occurred while checking engineer login for email: {Email}", email);
+				return DbErrorEnum.GeneralError;
             }
         }
 

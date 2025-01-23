@@ -21,6 +21,7 @@ namespace Upflux_WebService.Services
 		private readonly ILicenceCommunicationService _licenceCommunicationService;
 		private readonly IKmsService _kmsService;
 		private readonly IXmlService _xmlService;
+		private readonly ILogger<LicenceManagementService> _logger;
 		#endregion
 
 		#region public methods
@@ -33,13 +34,15 @@ namespace Upflux_WebService.Services
 			IMachineRepository machineRepository,
 			ILicenceCommunicationService licenceCommunicationService,
 			IKmsService kmsService,
-			IXmlService xmlService)
+			IXmlService xmlService,
+			ILogger<LicenceManagementService> logger)
 		{
 			_licenceRepository = licenceRepository;
 			_machineRepository = machineRepository;
 			_licenceCommunicationService = licenceCommunicationService;
 			_kmsService = kmsService;
 			_xmlService = xmlService;
+			_logger = logger;
 		}
 
 		/// <summary>
@@ -51,45 +54,60 @@ namespace Upflux_WebService.Services
 		/// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
 		public async Task CreateLicence(string machineId)
 		{
-			// Check for existing license and renew if available
-			var existingLicence = await ValidateMachineAndGetLicence(machineId);
+			_logger.LogInformation("Starting license creation for Machine ID: {MachineId}", machineId);
 
-			if (existingLicence != null)
+			try
 			{
-				await RenewExistingLicence(existingLicence);
-				var updatedLicenceFile = await CreateSignedFile(existingLicence);
+				// Check for existing license and renew if available
+				var existingLicence = await ValidateMachineAndGetLicence(machineId);
+
+				if (existingLicence != null)
+				{
+					_logger.LogInformation("Existing license found for Machine ID: {MachineId}. Renewing license.", machineId);
+
+					await RenewExistingLicence(existingLicence);
+					var updatedLicenceFile = await CreateSignedFile(existingLicence);
+
+					await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
+					{
+						LicenceContent = updatedLicenceFile
+					});
+
+					_logger.LogInformation("No existing license found for Machine ID: {MachineId}. Creating new license.", machineId);
+					return;
+				}
+
+				// Create new license
+				var keyId = await _kmsService.CreateKeyAsync();
+
+				var now = DateTime.UtcNow;
+				var truncatedExpirationDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc);
+
+				var licence = new Licence
+				{
+					LicenceKey = keyId,
+					MachineId = machineId,
+					ValidityStatus = "Valid",
+					ExpirationDate = truncatedExpirationDate.AddYears(1)
+				};
+
+				await _licenceRepository.AddAsync(licence);
+				await _licenceRepository.SaveChangesAsync();
+
+				var licenceFile = await CreateSignedFile(licence);
 
 				await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
 				{
-					LicenceContent = updatedLicenceFile
+					LicenceContent = licenceFile
 				});
 
-				return;
+				_logger.LogInformation("Successfully created new license for Machine ID: {MachineId}", machineId);
 			}
-
-			// Create new license
-			var keyId = await _kmsService.CreateKeyAsync();
-
-			var now = DateTime.UtcNow;
-			var truncatedExpirationDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc);
-
-			var licence = new Licence
+			catch (Exception ex)
 			{
-				LicenceKey = keyId,
-				MachineId = machineId,
-				ValidityStatus = "Valid",
-				ExpirationDate = truncatedExpirationDate.AddYears(1)
-			};
-
-			await _licenceRepository.AddAsync(licence);
-			await _licenceRepository.SaveChangesAsync();
-
-			var licenceFile = await CreateSignedFile(licence);
-
-			await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
-			{
-				LicenceContent = licenceFile
-			});
+				_logger.LogError(ex, "Error occurred while creating license for Machine ID: {MachineId}", machineId);
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -101,39 +119,57 @@ namespace Upflux_WebService.Services
 		/// </returns>
 		public async Task<LicenceValidationResponse> ValidateLicence(string licenceXml)
 		{
-			// Parse and normalize XML
-			var receivedXml = _xmlService.ParseXml(licenceXml);
+			_logger.LogInformation("Starting license validation.");
 
-			if (!TryExtractLicenceValues(receivedXml, out var expirationDate, out var machineId, out var signature))
+			try
 			{
-				return new LicenceValidationResponse() { IsValid = false, Message = "Invalid XML Content."};
+				// Parse and normalize XML
+				var receivedXml = _xmlService.ParseXml(licenceXml);
+
+				if (!TryExtractLicenceValues(receivedXml, out var expirationDate, out var machineId, out var signature))
+				{
+					_logger.LogWarning("License validation failed: Invalid XML content.");
+					return new LicenceValidationResponse() { IsValid = false, Message = "Invalid XML Content." };
+				}
+
+				_logger.LogInformation("Validating license for Machine ID: {MachineId}", machineId);
+
+				receivedXml.Root?.Element("Signature")?.Remove();
+				var normalizedXml = _xmlService.NormalizeXml(receivedXml);
+
+				// Compute the hash of the normalized XML
+				using var sha256 = SHA256.Create();
+				var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedXml));
+
+				var existingLicenceMetadata = await _licenceRepository.GetLicenceByMachineId(machineId);
+				if (existingLicenceMetadata == null)
+				{
+					_logger.LogWarning("License validation failed: No matching license found for Machine ID: {MachineId}", machineId);
+					return new LicenceValidationResponse() { IsValid = false, Message = "No Matching Licence" };
+				}
+
+				// Verify the signature
+				if (!await _kmsService.VerifySignatureAsync(existingLicenceMetadata.LicenceKey, hash, Convert.FromBase64String(signature)))
+				{
+					_logger.LogWarning("License validation failed: Invalid signature for Machine ID: {MachineId}", machineId);
+					return new LicenceValidationResponse() { IsValid = false, Message = "Invalid Signature." };
+				}
+
+				// Validate metadata consistency
+				if (!ValidateMetadata(expirationDate, machineId, existingLicenceMetadata))
+				{
+					_logger.LogWarning("License validation failed: Invalid Licence Metadata for Machine ID: {MachineId}", machineId);
+					return new LicenceValidationResponse() { IsValid = false, Message = "Invalid Metadata" };
+				}
+
+				_logger.LogInformation("License validation successful for Machine ID: {MachineId}", machineId);
+				return new LicenceValidationResponse() { IsValid = true, Message = "Licence is valid." };
 			}
-			receivedXml.Root?.Element("Signature")?.Remove();
-			var normalizedXml = _xmlService.NormalizeXml(receivedXml);
-
-			// Compute the hash of the normalized XML
-			using var sha256 = SHA256.Create();
-			var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedXml));
-
-			var existingLicenceMetadata = await _licenceRepository.GetLicenceByMachineId(machineId);
-			if (existingLicenceMetadata == null)
+			catch (Exception ex)
 			{
-				return new LicenceValidationResponse() { IsValid = false, Message = "No Matching Licence" };
+				_logger.LogError(ex, "Error occurred while validating license.");
+				return new LicenceValidationResponse() { IsValid = false, Message = "Internal Server Error." };
 			}
-
-			// Verify the signature
-			if (!await _kmsService.VerifySignatureAsync(existingLicenceMetadata.LicenceKey, hash, Convert.FromBase64String(signature)))
-			{
-				return new LicenceValidationResponse() { IsValid = false, Message = "Invalid Signature." };
-			}
-
-			// Validate metadata consistency
-			if (!ValidateMetadata(expirationDate, machineId, existingLicenceMetadata))
-			{
-				return new LicenceValidationResponse() { IsValid = false, Message = "Invalid Metadata" };
-			}
-
-			return new LicenceValidationResponse() { IsValid = true, Message = "Licence is valid." };
 		}
 
 		#endregion

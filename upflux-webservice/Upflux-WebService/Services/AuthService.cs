@@ -19,55 +19,64 @@ namespace Upflux_WebService.Services
         #region private members
         private readonly IConfiguration _configuration;
         private readonly IEntityQueryService _entityQueryService;
-        #endregion
+		private readonly ILogger<AuthService> _logger;
+		#endregion
 
-        #region public methods
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="configuration"></param>
-        public AuthService(IConfiguration configuration,IEntityQueryService entityQueryService)
+		#region public methods
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		/// <param name="configuration"></param>
+		public AuthService(IConfiguration configuration,IEntityQueryService entityQueryService, ILogger<AuthService> logger)
         {
             _configuration = configuration;
             _entityQueryService = entityQueryService;
+			_logger = logger;
+		}
 
-        }
-
-        /// <summary>
-        /// Authenticates an admin user and generates a token.
-        /// </summary>
-        /// <param name="email">The email address of the admin.</param>
-        /// <param name="password">The password of the admin (should be hashed).</param>
-        /// <returns>A JWT token for the admin if authentication is successful.</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown when the provided credentials are invalid.</exception>
-        /// <remarks>
-        /// This method verifies the admin's credentials (email and password). If the credentials are valid, a JWT token is generated and returned.
-        /// The token will allow the admin to access authorized resources within the application.
-        /// </remarks>
-        public string AdminLogin(string email, string password)
+		/// <summary>
+		/// Authenticates an admin user and generates a token.
+		/// </summary>
+		/// <param name="email">The email address of the admin.</param>
+		/// <param name="password">The password of the admin (should be hashed).</param>
+		/// <returns>A JWT token for the admin if authentication is successful.</returns>
+		/// <exception cref="UnauthorizedAccessException">Thrown when the provided credentials are invalid.</exception>
+		/// <remarks>
+		/// This method verifies the admin's credentials (email and password). If the credentials are valid, a JWT token is generated and returned.
+		/// The token will allow the admin to access authorized resources within the application.
+		/// </remarks>
+		public string AdminLogin(string email, string password)
         {
-            var loginResult = _entityQueryService.CheckAdminLogin(email, password).Result; // Ensures async call is awaited properly
+			_logger.LogInformation("Attempting admin login for email: {Email}", email);
 
-            // Return error message based on login result
-            switch (loginResult)
-            {
-                case DbErrorEnum.Success:
-                    // Generate a token for the admin
-                    return GenerateToken(email, new List<string>(), "Admin");
+			var loginResult = _entityQueryService.CheckAdminLogin(email, password).Result; // Ensures async call is awaited properly
 
-                case DbErrorEnum.UserNotFound:
-                    throw new Exception("User not found.");
+			// Return error message based on login result
+			switch (loginResult)
+			{
+				case DbErrorEnum.Success:
+					_logger.LogInformation("Admin login successful for email: {Email}", email);
+					return GenerateToken(email, new List<string>(), "Admin");
 
-                case DbErrorEnum.AdminNotFound:
-                    throw new Exception("Admin not found.");
+				case DbErrorEnum.UserNotFound:
+					_logger.LogWarning("Login failed: User not found for email: {Email}", email);
+					break;
 
-                case DbErrorEnum.InvalidPassword:
-                    throw new Exception("Invalid password.");
+				case DbErrorEnum.AdminNotFound:
+					_logger.LogWarning("Login failed: Admin not found for email: {Email}", email);
+					break;
 
-                default:
-                    throw new Exception("An error occurred during login.");
-            }
-        }
+				case DbErrorEnum.InvalidPassword:
+					_logger.LogWarning("Login failed: Invalid password for email: {Email}", email);
+					break;
+
+				default:
+					_logger.LogError("Login failed: Unknown error for email: {Email}", email);
+					break;
+			}
+
+			throw new UnauthorizedAccessException("Invalid credentials");
+		}
 
 
         /// <summary>
@@ -113,27 +122,39 @@ namespace Upflux_WebService.Services
         /// </remarks>
         public string GenerateEngineerToken(string adminEmail, string engineerEmail,List<string> machineIds, string engineerName = "Engineer")
         {
-           
-            string token = GenerateToken(engineerEmail, machineIds, "Engineer");
-            
-                // Generate a token for the engineer
-            var res =_entityQueryService.CreateEngineerCredentials(adminEmail, engineerEmail,engineerName, machineIds, DateTime.UtcNow , DateTime.UtcNow.AddMinutes(30)).Result;
-            return token;
-        }
+			_logger.LogInformation("Generating engineer token for engineer: {EngineerEmail} by admin: {AdminEmail}",
+				engineerEmail, adminEmail);
+
+			try
+			{
+				var token = GenerateToken(engineerEmail, machineIds, "Engineer");
+
+				_entityQueryService.CreateEngineerCredentials(adminEmail, engineerEmail, engineerName, machineIds,
+					DateTime.UtcNow, DateTime.UtcNow.AddMinutes(30)).Wait();
+
+				_logger.LogInformation("Engineer token successfully generated for engineer: {EngineerEmail}", engineerEmail);
+                return token;
+            }
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Failed to generate engineer token for engineer: {EngineerEmail}", engineerEmail);
+				throw;
+			}
+		}
 
         public string ParseLoginToken(string engineerEmail, List<string> machineIds, string engineerName = "Engineer")
         {
-
-            string token = GenerateToken(engineerEmail, machineIds, "Engineer");
+			string token = GenerateToken(engineerEmail, machineIds, "Engineer");
 
             // Generate a token for the engineer
             DbErrorEnum res = _entityQueryService.CheckEngineerLogin(engineerEmail).Result;
             if (res == DbErrorEnum.Success)
             {
-                return token;
-            }else
+				return token;
+            }
+            else
             {
-                throw new Exception("Invalid User");
+				throw new Exception("Invalid User");
             }
         }
 
@@ -149,7 +170,7 @@ namespace Upflux_WebService.Services
 
         public Dictionary<string, string> ParseToken(string token)
         {
-            var handler = new JwtSecurityTokenHandler();
+			var handler = new JwtSecurityTokenHandler();
             var jwtToken = handler.ReadJwtToken(token);
 
             return jwtToken.Claims.ToDictionary(c => c.Type, c => c.Value);

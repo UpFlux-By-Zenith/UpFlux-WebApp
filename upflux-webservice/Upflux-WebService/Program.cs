@@ -12,7 +12,7 @@ using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Repository;
 using Upflux_WebService.GrpcServices;
 using Upflux_WebService.GrpcServices.Interfaces;
-using Upflux_WebService.Core.Models;
+using Serilog;
 
 namespace Upflux_WebService
 {
@@ -25,7 +25,15 @@ namespace Upflux_WebService
 			// Add services to the container
 			ConfigureServices(builder);
 
-            builder.Services.AddCors(options =>
+			Log.Logger = new LoggerConfiguration()
+				.ReadFrom.Configuration(builder.Configuration)
+				.CreateLogger();
+
+
+			// serilog as default logger
+			builder.Host.UseSerilog();
+
+			builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowSpecificOrigins", policy =>
                 {

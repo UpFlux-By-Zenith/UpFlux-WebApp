@@ -8,17 +8,23 @@ namespace Upflux_WebService.GrpcServices
 	public class MonitoringService: MonitoringServiceBase, IMonitoringService
 	{
 		private readonly INotificationService _notificationService;
+		private readonly ILogger<MonitoringService> _logger;
 
-		public MonitoringService(INotificationService notificationService)
+		public MonitoringService(INotificationService notificationService, ILogger<MonitoringService> logger)
 		{
 			_notificationService = notificationService;
+			_logger = logger;
 		}
 
 		public override async Task<AggregatedDataResponse> SendAggregatedData(AggregatedDataRequest request, ServerCallContext context)
 		{
+			_logger.LogInformation("Received aggregated data request with {Count} data items.", request.AggregatedDataList.Count);
+
 			foreach (var aggregatedData in request.AggregatedDataList)
 			{
-				// Prepare the data to send
+				_logger.LogInformation("Processing aggregated data for MachineId {Uuid} at {Timestamp}.",
+					aggregatedData.Uuid, aggregatedData.Timestamp.ToDateTime());
+
 				var dataToSend = new
 				{
 					Uuid = aggregatedData.Uuid,
@@ -44,9 +50,19 @@ namespace Upflux_WebService.GrpcServices
 					}
 				};
 
-				// Use SendMessageToUriAsync to send data to groups
-				await _notificationService.SendMessageToUriAsync(aggregatedData.Uuid, dataToSend.ToString());
+				try
+				{
+					_logger.LogDebug("Sending data to notification service for MachineId {Uuid}.", aggregatedData.Uuid);
+					await _notificationService.SendMessageToUriAsync(aggregatedData.Uuid, dataToSend.ToString());
+					_logger.LogInformation("Successfully sent data for MachineId {Uuid}.", aggregatedData.Uuid);
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(ex, "Failed to send data for MachineId {Uuid}.", aggregatedData.Uuid);
+				}
 			}
+
+			_logger.LogInformation("All data items processed successfully.");
 
 			return new AggregatedDataResponse
 			{

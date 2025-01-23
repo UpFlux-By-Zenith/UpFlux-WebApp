@@ -65,3 +65,4 @@ node_modules/
 # Package directories
 *.nuget/
 packages/
+/upflux-webservice/Upflux-WebService/logs

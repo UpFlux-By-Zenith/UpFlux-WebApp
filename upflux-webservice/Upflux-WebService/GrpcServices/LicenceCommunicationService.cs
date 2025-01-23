@@ -1,4 +1,5 @@
 ﻿using Grpc.Core;
+using Serilog;
 using LicenceCommunication;
 using System.Collections.Concurrent;
 using Upflux_WebService.Core.Models;
@@ -139,18 +140,30 @@ namespace Upflux_WebService.GrpcServices
 
 			var generatedId = await generatedMachineIdRepository.GetByMachineId(request.DeviceUuid);
 			if (generatedId is null)
+			{
 				return new AddUnregisteredDeviceResponse
 				{
 					IsSuccesful = false,
 					Message = "Device UUID Unrecognized."
 				};
+			}
 
-			Machine newMachine = new() 
-			{ 
-				MachineId = request.DeviceUuid, 
+			if (await machineRepository.GetByIdAsync(request.DeviceUuid) != null)
+			{
+				return new AddUnregisteredDeviceResponse
+				{
+					IsSuccesful = false,
+					Message = "Device UUID is already in the system"
+				};
+			}
+
+			Machine newMachine = new()
+			{
+				MachineId = request.DeviceUuid,
 				dateAddedOn = DateTime.UtcNow,
-				ipAddress = "NA" 
+				ipAddress = "NA"
 			};
+
 			await machineRepository.AddAsync(newMachine);
 			await machineRepository.SaveChangesAsync();
 
