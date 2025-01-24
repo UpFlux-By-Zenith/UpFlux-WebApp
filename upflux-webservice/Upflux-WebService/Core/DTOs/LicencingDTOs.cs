@@ -10,4 +10,19 @@ namespace Upflux_WebService.Core.DTOs
 		[Required]
 		public string MachineId { get; set; }
 	}
+
+	public class LicenceResponse
+	{
+		[Required]
+		public string MachineId { get; set; }
+
+		[Required]
+		public DateTime ExpirationDate { get; set; }
+	}
+
+	public class LicencesResponse
+	{
+		[Required]
+		public IEnumerable<LicenceResponse> Licences { get; set; }
+	}
 }
