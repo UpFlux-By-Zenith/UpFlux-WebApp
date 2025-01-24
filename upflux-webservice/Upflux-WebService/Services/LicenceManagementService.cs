@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Globalization;
 using LicenceCommunication;
+using Upflux_WebService.Core.DTOs;
 
 namespace Upflux_WebService.Services
 {
@@ -46,6 +47,62 @@ namespace Upflux_WebService.Services
 		}
 
 		/// <summary>
+		/// Retrieves a license by the machine ID.
+		/// </summary>
+		/// <param name="machineId">The ID of the machine for which the license is requested.</param>
+		/// <returns>A task representing the asynchronous operation, containing the license response DTO.</returns>
+		public async Task<LicenceResponse?> GetLicenceByMachineId(string machineId)
+		{
+			_logger.LogInformation("Retrieving license for Machine ID: {MachineId}", machineId);
+
+			try
+			{
+				var licence = await _licenceRepository.GetLicenceByMachineId(machineId);
+				if (licence == null)
+				{
+					_logger.LogWarning("No license found for Machine ID: {MachineId}", machineId);
+					return null;
+				}
+
+				return new LicenceResponse
+				{
+					MachineId = licence.MachineId,
+					ExpirationDate = licence.ExpirationDate
+				};
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error occurred while retrieving licence for Machine ID: {MachineId}", machineId);
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// Retrieves all licenses.
+		/// </summary>
+		/// <returns>A task representing the asynchronous operation, containing a list of license response DTOs.</returns>
+		public async Task<IEnumerable<LicenceResponse>> GetAllLicences()
+		{
+			_logger.LogInformation("Retrieving all licences.");
+
+			try
+			{
+				var licences = await _licenceRepository.GetAllAsync();
+
+				return licences.Select(l => new LicenceResponse
+				{
+					MachineId = l.MachineId,
+					ExpirationDate = l.ExpirationDate
+				});
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error occurred while retrieving all licences.");
+				throw;
+			}
+		}
+
+		/// <summary>
 		/// Generates a new license or renews an existing one for the specified machine ID.
 		/// If a license already exists for the given machine ID, it is renewed with updated metadata.
 		/// If no license exists, a new license is created, stored, and pushed for communication.
@@ -54,7 +111,7 @@ namespace Upflux_WebService.Services
 		/// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
 		public async Task CreateLicence(string machineId)
 		{
-			_logger.LogInformation("Starting license creation for Machine ID: {MachineId}", machineId);
+			_logger.LogInformation("Starting licence creation for Machine ID: {MachineId}", machineId);
 
 			try
 			{

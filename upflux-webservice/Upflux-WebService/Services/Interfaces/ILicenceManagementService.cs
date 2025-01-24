@@ -1,4 +1,6 @@
 ﻿using LicenceCommunication;
+using Upflux_WebService.Core.DTOs;
+using Upflux_WebService.Core.Models;
 
 namespace Upflux_WebService.Services.Interfaces
 {
@@ -21,5 +23,18 @@ namespace Upflux_WebService.Services.Interfaces
 		/// <param name="licenceXml">is the licence file that is received from the gateway</param>
 		/// <returns></returns>
 		Task<LicenceValidationResponse> ValidateLicence(string licenceXml);
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		Task<IEnumerable<LicenceResponse>> GetAllLicences();
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="machineId"></param>
+		/// <returns></returns>
+		Task<LicenceResponse?> GetLicenceByMachineId(string machineId);
 	}
 }
