@@ -30,7 +30,7 @@ namespace Upflux_WebService.Controllers
 		/// Downloads all log files as a ZIP archive.
 		/// </summary>
 		/// <returns>A ZIP file containing all log files.</returns>
-		[HttpGet("download-all")]
+		[HttpGet("admin/download-all")]
 		public IActionResult DownloadAllLogs()
 		{
 			try
