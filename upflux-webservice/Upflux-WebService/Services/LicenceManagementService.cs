@@ -8,6 +8,11 @@ using System.Text;
 using System.Globalization;
 using LicenceCommunication;
 using Upflux_WebService.Core.DTOs;
+using UpFlux_WebService;
+
+///
+///  ************************TO BE REMOVED*********************************
+///
 
 namespace Upflux_WebService.Services
 {
@@ -23,6 +28,7 @@ namespace Upflux_WebService.Services
 		private readonly IKmsService _kmsService;
 		private readonly IXmlService _xmlService;
 		private readonly ILogger<LicenceManagementService> _logger;
+		private readonly ControlChannelService _controlChannelService;
 		#endregion
 
 		#region public methods
@@ -36,7 +42,8 @@ namespace Upflux_WebService.Services
 			ILicenceCommunicationService licenceCommunicationService,
 			IKmsService kmsService,
 			IXmlService xmlService,
-			ILogger<LicenceManagementService> logger)
+			ILogger<LicenceManagementService> logger,
+			ControlChannelService controlChannelService )
 		{
 			_licenceRepository = licenceRepository;
 			_machineRepository = machineRepository;
@@ -44,6 +51,7 @@ namespace Upflux_WebService.Services
 			_kmsService = kmsService;
 			_xmlService = xmlService;
 			_logger = logger;
+			_controlChannelService = controlChannelService;
 		}
 
 		/// <summary>
@@ -125,10 +133,11 @@ namespace Upflux_WebService.Services
 					await RenewExistingLicence(existingLicence);
 					var updatedLicenceFile = await CreateSignedFile(existingLicence);
 
-					await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
-					{
-						LicenceContent = updatedLicenceFile
-					});
+					//await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
+					//{
+					//	LicenceContent = updatedLicenceFile
+					//});
+					await _controlChannelService.SendLicenceResponseAsync(existingLicence.MachineId, true, updatedLicenceFile, existingLicence.ExpirationDate);
 
 					_logger.LogInformation("No existing license found for Machine ID: {MachineId}. Creating new license.", machineId);
 					return;
@@ -153,10 +162,11 @@ namespace Upflux_WebService.Services
 
 				var licenceFile = await CreateSignedFile(licence);
 
-				await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
-				{
-					LicenceContent = licenceFile
-				});
+				await _controlChannelService.SendLicenceResponseAsync(licence.MachineId, true, licenceFile, licence.ExpirationDate);
+				//await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
+				//{
+				//	LicenceContent = licenceFile
+				//});
 
 				_logger.LogInformation("Successfully created new license for Machine ID: {MachineId}", machineId);
 			}

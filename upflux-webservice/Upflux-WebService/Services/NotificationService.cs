@@ -8,17 +8,14 @@ namespace Upflux_WebService.Services
     public class NotificationService : INotificationService
     {
         private readonly IHubContext<NotificationHub> _hubContext;
-        private readonly MockDataGenerator _dataGenerator;
 		private readonly ILogger<NotificationService> _logger;
 
 		// Local mapping for group machine IDs and URIs
 		private static readonly Dictionary<string, List<string>> GroupUriMapping = new();
-        private readonly Dictionary<string, AggregatedData> _mockDataStorage = new();
 
         public NotificationService(IHubContext<NotificationHub> hubContext, ILogger<NotificationService> logger)
         {
             _hubContext = hubContext;
-            _dataGenerator = new MockDataGenerator();
 			_logger = logger;
 		}
 
@@ -89,7 +86,6 @@ namespace Upflux_WebService.Services
 
 			if (GroupUriMapping.TryGetValue(groupId, out var uris))
             {
-                _mockDataStorage.Remove(uri);
                 uris.Remove(uri);
 				_logger.LogInformation("Successfully removed URI '{Uri}' from group '{GroupId}'", uri, groupId);
 			}

@@ -14,6 +14,7 @@ using Upflux_WebService.Repository;
 using Upflux_WebService.GrpcServices;
 using Upflux_WebService.GrpcServices.Interfaces;
 using Serilog;
+using UpFlux_WebService;
 
 namespace Upflux_WebService
 {
@@ -81,10 +82,11 @@ namespace Upflux_WebService
 				.AddScoped<IMachineRepository, MachineRepository>()
 				.AddScoped<IEntityQueryService, EntityQueryService>()
 				.AddScoped<INotificationService, NotificationService>()
-				.AddScoped<IMonitoringService,MonitoringService>()
 				.AddScoped<IAlertService, AlertService>()
 				.AddScoped<ICloudLogService, CloudLogService>()
 				.AddScoped<ILogFileService, LogFileService>()
+				.AddSingleton<ControlChannelService>()
+				.AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>())
 				.AddSingleton<LicenceCommunicationService>()
 				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
 
@@ -209,9 +211,10 @@ namespace Upflux_WebService
 
 			// Map gRPC services
 			app.MapGrpcService<LicenceCommunicationService>();
-			app.MapGrpcService<MonitoringService>();
 			app.MapGrpcService<AlertService>();
 			app.MapGrpcService<CloudLogService>();
+			app.MapGrpcService<ControlChannelService>();
+
 
 			app.MapHub<NotificationHub>("/notificationHub");
         }
