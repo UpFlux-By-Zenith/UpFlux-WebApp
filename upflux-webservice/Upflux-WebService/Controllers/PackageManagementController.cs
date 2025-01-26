@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
 
@@ -16,19 +17,38 @@ namespace Upflux_WebService.Controllers;
 public class PackageManagementController : ControllerBase
 {
     private readonly ILogger<PackageManagementController> _logger;
-    private readonly string _uploadPath = "/tmp/uploads"; // Base upload directory
-    private readonly string _uploadedPackagesPath = "/tmp/uploaded-packages"; // Packages storage directory
-    private readonly string _signedFilesPath = "/tmp/signed"; // Path to save signed files
+	//private readonly string _uploadPath = "/tmp/uploads"; // Base upload directory
+	//private readonly string _uploadedPackagesPath = "/tmp/uploaded-packages"; // Packages storage directory
+	//private readonly string _signedFilesPath = "/tmp/signed"; // Path to save signed files
 
-    public PackageManagementController(ILogger<PackageManagementController> logger)
+	private readonly string _uploadPath = Path.Combine(Path.GetTempPath(), "uploads");
+	private readonly string _uploadedPackagesPath = Path.Combine(Path.GetTempPath(), "uploaded-packages");
+	private readonly string _signedFilesPath = Path.Combine(Path.GetTempPath(), "signed");
+    private readonly string _gatewayId;
+    private readonly IControlChannelService _controlChannelService;
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="configuration"></param>
+	public PackageManagementController(ILogger<PackageManagementController> logger, IConfiguration configuration, IControlChannelService controlChannelService)
     {
         _logger = logger;
-        // Ensure directories exist
-        Directory.CreateDirectory(_uploadPath);
+		_gatewayId = configuration["GatewayId"]!;
+        _controlChannelService = controlChannelService;
+
+		// Ensure directories exist
+		Directory.CreateDirectory(_uploadPath);
         Directory.CreateDirectory(_uploadedPackagesPath);
         Directory.CreateDirectory(_signedFilesPath);
-    }
+	}
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
     [HttpPost("sign")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
     public async Task<IActionResult> SignFile(IFormFile file)
@@ -90,7 +110,7 @@ public class PackageManagementController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [HttpGet("packages")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
     public IActionResult GetPackages()
     {
         try
@@ -122,14 +142,13 @@ public class PackageManagementController : ControllerBase
         }
     }
 
-
     /// <summary>
     /// Mocks the process of upload the package to a machine
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpPost("packages/check")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
     public IActionResult CheckPackageExists([FromBody] PackageCheckRequest request)
     {
         if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
@@ -144,9 +163,48 @@ public class PackageManagementController : ControllerBase
         return Ok("Package exists.");
     }
 
-    public class PackageCheckRequest
+	/// <summary>
+	/// upload package to gateway
+	/// </summary>
+	/// <param name="request"></param>
+	/// <returns></returns>
+	[HttpPost("packages/upload")]
+	//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+	public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
+	{
+		if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
+			return BadRequest("Package name and version are required.");
+
+		var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
+		if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
+
+		var packageFile = Directory.GetFiles(packageDirectory).FirstOrDefault(f => f.Contains(request.Version));
+		if (packageFile == null) return NotFound("Package version not found.");
+
+        try
+        {
+            var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
+            await _controlChannelService.SendUpdatePackageAsync(_gatewayId, Path.GetFileName(packageFile), packageData, request.TargetDevices);
+
+			return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
+		}
+		catch (Exception ex)
+        {
+			_logger.LogError($"Error sending package: {ex.Message}");
+			return StatusCode(500, $"Error sending package: {ex.Message}");
+		}
+	}
+
+	public class PackageCheckRequest
     {
         public string Name { get; set; }
         public string Version { get; set; }
     }
+
+	public class PackageUploadRequest
+	{
+		public string Name { get; set; } // Package name
+		public string Version { get; set; } // Package version
+		public string[] TargetDevices { get; set; } // Target devices
+	}
 }

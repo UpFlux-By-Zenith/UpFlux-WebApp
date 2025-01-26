@@ -22,11 +22,17 @@ namespace UpFlux_WebService
 		private readonly ConcurrentDictionary<string, IServerStreamWriter<ControlMessage>> _connectedGateways
 			= new ConcurrentDictionary<string, IServerStreamWriter<ControlMessage>>();
 
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		/// <param name="logger"></param>
+		/// <param name="serviceScopeFactory"></param>
+		/// <param name="configuration"></param>
 		public ControlChannelService(ILogger<ControlChannelService> logger, IServiceScopeFactory serviceScopeFactory, IConfiguration configuration)
 		{
 			_logger = logger;
 			_serviceScopeFactory = serviceScopeFactory;
-			_logDirectoryPath = configuration["Logging:MachineLogsDirectory"];
+			_logDirectoryPath = configuration["Logging:MachineLogsDirectory"]!;
 		}
 
 		public override async Task OpenControlChannel(
@@ -181,6 +187,9 @@ namespace UpFlux_WebService
 			_logger.LogInformation("Processing license renewal request for Device UUID: {DeviceUuid}", deviceUuid);
 
 			// send signalR notification for and expired licence 
+			using var scope = _serviceScopeFactory.CreateScope();
+			var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+			await notificationService.SendMessageToUriAsync("Alert/Licence", $" Device :{deviceUuid} has an expired licence and is requesting renewal");
 
 			await SendNotificationMessageAsync(gatewayId, $"License renewal request received for Device UUID: {deviceUuid}. Further action required.");
 			_logger.LogInformation("Notification sent for license renewal request for Device UUID: {DeviceUuid}", deviceUuid);
@@ -213,17 +222,7 @@ namespace UpFlux_WebService
 				_logger.LogInformation("Received LogUpload from device={0} at gateway=[{1}], file={2}, size={3} bytes",
 					upload.DeviceUuid, gatewayId, upload.FileName, upload.Data.Length);
 
-				// Delete and recreate the directory to reset it
-				if (Directory.Exists(_logDirectoryPath))
-				{
-					Directory.Delete(_logDirectoryPath, true); // true ensures recursive deletion
-					_logger.LogInformation("Deleted existing log directory: {0}", _logDirectoryPath);
-				}
-
 				Directory.CreateDirectory(_logDirectoryPath);
-				_logger.LogInformation("Recreated log directory: {0}", _logDirectoryPath);
-
-				// Save the log to the specified directory
 				string filePath = Path.Combine(_logDirectoryPath, upload.FileName);
 				await File.WriteAllBytesAsync(filePath, upload.Data.ToByteArray());
 
@@ -247,34 +246,9 @@ namespace UpFlux_WebService
 				_logger.LogInformation("Monitoring from dev={0} (gw={1}): CPU={2}%, MEM={3}%",
 					aggregatedData.Uuid, gatewayId, aggregatedData.Metrics.CpuUsage, aggregatedData.Metrics.MemoryUsage);
 
-				var dataToSend = new
-				{
-					Uuid = aggregatedData.Uuid,
-					Timestamp = aggregatedData.Timestamp.ToDateTime(),
-					Metrics = new
-					{
-						CpuUsage = aggregatedData.Metrics.CpuUsage,
-						MemoryUsage = aggregatedData.Metrics.MemoryUsage,
-						DiskUsage = aggregatedData.Metrics.DiskUsage,
-						NetworkUsage = new
-						{
-							BytesSent = aggregatedData.Metrics.NetworkUsage.BytesSent,
-							BytesReceived = aggregatedData.Metrics.NetworkUsage.BytesReceived
-						},
-						CpuTemperature = aggregatedData.Metrics.CpuTemperature,
-						SystemUptime = aggregatedData.Metrics.SystemUptime
-					},
-					SensorData = new
-					{
-						RedValue = aggregatedData.SensorData.RedValue,
-						GreenValue = aggregatedData.SensorData.GreenValue,
-						BlueValue = aggregatedData.SensorData.BlueValue
-					}
-				};
-
 				try
 				{
-					await notificationService.SendMessageToUriAsync(aggregatedData.Uuid, mon.AggregatedData.ToString());
+					await notificationService.SendMessageToUriAsync(aggregatedData.Uuid, aggregatedData.ToString());
 					_logger.LogInformation("Successfully sent data for MachineId {Uuid}.", aggregatedData.Uuid);
 				}
 				catch (Exception ex)
@@ -293,7 +267,7 @@ namespace UpFlux_WebService
 			// send signalR notification here
 			using var scope = _serviceScopeFactory.CreateScope();
 			var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-			await notificationService.SendMessageToUriAsync("Alert", alert.ToString());
+			await notificationService.SendMessageToUriAsync("Alert/Machine", alert.ToString());
 
 			// Send an alertResponse back
 			if (_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
@@ -358,6 +332,7 @@ namespace UpFlux_WebService
 		/// Sends a LicenceResponse to connected gateways.
 		/// </summary>
 		public async Task SendLicenceResponseAsync(
+			string gatewayId,
 			string deviceUuid,
 			bool approved,
 			string licenceContent,
@@ -377,14 +352,12 @@ namespace UpFlux_WebService
 				LicenseResponse = licenseResponse
 			};
 
-			/// send to every gateway for now
-			foreach (var kvp in _connectedGateways)
+			// Check if the target gateway is connected
+			if (_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
 			{
-				var gatewayId = kvp.Key;
-				var writer = kvp.Value;
-
 				try
 				{
+					// Send the license response to the specified gateway
 					await writer.WriteAsync(responseMessage);
 					_logger.LogInformation("LicenceResponse sent to Gateway [{0}] for DeviceUuid={1}, Approved={2}",
 						gatewayId, deviceUuid, approved);
@@ -393,6 +366,11 @@ namespace UpFlux_WebService
 				{
 					_logger.LogError(ex, "Failed to send LicenceResponse to Gateway [{0}] for DeviceUuid={1}", gatewayId, deviceUuid);
 				}
+			}
+			else
+			{
+				// Log if the gateway is not connected
+				_logger.LogWarning("Gateway [{0}] is not connected. LicenceResponse not sent.", gatewayId);
 			}
 		}
 
@@ -446,7 +424,7 @@ namespace UpFlux_WebService
 
 			ControlMessage msg = new ControlMessage
 			{
-				SenderId = "CloudSim",
+				SenderId = "Cloud",
 				LogRequest = req
 			};
 			await writer.WriteAsync(msg);
@@ -459,7 +437,6 @@ namespace UpFlux_WebService
 		/// </summary>
 		public async Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices)
 		{
-			// send to every gateway fro now
 			if (!_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
 			{
 				_logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
@@ -475,7 +452,7 @@ namespace UpFlux_WebService
 
 			ControlMessage msg = new ControlMessage
 			{
-				SenderId = "CloudSim",
+				SenderId = "Cloud",
 				UpdatePackage = update
 			};
 			await writer.WriteAsync(msg);
@@ -504,6 +481,5 @@ namespace UpFlux_WebService
 
 			_logger.LogInformation("VersionDataRequest sent to gateway [{0}].", gatewayId);
 		}
-
 	}
 }

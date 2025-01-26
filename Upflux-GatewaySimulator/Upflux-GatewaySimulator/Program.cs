@@ -1,0 +1,504 @@
+﻿using Grpc.Core;
+using Grpc.Net.Client;
+using UpFlux_GatewaySimulator.Protos;
+using UpFlux_GatewaySimulator;
+using Upflux_GatewaySimulator;
+
+Console.WriteLine("Starting gRPC Client...");
+
+// Create the gRPC channel
+var channel = GrpcChannel.ForAddress("http://localhost:50002", new GrpcChannelOptions
+{
+	Credentials = ChannelCredentials.Insecure, // Use TLS for secure communication
+	MaxReceiveMessageSize = 200 * 1024 * 1024,
+	MaxSendMessageSize = 200 * 1024 * 1024
+});
+
+// Create the client from the generated code
+var client = new ControlChannel.ControlChannelClient(channel);
+
+// Define a single SenderId to use across all requests
+string senderId = "gateway-patrick-1234";
+Console.WriteLine($"Using SenderId: {senderId}");
+
+// CancellationToken to allow clean termination
+var cts = new CancellationTokenSource();
+
+// Start the streaming RPC
+using var call = client.OpenControlChannel(cancellationToken: cts.Token);
+
+// Instantiate the mock data generator
+var mockDataGenerator = new MockDataGenerator();
+
+// Dictionary to store and reuse UUIDs for monitoring data
+var monitoringDataDict = new Dictionary<string, MonitoringDataMessage>();
+
+// Task for receiving messages from the server
+var receiveTask = Task.Run(async () =>
+{
+	try
+	{
+		await foreach (var response in call.ResponseStream.ReadAllAsync(cts.Token))
+		{
+			if (response.PayloadCase == ControlMessage.PayloadOneofCase.LicenseResponse)
+			{
+				var licenseResponse = response.LicenseResponse;
+				Console.WriteLine($"Received LicenseResponse: DeviceUuid={licenseResponse.DeviceUuid}, Approved={licenseResponse.Approved}, " +
+								  $"License={licenseResponse.License}, ExpirationDate={licenseResponse.ExpirationDate.ToDateTime()}");
+			}
+			else if (response.PayloadCase == ControlMessage.PayloadOneofCase.LogRequest)
+			{
+				await HandleLogRequest(response.LogRequest);
+			}
+			else if (response.PayloadCase == ControlMessage.PayloadOneofCase.CommandRequest)
+			{
+				await HandleCommandRequest(response.CommandRequest);
+			}
+			else if (response.PayloadCase == ControlMessage.PayloadOneofCase.UpdatePackage)
+			{
+				await HandleUpdatePackage(response.UpdatePackage);
+			}
+			else
+			{
+				Console.WriteLine($"Received: SenderId={response.SenderId}, Description={response.Description}");
+			}
+		}
+	}
+	catch (OperationCanceledException)
+	{
+		Console.WriteLine("Receive task canceled.");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error receiving messages: {ex.Message}");
+	}
+});
+
+// Console menu for sending data
+void ShowMenu()
+{
+	Console.WriteLine("\nChoose an action:");
+	Console.WriteLine("1. Send Monitoring Data");
+	Console.WriteLine("2. Send Monitoring Data Batch");
+	Console.WriteLine("3. Send License Request");
+	Console.WriteLine("4. Send Log Upload");
+	Console.WriteLine("5. Send Alert");
+	Console.WriteLine("6. Exit");
+}
+
+async Task SendMonitoringData()
+{
+	Console.WriteLine("Enter UUID for monitoring data (leave blank to create a new one):");
+	string inputUuid = Console.ReadLine();
+
+	if (string.IsNullOrWhiteSpace(inputUuid))
+	{
+		// Generate new UUID and mock data
+		inputUuid = Guid.NewGuid().ToString();
+		var newData = mockDataGenerator.GenerateMockData(inputUuid);
+		monitoringDataDict[inputUuid] = newData;
+
+		Console.WriteLine($"New UUID generated: {inputUuid}");
+	}
+
+	if (!monitoringDataDict.TryGetValue(inputUuid, out var monitoringData))
+	{
+		Console.WriteLine($"UUID {inputUuid} not found. Generating new data...");
+		monitoringData = mockDataGenerator.GenerateMockData(inputUuid);
+		monitoringDataDict[inputUuid] = monitoringData;
+	}
+
+	try
+	{
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			MonitoringData = monitoringData
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent MonitoringData: UUID={inputUuid}, Timestamp={DateTime.UtcNow}");
+
+		// Update the mock data for the next send
+		foreach (var data in monitoringData.AggregatedData)
+		{
+			mockDataGenerator.UpdateMockData(data);
+		}
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending monitoring data: {ex.Message}");
+	}
+}
+
+async Task SendLicenseRequest()
+{
+	try
+	{
+		Console.WriteLine("Enter Device UUID (leave blank for random):");
+		string deviceUuid = Console.ReadLine();
+		if (string.IsNullOrWhiteSpace(deviceUuid))
+		{
+			deviceUuid = Guid.NewGuid().ToString();
+		}
+
+		Console.WriteLine("Is this a renewal request? (y/n):");
+		string renewalInput = Console.ReadLine();
+		bool isRenewal = renewalInput?.Trim().ToLower() == "y";
+
+		var licenseRequest = new LicenseRequest
+		{
+			DeviceUuid = deviceUuid,
+			IsRenewal = isRenewal
+		};
+
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			LicenseRequest = licenseRequest
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent LicenseRequest: UUID={deviceUuid}, IsRenewal={isRenewal}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending license request: {ex.Message}");
+	}
+}
+
+async Task SendLogUpload()
+{
+	try
+	{
+		Console.WriteLine("Enter Device UUID for log upload:");
+		string deviceUuid = Console.ReadLine() ?? Guid.NewGuid().ToString();
+
+		Console.WriteLine("Enter file name for the log (e.g., 'log.txt'):");
+		string fileName = Console.ReadLine() ?? "log.txt";
+
+		Console.WriteLine("Enter the size of the log data (in bytes):");
+		if (!int.TryParse(Console.ReadLine(), out int logSize))
+		{
+			logSize = 1024; // Default size
+		}
+
+		// Generate mock log data
+		var logData = new byte[logSize];
+		new Random().NextBytes(logData);
+
+		var logUpload = new LogUpload
+		{
+			DeviceUuid = deviceUuid,
+			FileName = fileName,
+			Data = Google.Protobuf.ByteString.CopyFrom(logData)
+		};
+
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			LogUpload = logUpload
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent LogUpload: DeviceUuid={deviceUuid}, FileName={fileName}, Size={logSize} bytes");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending log upload: {ex.Message}");
+	}
+}
+
+async Task SendAlert()
+{
+	try
+	{
+		Console.WriteLine("Enter alert level (e.g., 'INFO', 'WARNING', 'ERROR'):");
+		string level = Console.ReadLine() ?? "INFO";
+
+		Console.WriteLine("Enter alert message:");
+		string message = Console.ReadLine() ?? "Default alert message";
+
+		Console.WriteLine("Enter source of the alert (e.g., 'Sensor', 'System'):");
+		string source = Console.ReadLine() ?? "System";
+
+		var alertMessage = new AlertMessage
+		{
+			Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow),
+			Level = level,
+			Message = message,
+			Source = source
+		};
+
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			AlertMessage = alertMessage
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent AlertMessage: Level={level}, Message={message}, Source={source}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending alert message: {ex.Message}");
+	}
+}
+
+async Task SendLogRequest()
+{
+	try
+	{
+		Console.WriteLine("Enter UUIDs of devices for the log request, separated by commas:");
+		string inputUuids = Console.ReadLine();
+		var deviceUuids = (inputUuids ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+		if (deviceUuids.Length == 0)
+		{
+			Console.WriteLine("No device UUIDs entered. Aborting log request.");
+			return;
+		}
+
+		var logRequestMessage = new LogRequestMessage();
+		logRequestMessage.DeviceUuids.AddRange(deviceUuids);
+
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			LogRequest = logRequestMessage
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent LogRequest for devices: {string.Join(", ", deviceUuids)}");
+
+		// Wait for server to respond with logs or success messages
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending log request: {ex.Message}");
+	}
+}
+
+async Task HandleLogRequest(LogRequestMessage logRequest)
+{
+	try
+	{
+		foreach (var deviceUuid in logRequest.DeviceUuids)
+		{
+			Console.WriteLine($"Generating log for device: {deviceUuid}");
+
+			// Generate a mock log file
+			string logContent = $"Mock log data for device {deviceUuid} at {DateTime.UtcNow}";
+			byte[] logData = System.Text.Encoding.UTF8.GetBytes(logContent);
+
+			// Simulate saving the log to a file (if required)
+			string fileName = $"log-{deviceUuid}.txt";
+			string filePath = Path.Combine(Path.GetTempPath(), fileName);
+			await File.WriteAllBytesAsync(filePath, logData);
+
+			Console.WriteLine($"Log saved locally at {filePath}.");
+
+			// Send LogUpload message back to the server
+			var logUpload = new LogUpload
+			{
+				DeviceUuid = deviceUuid,
+				FileName = fileName,
+				Data = Google.Protobuf.ByteString.CopyFrom(logData)
+			};
+
+			var controlMessage = new ControlMessage
+			{
+				SenderId = senderId,
+				LogUpload = logUpload
+			};
+
+			await call.RequestStream.WriteAsync(controlMessage);
+			Console.WriteLine($"Sent LogUpload for device: {deviceUuid}");
+		}
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error handling LogRequest: {ex.Message}");
+	}
+}
+
+async Task HandleCommandRequest(CommandRequest commandRequest)
+{
+	try
+	{
+		Console.WriteLine($"Received CommandRequest: CommandId={commandRequest.CommandId}, CommandType={commandRequest.CommandType}, Parameters={commandRequest.Parameters}");
+
+		// Simulate executing the command (e.g., mock implementation)
+		Console.WriteLine("Executing command...");
+		await Task.Delay(1000); // Simulate execution time
+		Console.WriteLine($"Command {commandRequest.CommandId} of type {commandRequest.CommandType} executed successfully.");
+
+		// Send CommandResponse back to the server
+		var commandResponse = new CommandResponse
+		{
+			CommandId = commandRequest.CommandId,
+			Success = true,
+			Details = $"Command {commandRequest.CommandId} executed successfully."
+		};
+
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			CommandResponse = commandResponse
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent CommandResponse for CommandId={commandRequest.CommandId}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error handling CommandRequest: {ex.Message}");
+	}
+}
+
+async Task SendMonitoringDataBatch()
+{
+	Console.WriteLine("Enter the number of AggregatedData objects to send in this batch:");
+	if (!int.TryParse(Console.ReadLine(), out int batchSize) || batchSize <= 0)
+	{
+		Console.WriteLine("Invalid input. Aborting.");
+		return;
+	}
+
+	Console.WriteLine("Enter UUID for the batch (leave blank to create a new one):");
+	string batchUuid = Console.ReadLine();
+	if (string.IsNullOrWhiteSpace(batchUuid))
+	{
+		batchUuid = Guid.NewGuid().ToString();
+		Console.WriteLine($"Generated new UUID for batch: {batchUuid}");
+	}
+
+	// Generate a batch of AggregatedData
+	var monitoringDataMessage = new MonitoringDataMessage();
+	for (int i = 0; i < batchSize; i++)
+	{
+		var aggregatedData = mockDataGenerator.GenerateMockAggregatedData(batchUuid);
+		monitoringDataMessage.AggregatedData.Add(aggregatedData);
+	}
+
+	try
+	{
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			MonitoringData = monitoringDataMessage
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent batch of MonitoringData: UUID={batchUuid}, BatchSize={batchSize}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending monitoring data batch: {ex.Message}");
+	}
+}
+
+async Task HandleUpdatePackage(UpdatePackage updatePackage)
+{
+	try
+	{
+		Console.WriteLine($"Received UpdatePackage: FileName={updatePackage.FileName}, Size={updatePackage.PackageData.Length} bytes");
+
+		// Traverse to the root directory of the project (two levels up from bin/Debug/netX.X)
+		string rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+		string saveDirectory = Path.Combine(rootDirectory, "ReceivedPackages");
+
+		// Ensure the directory exists
+		if (!Directory.Exists(saveDirectory))
+		{
+			Directory.CreateDirectory(saveDirectory);
+			Console.WriteLine($"Created directory: {saveDirectory}");
+		}
+
+		// Save the update package to the directory
+		string filePath = Path.Combine(saveDirectory, updatePackage.FileName);
+		await File.WriteAllBytesAsync(filePath, updatePackage.PackageData.ToByteArray());
+
+		Console.WriteLine($"UpdatePackage saved to: {filePath}");
+
+		// Send an acknowledgment back to the server
+		var updateAck = new UpdateAck
+		{
+			FileName = updatePackage.FileName,
+			Success = true,
+			Details = "Update package received and saved successfully."
+		};
+
+		var ackMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			UpdateAck = updateAck
+		};
+
+		await call.RequestStream.WriteAsync(ackMessage);
+		Console.WriteLine($"Sent UpdateAck for FileName={updatePackage.FileName}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error handling UpdatePackage: {ex.Message}");
+
+		// Send a failure acknowledgment back to the server
+		var updateAck = new UpdateAck
+		{
+			FileName = updatePackage.FileName,
+			Success = false,
+			Details = $"Failed to process the update package: {ex.Message}"
+		};
+
+		var ackMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			UpdateAck = updateAck
+		};
+
+		await call.RequestStream.WriteAsync(ackMessage);
+		Console.WriteLine($"Sent failure UpdateAck for FileName={updatePackage.FileName}");
+	}
+}
+
+
+// Run the menu loop
+bool running = true;
+while (running)
+{
+	ShowMenu();
+	var choice = Console.ReadLine();
+
+	switch (choice)
+	{
+		case "1":
+			await SendMonitoringData();
+			break;
+		case "2":
+			await SendMonitoringDataBatch();
+			break;
+		case "3":
+			await SendLicenseRequest();
+			break;
+		case "4":
+			await SendLogUpload();
+			break;
+		case "5":
+			await SendAlert();
+			break;
+		case "6":
+			Console.WriteLine("Exiting...");
+			running = false;
+			break;
+		default:
+			Console.WriteLine("Invalid choice. Please try again.");
+			break;
+	}
+}
+
+// Complete the request stream and wait for the receive task
+cts.Cancel();
+await call.RequestStream.CompleteAsync();
+await receiveTask;
+
+Console.WriteLine("Client has shut down.");
