@@ -48,7 +48,6 @@ namespace Upflux_WebService.Controllers
 			catch (FileNotFoundException ex)
 			{
 				return NotFound(ex.Message);
-				return BadRequest();
 			}
 			catch (Exception ex)
 			{

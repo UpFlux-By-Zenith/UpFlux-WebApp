@@ -49,7 +49,7 @@ message ControlMessage {
   }
 }
 
-// ==================== LICENSE =====================
+// ==================== LICENSE ===================== V
 message LicenseRequest {
   // For registration or renewal 
   string deviceUuid = 1;

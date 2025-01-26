@@ -24,11 +24,10 @@ namespace Upflux_WebService.Services
 		#region private members
 		private readonly ILicenceRepository _licenceRepository;
 		private readonly IMachineRepository _machineRepository;
-		private readonly ILicenceCommunicationService _licenceCommunicationService;
 		private readonly IKmsService _kmsService;
 		private readonly IXmlService _xmlService;
 		private readonly ILogger<LicenceManagementService> _logger;
-		private readonly ControlChannelService _controlChannelService;
+		private readonly IControlChannelService _controlChannelService;
 		private readonly string _gatewayId;
 		#endregion
 
@@ -40,16 +39,14 @@ namespace Upflux_WebService.Services
 		public LicenceManagementService(
 			ILicenceRepository licenceRepository,
 			IMachineRepository machineRepository,
-			ILicenceCommunicationService licenceCommunicationService,
 			IKmsService kmsService,
 			IXmlService xmlService,
 			ILogger<LicenceManagementService> logger,
-			ControlChannelService controlChannelService,
+			IControlChannelService controlChannelService,
 			IConfiguration configuration)
 		{
 			_licenceRepository = licenceRepository;
 			_machineRepository = machineRepository;
-			_licenceCommunicationService = licenceCommunicationService;
 			_kmsService = kmsService;
 			_xmlService = xmlService;
 			_logger = logger;

@@ -9,10 +9,12 @@ namespace Upflux_WebService.Controllers
 	public class CommandController : ControllerBase
 	{
 		private readonly IControlChannelService _controlChannelService;
+		private readonly string _gatewayId;
 
-		public CommandController(IControlChannelService controlChannelService)
+		public CommandController(IControlChannelService controlChannelService, IConfiguration configuration)
 		{
 			_controlChannelService = controlChannelService;
+			_gatewayId = configuration["GatewayId"]!;
 		}
 
 		/// <summary>
@@ -25,20 +27,19 @@ namespace Upflux_WebService.Controllers
 		/// <returns>An HTTP response indicating the result of the operation.</returns>
 		[HttpPost("rollback")]
 		public async Task<IActionResult> SendRollbackCommand(
-			[FromQuery] string gatewayId,
 			[FromQuery] string version = "",
 			[FromBody] string[] targetDevices = null)
 		{
 			try
 			{
-				if (string.IsNullOrWhiteSpace(gatewayId))
+				if (string.IsNullOrWhiteSpace(_gatewayId))
 					return BadRequest(new { message = "Gateway ID is required." });
 
 				targetDevices ??= Array.Empty<string>();
 
 				// Call the ControlChannelService to send the rollback command
 				await _controlChannelService.SendCommandToGatewayAsync(
-					gatewayId,
+					_gatewayId,
 					Guid.NewGuid().ToString(),
 					CommandType.Rollback,
 					version,

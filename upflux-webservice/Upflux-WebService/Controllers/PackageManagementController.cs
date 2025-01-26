@@ -21,6 +21,8 @@ public class PackageManagementController : ControllerBase
 	//private readonly string _uploadedPackagesPath = "/tmp/uploaded-packages"; // Packages storage directory
 	//private readonly string _signedFilesPath = "/tmp/signed"; // Path to save signed files
 
+	//C:\Users\<Username>\AppData\Local\Temp on Windows
+	// /tmp on Linux
 	private readonly string _uploadPath = Path.Combine(Path.GetTempPath(), "uploads");
 	private readonly string _uploadedPackagesPath = Path.Combine(Path.GetTempPath(), "uploaded-packages");
 	private readonly string _signedFilesPath = Path.Combine(Path.GetTempPath(), "signed");

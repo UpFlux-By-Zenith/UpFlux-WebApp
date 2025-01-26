@@ -20,6 +20,7 @@ namespace Upflux_WebService.Data
 
 		public DbSet<GeneratedMachineId> Generated_Machine_Ids { get; set; }
 
+
 		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
 		: base(options)
 		{

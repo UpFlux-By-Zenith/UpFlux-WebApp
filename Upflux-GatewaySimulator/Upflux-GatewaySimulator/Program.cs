@@ -7,9 +7,9 @@ using Upflux_GatewaySimulator;
 Console.WriteLine("Starting gRPC Client...");
 
 // Create the gRPC channel
-var channel = GrpcChannel.ForAddress("http://localhost:50002", new GrpcChannelOptions
+var channel = GrpcChannel.ForAddress("http://localhost:5002", new GrpcChannelOptions
 {
-	Credentials = ChannelCredentials.Insecure, // Use TLS for secure communication
+	//Credentials = ChannelCredentials.Insecure, 
 	MaxReceiveMessageSize = 200 * 1024 * 1024,
 	MaxSendMessageSize = 200 * 1024 * 1024
 });
@@ -57,6 +57,10 @@ var receiveTask = Task.Run(async () =>
 			else if (response.PayloadCase == ControlMessage.PayloadOneofCase.UpdatePackage)
 			{
 				await HandleUpdatePackage(response.UpdatePackage);
+			}
+			else if (response.PayloadCase == ControlMessage.PayloadOneofCase.VersionDataRequest)
+			{
+				await HandleVersionDataRequest(response.VersionDataRequest);
 			}
 			else
 			{
@@ -321,6 +325,73 @@ async Task HandleLogRequest(LogRequestMessage logRequest)
 		Console.WriteLine($"Error handling LogRequest: {ex.Message}");
 	}
 }
+
+/// this will send
+async Task HandleVersionDataRequest(VersionDataRequest request)
+{
+	Console.WriteLine("Received VersionDataRequest.");
+
+	// Prepare pre-defined device UUIDs and version information
+	Console.WriteLine("Preparing mock data for VersionDataResponse...");
+
+	// Example UUIDs and version configuration
+	var deviceUuids = new[] { "1", "2", "should not be there" };
+	var versionDataResponse = new VersionDataResponse
+	{
+		Success = true,
+		Message = "Version data successfully retrieved."
+	};
+
+	foreach (var deviceUuid in deviceUuids)
+	{
+		/// set current version here
+		var currentVersion = new UpFlux_GatewaySimulator.Protos.VersionInfo
+		{
+			Version = "v100",
+			InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-7))
+		};
+
+		var availableVersions = new List<UpFlux_GatewaySimulator.Protos.VersionInfo>
+		{
+			new UpFlux_GatewaySimulator.Protos.VersionInfo
+			{
+				Version = "v1.1.0",
+				InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-5))
+			},
+			new UpFlux_GatewaySimulator.Protos.VersionInfo
+			{
+				Version = "v1.2.0",
+				InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-2))
+			}
+		};
+
+		versionDataResponse.DeviceVersionsList.Add(new DeviceVersions
+		{
+			DeviceUuid = deviceUuid,
+			Current = currentVersion,
+			Available = { availableVersions }
+		});
+	}
+
+	// Send the response back to the server
+	var controlMessage = new ControlMessage
+	{
+		SenderId = senderId,
+		VersionDataResponse = versionDataResponse
+	};
+
+	try
+	{
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine("Sent VersionDataResponse to server.");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending VersionDataResponse: {ex.Message}");
+	}
+}
+
+
 
 async Task HandleCommandRequest(CommandRequest commandRequest)
 {

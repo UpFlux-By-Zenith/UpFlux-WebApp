@@ -5,6 +5,7 @@ using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Core.Models;
 using Google.Protobuf.WellKnownTypes;
 using Upflux_WebService.Services.Interfaces;
+using System.Runtime.CompilerServices;
 
 namespace UpFlux_WebService
 {
@@ -84,7 +85,7 @@ namespace UpFlux_WebService
 					await HandleLogUpload(gatewayId, msg.LogUpload);
 					break;
 				case ControlMessage.PayloadOneofCase.MonitoringData:
-					HandleMonitoringData(gatewayId, msg.MonitoringData);
+					await HandleMonitoringData(gatewayId, msg.MonitoringData);
 					break;
 				case ControlMessage.PayloadOneofCase.AlertMessage:
 					await HandleAlertMessage(gatewayId, msg.AlertMessage);
@@ -101,7 +102,7 @@ namespace UpFlux_WebService
 						gatewayId, msg.LogResponse.Success, msg.LogResponse.Message);
 					break;
 				case ControlMessage.PayloadOneofCase.VersionDataResponse:
-					HandleVersionDataResponse(gatewayId, msg.VersionDataResponse);
+					await HandleVersionDataResponse(gatewayId, msg.VersionDataResponse);
 					break;
 				default:
 					_logger.LogWarning("Received unknown message from [{0}] => {1}", gatewayId, msg.PayloadCase);
@@ -287,7 +288,7 @@ namespace UpFlux_WebService
 		}
 
 		// ---------- EXACT version data logic ----------
-		private void HandleVersionDataResponse(string gatewayId, VersionDataResponse resp)
+		private async Task HandleVersionDataResponse(string gatewayId, VersionDataResponse resp)
 		{
 			if (!resp.Success)
 			{
@@ -296,11 +297,31 @@ namespace UpFlux_WebService
 			else
 			{
 				_logger.LogInformation("VersionDataResponse from [{0}]: {1}", gatewayId, resp.Message);
+
+				using var scope = _serviceScopeFactory.CreateScope();
+				var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
+
 				foreach (DeviceVersions? dv in resp.DeviceVersionsList)
 				{
 					_logger.LogInformation(" Device={0}", dv.DeviceUuid);
+
+					var application = await applicationRepository.GetByMachineId(dv.DeviceUuid);
+					if (application is null)
+					{
+						// or add it?
+						_logger.LogInformation($"machine: [{dv.DeviceUuid}] have an applicatiuon running that is not in the database");
+						continue;
+					}
+
 					if (dv.Current != null)
 					{
+						if (application.CurrentVersion != dv.Current.Version)
+						{
+							application.CurrentVersion = dv.Current.Version;
+							applicationRepository.Update(application);
+							await applicationRepository.SaveChangesAsync();
+						}
+
 						DateTime installed = dv.Current.InstalledAt.ToDateTime();
 						_logger.LogInformation("  CURRENT => Version={0}, InstalledAt={1}", dv.Current.Version, installed);
 					}
@@ -399,7 +420,7 @@ namespace UpFlux_WebService
 
 			ControlMessage msg = new ControlMessage
 			{
-				SenderId = "CloudSim",
+				SenderId = "Cloud",
 				CommandRequest = cmdReq
 			};
 			await writer.WriteAsync(msg);

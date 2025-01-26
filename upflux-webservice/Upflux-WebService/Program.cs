@@ -31,6 +31,15 @@ namespace Upflux_WebService
 				.ReadFrom.Configuration(builder.Configuration)
 				.CreateLogger();
 
+
+			builder.WebHost.ConfigureKestrel(options =>
+			{
+				options.ListenAnyIP(5002, listenOptions =>
+				{
+					listenOptions.Protocols = HttpProtocols.Http2;
+				});
+			});
+
 			// serilog as default logger
 			builder.Host.UseSerilog();
 
@@ -78,18 +87,14 @@ namespace Upflux_WebService
 				.AddScoped<IXmlService, XmlService>()
 				.AddScoped<IGeneratedMachineIdService, GeneratedMachineIdService>()
 				.AddScoped<IGeneratedMachineIdRepository, GeneratedMachineIdRepository>()
+				.AddScoped<IApplicationRepository, ApplicationRepository>()
 				.AddScoped<ILicenceRepository, LicenceRepository>()
 				.AddScoped<IMachineRepository, MachineRepository>()
 				.AddScoped<IEntityQueryService, EntityQueryService>()
 				.AddScoped<INotificationService, NotificationService>()
-				.AddScoped<IAlertService, AlertService>()
-				.AddScoped<ICloudLogService, CloudLogService>()
 				.AddScoped<ILogFileService, LogFileService>()
 				.AddSingleton<ControlChannelService>()
-				.AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>())
-				.AddSingleton<LicenceCommunicationService>()
-				.AddSingleton<ILicenceCommunicationService>(sp => sp.GetRequiredService<LicenceCommunicationService>());
-
+				.AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 
 			// Load JWT settings from configuration
 			var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
@@ -211,8 +216,6 @@ namespace Upflux_WebService
 
 			// Map gRPC services
 			app.MapGrpcService<LicenceCommunicationService>();
-			app.MapGrpcService<AlertService>();
-			app.MapGrpcService<CloudLogService>();
 			app.MapGrpcService<ControlChannelService>();
 
 
