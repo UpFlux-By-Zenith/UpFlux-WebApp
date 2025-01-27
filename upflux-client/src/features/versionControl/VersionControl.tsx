@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Group, Stack, Table, Text, Select, Modal } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Group,
+  Stack,
+  Table,
+  Text,
+  Select,
+  Modal,
+  RingProgress,
+  SimpleGrid,
+} from "@mantine/core";
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
-import { getMachineDetails } from "../../api/applicationsRequest"; 
+import { getMachineDetails } from "../../api/applicationsRequest";
 
 export const VersionControl: React.FC = () => {
   // State for Modal visibility
@@ -17,6 +28,23 @@ export const VersionControl: React.FC = () => {
     { appName: string; appVersion: string; lastUpdate: string }[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Mocked machine metrics data
+  const metrics = [
+    { label: "CPU", value: 47 },
+    { label: "CPU Temp", value: 87 },
+    { label: "System Uptime", value: 67 },
+    { label: "Memory Usage", value: 39 },
+    { label: "Disk Usage", value: 47 },
+    { label: "Network Usage", value: 85 },
+  ];
+
+  // Determine the color based on the metric value
+  const getColor = (value: number) => {
+    if (value <= 50) return "green";
+    if (value > 50 && value <= 80) return "orange";
+    return "red";
+  };
 
   // Fetch data from API
   useEffect(() => {
@@ -69,6 +97,41 @@ export const VersionControl: React.FC = () => {
             Configure App Version
           </Button>
         </Group>
+
+        {/* Machine Metrics Section */}
+        <Box className="metrics-container">
+        <SimpleGrid cols={6}>
+          {metrics.map((metric, index) => (
+            <RingProgress
+              key={index}
+              size={150}
+              thickness={10}
+              sections={[
+                { value: metric.value, color: getColor(metric.value) },
+                { value: 100 - metric.value, color: "gray" },
+              ]}
+              label={
+                <Box
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100%",
+                  }}
+                >
+                  <Text size="sm" fw="bold">
+                    {metric.value}%
+                  </Text>
+                  <Text size="xs" mt="xs" fw="bold">
+                    {metric.label}
+                  </Text>
+                </Box>
+              }
+            />
+          ))}
+        </SimpleGrid>
+        </Box>
 
         {/* Table Section */}
         <Box>
