@@ -8,6 +8,11 @@ using System.Text;
 using System.Globalization;
 using LicenceCommunication;
 using Upflux_WebService.Core.DTOs;
+using UpFlux_WebService;
+
+///
+///  ************************TO BE REMOVED*********************************
+///
 
 namespace Upflux_WebService.Services
 {
@@ -19,10 +24,11 @@ namespace Upflux_WebService.Services
 		#region private members
 		private readonly ILicenceRepository _licenceRepository;
 		private readonly IMachineRepository _machineRepository;
-		private readonly ILicenceCommunicationService _licenceCommunicationService;
 		private readonly IKmsService _kmsService;
 		private readonly IXmlService _xmlService;
 		private readonly ILogger<LicenceManagementService> _logger;
+		private readonly IControlChannelService _controlChannelService;
+		private readonly string _gatewayId;
 		#endregion
 
 		#region public methods
@@ -33,17 +39,19 @@ namespace Upflux_WebService.Services
 		public LicenceManagementService(
 			ILicenceRepository licenceRepository,
 			IMachineRepository machineRepository,
-			ILicenceCommunicationService licenceCommunicationService,
 			IKmsService kmsService,
 			IXmlService xmlService,
-			ILogger<LicenceManagementService> logger)
+			ILogger<LicenceManagementService> logger,
+			IControlChannelService controlChannelService,
+			IConfiguration configuration)
 		{
 			_licenceRepository = licenceRepository;
 			_machineRepository = machineRepository;
-			_licenceCommunicationService = licenceCommunicationService;
 			_kmsService = kmsService;
 			_xmlService = xmlService;
 			_logger = logger;
+			_controlChannelService = controlChannelService;
+			_gatewayId = configuration["GatewayId"]!;
 		}
 
 		/// <summary>
@@ -125,10 +133,7 @@ namespace Upflux_WebService.Services
 					await RenewExistingLicence(existingLicence);
 					var updatedLicenceFile = await CreateSignedFile(existingLicence);
 
-					await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
-					{
-						LicenceContent = updatedLicenceFile
-					});
+					await _controlChannelService.SendLicenceResponseAsync(_gatewayId, existingLicence.MachineId, true, updatedLicenceFile, existingLicence.ExpirationDate);
 
 					_logger.LogInformation("No existing license found for Machine ID: {MachineId}. Creating new license.", machineId);
 					return;
@@ -153,10 +158,7 @@ namespace Upflux_WebService.Services
 
 				var licenceFile = await CreateSignedFile(licence);
 
-				await _licenceCommunicationService.PushLicenceUpdateAsync(new LicenceUpdateEvent
-				{
-					LicenceContent = licenceFile
-				});
+				await _controlChannelService.SendLicenceResponseAsync(_gatewayId, licence.MachineId, true, licenceFile, licence.ExpirationDate);
 
 				_logger.LogInformation("Successfully created new license for Machine ID: {MachineId}", machineId);
 			}
@@ -289,10 +291,10 @@ namespace Upflux_WebService.Services
 			}
 
 			DateTime output = DateTime.ParseExact(
-				dateTime.Substring(0, 19) + "Z", 
+				dateTime.Substring(0, 19) + "Z",
 				"yyyy-MM-ddTHH:mm:ssZ",
-				CultureInfo.InvariantCulture,  
-				DateTimeStyles.AdjustToUniversal 
+				CultureInfo.InvariantCulture,
+				DateTimeStyles.AdjustToUniversal
 			);
 
 			return output;

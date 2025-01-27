@@ -1,4 +1,8 @@
-﻿using LicenceCommunication;
+﻿///
+/// ------------------- TO BE DELETED --------------------
+///
+
+using LicenceCommunication;
 
 namespace Upflux_WebService.GrpcServices.Interfaces
 {

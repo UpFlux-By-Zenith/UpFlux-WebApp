@@ -66,3 +66,4 @@ node_modules/
 *.nuget/
 packages/
 /upflux-webservice/Upflux-WebService/logs
+/Upflux-GatewaySimulator/Upflux-GatewaySimulator/ReceivedPackages
