@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomePage, notifications }) => 
             <li><Link to="/">Home</Link></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><Link to="login">Login</Link></li>
+            <li><Link to="/login">Login</Link></li>
           </>
         ) : (
           <>
@@ -77,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomePage, notifications }) => 
               {/* Profile Menu */}
               <Menu width={80} trigger="hover">
                 <Menu.Target>
-                  <Link to="profile">Profile</Link>
+                  <Link to="/account-settings">Profile</Link>
                 </Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Item component={Link} to="/">Logout</Menu.Item>
