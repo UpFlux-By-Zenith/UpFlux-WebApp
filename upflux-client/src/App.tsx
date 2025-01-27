@@ -14,6 +14,7 @@ import { UpdateManagement } from './features/updateManagement/UpdateManagement';
 import { VersionControl } from './features/versionControl/VersionControl';
 import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
 import { useState } from 'react';
+import { AccountSettings } from './features/accountSettings/AccountSettings';
 
 export const App = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -83,6 +84,15 @@ export const App = () => {
                 element={
                   <Layout>
                     <ClusterManagement />
+                  </Layout>
+                }
+              />
+
+              <Route
+                path="/account-settings"
+                element={
+                  <Layout>
+                    <AccountSettings />
                   </Layout>
                 }
               />
