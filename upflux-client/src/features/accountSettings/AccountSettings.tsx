@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Layout from '../../Layout';
-import { TextInput, Button, Text, Stack, Box, Group } from '@mantine/core';
+import { TextInput, Button, Text, Stack, Group, Box } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import { postAuthToken } from '../../api/parseTokenRequest';
 import './accountSettings.css';
 
 export const AccountSettings: React.FC = () => {
-  // State for form values and errors
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors] = useState({
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [generalError, setGeneralError] = useState<string | null>(null); // Error for API responses
-
   // State for user role
   const [role, setRole] = useState<string | null>(null);
 
@@ -51,56 +40,33 @@ export const AccountSettings: React.FC = () => {
       </Group>
 
       {/* Instructions and Input Fields */}
-      <Text className="instructions">
-        View your account details below.
-      </Text>
-      <TextInput
-        label={
-          <>
-            Name
-          </>
-        }
-        placeholder="{PLACEHOLDER_CURRENT_PASSWORD}"
-        className="input-field wide-input"
-        type="password"
-        value={currentPassword}
-        onChange={(e) => setCurrentPassword(e.target.value)}
-      />
-
-      <TextInput
-        label={
-          <>
-            Email
-          </>
-        }
-        placeholder="{PLACEHOLDER_NEW_PASSWORD}"
-        className="input-field wide-input"
-        type="password"
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-        error={errors.newPassword}
-      />
-      <TextInput
-        label={
-          <>
-            Role
-          </>
-        }
-        placeholder="{PLACEHOLDER_CONFIRM_PASSWORD}"
-        className="input-field wide-input"
-        type="password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        error={errors.confirmPassword}
-      />
-
-      {/* Display general API error if it exists */}
-      {generalError && (
-        <Text color="red" className="error-text">
-          {generalError}
-        </Text>
-      )}
-
+      <Text className="instructions">View your account details below.</Text>
+      <Box className="grid-container">
+        <TextInput
+          label="Name"
+          value="Adam Smith"
+          readOnly
+          className="input-field"
+        />
+        <TextInput
+          label="Email"
+          value="adam@upflux.com"
+          readOnly
+          className="input-field"
+        />
+        <TextInput
+          label="Role"
+          value="Engineer"
+          readOnly
+          className="input-field"
+        />
+        <TextInput
+          label="Accessible Machines"
+          value="Machine 001, Machine 002"
+          readOnly
+          className="input-field"
+        />
+      </Box>
     </Stack>
   );
 };
