@@ -113,11 +113,11 @@ namespace Upflux_WebService.Services
 					}
 				}
 
-				_logger.LogWarning("Message not sent. URI '{Uri}' not found in any group.", uri);
+				_logger.LogWarning("[SignalR] Message not sent. URI '{Uri}' not found in any group.", uri);
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error occurred while sending message to URI '{Uri}'", uri);
+				_logger.LogError(ex, "[SignalR] Error occurred while sending message to URI '{Uri}'", uri);
 				throw;
 			}
 		}

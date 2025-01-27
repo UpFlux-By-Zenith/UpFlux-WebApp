@@ -2,8 +2,12 @@
 using Upflux_WebService.Services.Interfaces;
 using UpFlux_WebService.Protos;
 
+//// Access control not implemented
 namespace Upflux_WebService.Controllers
 {
+	/// <summary>
+	/// 
+	/// </summary>
 	[ApiController]
 	[Route("api/[controller]")]
 	public class CommandController : ControllerBase
@@ -11,6 +15,11 @@ namespace Upflux_WebService.Controllers
 		private readonly IControlChannelService _controlChannelService;
 		private readonly string _gatewayId;
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="controlChannelService"></param>
+		/// <param name="configuration"></param>
 		public CommandController(IControlChannelService controlChannelService, IConfiguration configuration)
 		{
 			_controlChannelService = controlChannelService;
@@ -18,13 +27,11 @@ namespace Upflux_WebService.Controllers
 		}
 
 		/// <summary>
-		/// Sends a rollback command to a specified gateway and target devices.
+		/// 
 		/// </summary>
-		/// <param name="gatewayId">The ID of the gateway to send the command to.</param>
-		/// <param name="commandId">The unique ID of the command.</param>
-		/// <param name="parameters">Optional parameters for the rollback command.</param>
-		/// <param name="targetDevices">A list of device UUIDs to target.</param>
-		/// <returns>An HTTP response indicating the result of the operation.</returns>
+		/// <param name="version"></param>
+		/// <param name="targetDevices"></param>
+		/// <returns></returns>
 		[HttpPost("rollback")]
 		public async Task<IActionResult> SendRollbackCommand(
 			[FromQuery] string version = "",
@@ -35,9 +42,8 @@ namespace Upflux_WebService.Controllers
 				if (string.IsNullOrWhiteSpace(_gatewayId))
 					return BadRequest(new { message = "Gateway ID is required." });
 
-				targetDevices ??= Array.Empty<string>();
+				targetDevices ??= [];
 
-				// Call the ControlChannelService to send the rollback command
 				await _controlChannelService.SendCommandToGatewayAsync(
 					_gatewayId,
 					Guid.NewGuid().ToString(),

@@ -1,13 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
@@ -16,24 +10,26 @@ namespace Upflux_WebService.Controllers;
 [Route("api/[controller]")]
 public class PackageManagementController : ControllerBase
 {
-    private readonly ILogger<PackageManagementController> _logger;
 	//private readonly string _uploadPath = "/tmp/uploads"; // Base upload directory
 	//private readonly string _uploadedPackagesPath = "/tmp/uploaded-packages"; // Packages storage directory
 	//private readonly string _signedFilesPath = "/tmp/signed"; // Path to save signed files
 
-	//C:\Users\<Username>\AppData\Local\Temp on Windows
-	// /tmp on Linux
+	// Path.GetTempPath()
+	// on windows points to ==> C:\Users\<Username>\AppData\Local\Temp 
+	// on Linux points to   ==> /tmp 
 	private readonly string _uploadPath = Path.Combine(Path.GetTempPath(), "uploads");
 	private readonly string _uploadedPackagesPath = Path.Combine(Path.GetTempPath(), "uploaded-packages");
 	private readonly string _signedFilesPath = Path.Combine(Path.GetTempPath(), "signed");
     private readonly string _gatewayId;
     private readonly IControlChannelService _controlChannelService;
+	private readonly ILogger<PackageManagementController> _logger;
 
-    /// <summary>
-    /// Constructor
-    /// </summary>
-    /// <param name="logger"></param>
-    /// <param name="configuration"></param>
+	/// <summary>
+	/// Constructor`
+	/// </summary>
+	/// <param name="logger"></param>
+	/// <param name="configuration"></param>
+	/// <param name="controlChannelService"></param>
 	public PackageManagementController(ILogger<PackageManagementController> logger, IConfiguration configuration, IControlChannelService controlChannelService)
     {
         _logger = logger;
@@ -112,7 +108,7 @@ public class PackageManagementController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [HttpGet("packages")]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
     public IActionResult GetPackages()
     {
         try
@@ -150,7 +146,7 @@ public class PackageManagementController : ControllerBase
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpPost("packages/check")]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
     public IActionResult CheckPackageExists([FromBody] PackageCheckRequest request)
     {
         if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
@@ -171,8 +167,8 @@ public class PackageManagementController : ControllerBase
 	/// <param name="request"></param>
 	/// <returns></returns>
 	[HttpPost("packages/upload")]
-	//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
-	public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
 	{
 		if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
 			return BadRequest("Package name and version are required.");
@@ -186,7 +182,7 @@ public class PackageManagementController : ControllerBase
         try
         {
             var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
-            await _controlChannelService.SendUpdatePackageAsync(_gatewayId, Path.GetFileName(packageFile), packageData, request.TargetDevices);
+            await _controlChannelService.SendUpdatePackageAsync(_gatewayId, Path.GetFileName(packageFile), packageData, request.TargetDevices, request.Name, request.Version);
 
 			return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
 		}

@@ -44,8 +44,9 @@ namespace Upflux_WebService.Services.Interfaces
 		/// <param name="fileName"></param>
 		/// <param name="packageData"></param>
 		/// <param name="targetDevices"></param>
+		/// <param name="appName"></param>
 		/// <returns></returns>
-		Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices);
+		Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices, string appName, string version);
 
 		/// <summary>
 		/// 

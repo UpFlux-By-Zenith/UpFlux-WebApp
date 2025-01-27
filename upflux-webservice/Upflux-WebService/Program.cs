@@ -12,7 +12,6 @@ using Upflux_WebService.Data;
 using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Repository;
 using Upflux_WebService.GrpcServices;
-using Upflux_WebService.GrpcServices.Interfaces;
 using Serilog;
 using UpFlux_WebService;
 
@@ -30,7 +29,6 @@ namespace Upflux_WebService
 			Log.Logger = new LoggerConfiguration()
 				.ReadFrom.Configuration(builder.Configuration)
 				.CreateLogger();
-
 
 			builder.WebHost.ConfigureKestrel(options =>
 			{

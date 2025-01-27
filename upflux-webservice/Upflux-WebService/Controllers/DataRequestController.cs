@@ -70,33 +70,34 @@ namespace Upflux_WebService.Controllers
             }
         }
 
-		/// <summary>
-		/// Get applications running on machines
-		/// </summary>
-		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
-		[HttpGet("engineer/machines-application")]
+        /// <summary>
+        /// Get applications running on machines
+        /// </summary>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+        [HttpGet("engineer/machines-application")]
 		public async Task<IActionResult> GetRunningApplications()
 		{
 			try
 			{
-				//var engineerEmail = GetClaimValue(ClaimTypes.Email);
-				//var machineIds = GetClaimValue("MachineIds");
+                var engineerEmail = GetClaimValue(ClaimTypes.Email);
+                var machineIds = GetClaimValue("MachineIds");
 
-				// Ensure claims exist
-				//if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-				//{
-				//	return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
-				//}
+                //Ensure claims exist
 
-				// Send version data request via control channel service
-				await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
+                if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+                {
+                    return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+                }
+
+                // Send version data request via control channel service
+                await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
 
 				// Return a meaningful response to the client
 				return Ok(new
 				{
 					Message = "Version data request sent successfully.",
-					//EngineerEmail = engineerEmail,
-					Timestamp = DateTime.UtcNow
+                    EngineerEmail = engineerEmail,
+                    Timestamp = DateTime.UtcNow
 				});
 			}
 			catch (Exception ex)

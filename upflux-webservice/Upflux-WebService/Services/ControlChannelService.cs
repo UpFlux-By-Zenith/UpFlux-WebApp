@@ -5,7 +5,7 @@ using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Core.Models;
 using Google.Protobuf.WellKnownTypes;
 using Upflux_WebService.Services.Interfaces;
-using System.Runtime.CompilerServices;
+
 
 namespace UpFlux_WebService
 {
@@ -20,8 +20,9 @@ namespace UpFlux_WebService
 		private readonly string _logDirectoryPath = Path.Combine(Directory.GetCurrentDirectory(), "logs");
 
 		// A dictionary of "GatewayID" => the active IServerStreamWriter
-		private readonly ConcurrentDictionary<string, IServerStreamWriter<ControlMessage>> _connectedGateways
-			= new ConcurrentDictionary<string, IServerStreamWriter<ControlMessage>>();
+		private readonly ConcurrentDictionary<string, IServerStreamWriter<ControlMessage>> _connectedGateways = new();
+		private readonly ConcurrentDictionary<string, CommandMetadata> _commandIdToMetadataMap = new();
+		private readonly ConcurrentDictionary<string, UpdateMetadata> _updateMetadataMap = new();
 
 		/// <summary>
 		/// Constructor
@@ -74,6 +75,8 @@ namespace UpFlux_WebService
 			}
 		}
 
+		#region private methods
+
 		private async Task HandleIncomingMessage(string gatewayId, ControlMessage msg)
 		{
 			switch (msg.PayloadCase)
@@ -82,20 +85,19 @@ namespace UpFlux_WebService
 					await HandleLicenseRequest(gatewayId, msg.LicenseRequest);
 					break;
 				case ControlMessage.PayloadOneofCase.LogUpload:
-					await HandleLogUpload(gatewayId, msg.LogUpload);
+					await HandleLogUploadAsync(gatewayId, msg.LogUpload);
 					break;
 				case ControlMessage.PayloadOneofCase.MonitoringData:
-					await HandleMonitoringData(gatewayId, msg.MonitoringData);
+					await HandleMonitoringDataAsync(gatewayId, msg.MonitoringData);
 					break;
 				case ControlMessage.PayloadOneofCase.AlertMessage:
-					await HandleAlertMessage(gatewayId, msg.AlertMessage);
+					await HandleAlertMessageAsync(gatewayId, msg.AlertMessage);
 					break;
 				case ControlMessage.PayloadOneofCase.CommandResponse:
-					_logger.LogInformation("Gateway [{0}] responded to command: {1}", gatewayId, msg.CommandResponse.CommandId);
+					await HandleCommandResponse(gatewayId, msg.CommandResponse);
 					break;
 				case ControlMessage.PayloadOneofCase.UpdateAck:
-					_logger.LogInformation("Gateway [{0}] acknowledged update: {1}, success={2}",
-						gatewayId, msg.UpdateAck.FileName, msg.UpdateAck.Success);
+					await HandleUpdateAcknowledged(gatewayId, msg.UpdateAck);
 					break;
 				case ControlMessage.PayloadOneofCase.LogResponse:
 					_logger.LogInformation("Gateway [{0}] responded to log request => success={1}, msg={2}",
@@ -110,7 +112,6 @@ namespace UpFlux_WebService
 			}
 		}
 
-		// ---------- EXACT license logic (with console prompt) ----------
 		private async Task HandleLicenseRequest(string gatewayId, LicenseRequest req)
 		{
 			_logger.LogInformation("Handling license request for Gateway ID: {GatewayId}, IsRenewal: {IsRenewal}, Device UUID: {DeviceUuid}",
@@ -130,7 +131,7 @@ namespace UpFlux_WebService
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "An error occurred while handling license request for Device UUID: {DeviceUuid}", req.DeviceUuid);
-				await SendNotificationMessageAsync(gatewayId, "An error occurred while processing the license request.");
+				await SendControlMessageAsync(gatewayId, "An error occurred while processing the license request.");
 			}
 		}
 
@@ -146,7 +147,7 @@ namespace UpFlux_WebService
 			if (generatedId is null)
 			{
 				_logger.LogWarning("Received communication attempt from unknown Machine ID: {DeviceUuid}", deviceUuid);
-				await SendNotificationMessageAsync(gatewayId, $"Unknown Machine ID: {deviceUuid}. Request denied.");
+				await SendControlMessageAsync(gatewayId, $"Unknown Machine ID: {deviceUuid}. Request denied.");
 				return;
 			}
 
@@ -155,7 +156,7 @@ namespace UpFlux_WebService
 			if (await machineRepository.GetByIdAsync(deviceUuid) != null)
 			{
 				_logger.LogInformation("Machine ID: {DeviceUuid} already exists in the repository. No action required.", deviceUuid);
-				await SendNotificationMessageAsync(gatewayId, $"Machine ID: {deviceUuid} already exists in the repository.");
+				await SendControlMessageAsync(gatewayId, $"Machine ID: {deviceUuid} already exists in the repository.");
 				return;
 			}
 
@@ -173,7 +174,7 @@ namespace UpFlux_WebService
 				await machineRepository.AddAsync(newMachine);
 				await machineRepository.SaveChangesAsync();
 
-				await SendNotificationMessageAsync(gatewayId, $"Successfully added new Machine record for Device UUID: {deviceUuid}.");
+				await SendControlMessageAsync(gatewayId, $"Successfully added new Machine record for Device UUID: {deviceUuid}.");
 				_logger.LogInformation("Successfully added new Machine record for Device UUID: {DeviceUuid}", deviceUuid);
 			}
 			catch (Exception ex)
@@ -186,17 +187,17 @@ namespace UpFlux_WebService
 		private async Task ProcessRenewalRequest(string gatewayId, string deviceUuid)
 		{
 			_logger.LogInformation("Processing license renewal request for Device UUID: {DeviceUuid}", deviceUuid);
-
-			// send signalR notification for and expired licence 
 			using var scope = _serviceScopeFactory.CreateScope();
 			var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+			// send signalR notification for and expired licence 
 			await notificationService.SendMessageToUriAsync("Alert/Licence", $" Device :{deviceUuid} has an expired licence and is requesting renewal");
 
-			await SendNotificationMessageAsync(gatewayId, $"License renewal request received for Device UUID: {deviceUuid}. Further action required.");
+			await SendControlMessageAsync(gatewayId, $"License renewal request received for Device UUID: {deviceUuid}. Further action required.");
 			_logger.LogInformation("Notification sent for license renewal request for Device UUID: {DeviceUuid}", deviceUuid);
 		}
 
-		private async Task SendNotificationMessageAsync(string gatewayId, string description)
+		private async Task SendControlMessageAsync(string gatewayId, string description)
 		{
 			if (_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
 			{
@@ -215,8 +216,7 @@ namespace UpFlux_WebService
 			}
 		}
 
-		// ---------- EXACT log saving logic ----------
-		private async Task HandleLogUpload(string gatewayId, LogUpload upload)
+		private async Task HandleLogUploadAsync(string gatewayId, LogUpload upload)
 		{
 			try
 			{
@@ -236,8 +236,7 @@ namespace UpFlux_WebService
 			}
 		}
 
-		// ---------- EXACT monitoring logic ----------
-		private async Task HandleMonitoringData(string gatewayId, MonitoringDataMessage mon)
+		private async Task HandleMonitoringDataAsync(string gatewayId, MonitoringDataMessage mon)
 		{
 			using var scope = _serviceScopeFactory.CreateScope();
 			var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
@@ -259,13 +258,12 @@ namespace UpFlux_WebService
 			}
 		}
 
-		// ---------- EXACT alert logic ----------
-		private async Task HandleAlertMessage(string gatewayId, AlertMessage alert)
+		private async Task HandleAlertMessageAsync(string gatewayId, AlertMessage alert)
 		{
 			_logger.LogInformation("ALERT from gw={0}, dev={1}, level={2}, msg={3}",
 				gatewayId, alert.Source, alert.Level, alert.Message);
 
-			// send signalR notification here
+			// notification
 			using var scope = _serviceScopeFactory.CreateScope();
 			var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 			await notificationService.SendMessageToUriAsync("Alert/Machine", alert.ToString());
@@ -276,7 +274,7 @@ namespace UpFlux_WebService
 				ControlMessage responseMsg = new ControlMessage
 				{
 					SenderId = "Cloud",
-					Description= "Alert received by the cloud.",
+					Description = "Alert received by the cloud.",
 					AlertResponse = new AlertResponseMessage
 					{
 						Success = true,
@@ -287,9 +285,178 @@ namespace UpFlux_WebService
 			}
 		}
 
-		// ---------- EXACT version data logic ----------
+		private async Task HandleCommandResponse(string gatewayId, CommandResponse req)
+		{
+			_logger.LogInformation("Gateway [{0}] responded to command: {1}", gatewayId, req.CommandId);
+
+			if (_commandIdToMetadataMap.TryGetValue(req.CommandId, out CommandMetadata? metadata))
+			{
+				_logger.LogInformation("Processing CommandResponse for CommandId: {0}, Parameters: {1}", req.CommandId, metadata.Parameters);
+
+				foreach (var machineId in metadata.MachineIds)
+				{
+					if (metadata.CommandType == CommandType.Rollback)
+						await ProcessMachineRollback(machineId, metadata.Parameters, req);
+				}
+
+				_commandIdToMetadataMap.TryRemove(req.CommandId, out _);
+
+				_logger.LogInformation("Successfully handled and removed CommandId: {0} from metadata map.", req.CommandId);
+			}
+			else
+			{
+				_logger.LogWarning("No metadata found for CommandId: {0}. Unable to process CommandResponse.", req.CommandId);
+			}
+		}
+
+		/// <summary>
+		/// update application database if rollback is succesful
+		/// </summary>
+		private async Task ProcessMachineRollback(string machineId, string parameters, CommandResponse req)
+		{
+			// need to keep track the user who initiated rollback (since it affects application table) - not done
+			// might want to add engineer email parameter at SendUpdatePackage (used by controller), update interface, and update controller
+
+			using var scope = _serviceScopeFactory.CreateScope();
+			var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
+			var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+			try
+			{
+				var application = await applicationRepository.GetByMachineId(machineId);
+				if (application == null)
+				{
+					_logger.LogWarning("No application found for MachineId: {0}. Skipping processing.", machineId);
+					await notificationService.SendMessageToUriAsync("Alert/Command",
+						$"Failed to process rollback for MachineId: {machineId}. No application found.");
+
+					return;
+				}
+
+				if (req.Success)
+				{
+					_logger.LogInformation("Processing successful CommandResponse for MachineId: {0}, CommandId: {1}, Parameters: {2}",
+						machineId, req.CommandId, parameters);
+
+					// update
+					application.CurrentVersion = parameters;
+
+					applicationRepository.Update(application);
+					await applicationRepository.SaveChangesAsync();
+
+					// send succes notification
+					string successMessage = $"MachineId: {machineId} successfully rolled back to version: {parameters}.";
+					await notificationService.SendMessageToUriAsync("Alert/Command", successMessage);
+
+					_logger.LogInformation("Successfully processed rollback for MachineId: {0}, CommandId: {1}. Updated to version: {2}",
+						machineId, req.CommandId, parameters);
+				}
+				else
+				{
+					// failure
+					_logger.LogWarning("Rollback command failed for MachineId: {0}, CommandId: {1}.", machineId, req.CommandId);
+
+					string failureMessage = $"Rollback failed for MachineId: {machineId}. CommandId: {req.CommandId}.";
+					await notificationService.SendMessageToUriAsync("Alert/Command", failureMessage);
+				}
+			}
+			catch (Exception ex)
+			{
+				// notifcation for error?
+				_logger.LogError(ex, "Error while processing rollback for MachineId: {0}, CommandId: {1}.", machineId, req.CommandId);
+
+				await notificationService.SendMessageToUriAsync("Alert/Command",
+					$"An error occurred while processing rollback for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// update application database if update is succesful
+		/// </summary>
+		private async Task HandleUpdateAcknowledged(string gatewayId, UpdateAck req)
+		{
+			// need to keep track of the id of user who initiated the update (since it affects application table) - not done
+			// might want to add engineer email parameter at SendUpdatePackage (used by controller), update interface, and update controller
+
+			_logger.LogInformation("Gateway [{0}] acknowledged update: {1}, success={2}",
+					gatewayId, req.FileName, req.Success);
+
+			using var scope = _serviceScopeFactory.CreateScope();
+			var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
+			var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+			if (!_updateMetadataMap.TryGetValue(req.FileName, out UpdateMetadata? metadata))
+			{
+				_logger.LogWarning("No metadata found for FileName: {0}. Unable to process UpdateAck.", req.FileName);
+				return;
+			}
+
+			try
+			{
+				_logger.LogInformation("Processing UpdateAck for GatewayId: {0}, FileName: {1}, Success: {2}",
+					gatewayId, req.FileName, req.Success);
+
+				foreach (var deviceUuid in metadata.TargetDevices)
+				{
+					var application = await applicationRepository.GetByMachineId(deviceUuid);
+
+					if (application == null)
+					{
+						_logger.LogWarning("No application found for DeviceUuid: {0}. Skipping update.", deviceUuid);
+
+						await notificationService.SendMessageToUriAsync("Alert/Update",
+							$"Update failed for DeviceUuid: {deviceUuid}. Application not found.");
+						continue;
+					}
+
+					if (req.Success)
+					{
+						// update
+						application.CurrentVersion = metadata.Version;
+						application.AppName = metadata.AppName;
+
+						applicationRepository.Update(application);
+						await applicationRepository.SaveChangesAsync();
+
+						_logger.LogInformation("Successfully updated application for DeviceUuid: {0} to version: {1}, AppName: {2}",
+							deviceUuid, metadata.Version, metadata.AppName);
+
+						// notification
+						await notificationService.SendMessageToUriAsync("Alert/Update",
+							$"DeviceUuid: {deviceUuid} successfully updated to version: {metadata.Version}, AppName: {metadata.AppName}.");
+					}
+					else
+					{
+						_logger.LogWarning("Update failed for DeviceUuid: {0}. FileName: {1}", deviceUuid, req.FileName);
+
+						//notification
+						await notificationService.SendMessageToUriAsync("Alert/Update",
+							$"Update failed for DeviceUuid: {deviceUuid}. FileName: {req.FileName}, AppName: {metadata.AppName}.");
+					}
+				}
+
+				_updateMetadataMap.TryRemove(req.FileName, out _);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while processing UpdateAck for GatewayId: {0}, FileName: {1}.", gatewayId, req.FileName);
+
+				await notificationService.SendMessageToUriAsync("Alert/Update",
+					$"An error occurred while processing update for GatewayId: {gatewayId}, FileName: {req.FileName}. Error: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// receive current running version and available version
+		/// </summary>
 		private async Task HandleVersionDataResponse(string gatewayId, VersionDataResponse resp)
 		{
+			// how to handle diffrent package version in cloud database and gateway version?
+			// should this update database? (if gateway is the trusted version) or should cloud send what is supposed to be the correct version (if cloud is the trusted source)
+			// currently updating database (trusting gateway)
+
+			//same case with available versions (just logging it currently)
+
 			if (!resp.Success)
 			{
 				_logger.LogWarning("Gateway [{0}] reported version data request failed: {1}", gatewayId, resp.Message);
@@ -308,7 +475,7 @@ namespace UpFlux_WebService
 					var application = await applicationRepository.GetByMachineId(dv.DeviceUuid);
 					if (application is null)
 					{
-						// or add it?
+						// or add it to application database?
 						_logger.LogInformation($"machine: [{dv.DeviceUuid}] have an applicatiuon running that is not in the database");
 						continue;
 					}
@@ -346,8 +513,9 @@ namespace UpFlux_WebService
 				}
 			}
 		}
+		#endregion
 
-		// ---------- PUBLIC METHODS to push messages from the console menu ----------
+		#region PUBLIC METHODS
 
 		/// <summary>
 		/// Sends a LicenceResponse to connected gateways.
@@ -369,16 +537,14 @@ namespace UpFlux_WebService
 
 			var responseMessage = new ControlMessage
 			{
-				SenderId = "Web Service",
+				SenderId = "Cloud",
 				LicenseResponse = licenseResponse
 			};
 
-			// Check if the target gateway is connected
 			if (_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
 			{
 				try
 				{
-					// Send the license response to the specified gateway
 					await writer.WriteAsync(responseMessage);
 					_logger.LogInformation("LicenceResponse sent to Gateway [{0}] for DeviceUuid={1}, Approved={2}",
 						gatewayId, deviceUuid, approved);
@@ -390,7 +556,6 @@ namespace UpFlux_WebService
 			}
 			else
 			{
-				// Log if the gateway is not connected
 				_logger.LogWarning("Gateway [{0}] is not connected. LicenceResponse not sent.", gatewayId);
 			}
 		}
@@ -423,10 +588,25 @@ namespace UpFlux_WebService
 				SenderId = "Cloud",
 				CommandRequest = cmdReq
 			};
-			await writer.WriteAsync(msg);
 
-			_logger.LogInformation("CommandRequest sent to [{0}]: id={1}, type={2}, deviceCount={3}",
-				gatewayId, commandId, cmdType, targetDevices.Length);
+			try
+			{
+				await writer.WriteAsync(msg);
+
+				_commandIdToMetadataMap[commandId] = new CommandMetadata
+				{
+					MachineIds = targetDevices.ToList(),
+					Parameters = parameters,
+					CommandType = cmdType
+				};
+
+				_logger.LogInformation("CommandRequest sent to [{0}]: id={1}, type={2}, deviceCount={3}",
+					gatewayId, commandId, cmdType, targetDevices.Length);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Failed to send CommandRequest to [{0}]: id={1}, type={2}", gatewayId, commandId, cmdType);
+			}
 		}
 
 		/// <summary>
@@ -440,10 +620,10 @@ namespace UpFlux_WebService
 				return;
 			}
 
-			LogRequestMessage req = new LogRequestMessage();
+			LogRequestMessage req = new();
 			req.DeviceUuids.AddRange(deviceUuids);
 
-			ControlMessage msg = new ControlMessage
+			ControlMessage msg = new()
 			{
 				SenderId = "Cloud",
 				LogRequest = req
@@ -456,7 +636,7 @@ namespace UpFlux_WebService
 		/// <summary>
 		/// Sends an update package to the gateway, which should forward/install it on the specified devices.
 		/// </summary>
-		public async Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices)
+		public async Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices, string appName, string version)
 		{
 			if (!_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
 			{
@@ -476,10 +656,27 @@ namespace UpFlux_WebService
 				SenderId = "Cloud",
 				UpdatePackage = update
 			};
-			await writer.WriteAsync(msg);
 
-			_logger.LogInformation("UpdatePackage [{0}] of size {1} bytes sent to [{2}], for {3} devices.",
-				fileName, packageData.Length, gatewayId, targetDevices.Length);
+			_updateMetadataMap[fileName] = new UpdateMetadata
+			{
+				TargetDevices = targetDevices.ToList(),
+				AppName = appName,
+				Version = version,
+				FileName = fileName
+			};
+
+			try
+			{
+				await writer.WriteAsync(msg);
+
+				_logger.LogInformation("UpdatePackage [{0}] of size {1} bytes sent to [{2}], for {3} devices.",
+					fileName, packageData.Length, gatewayId, targetDevices.Length);
+			}
+			catch (Exception ex)
+			{
+				_updateMetadataMap.TryRemove(fileName, out _);
+				_logger.LogError(ex, "Failed to send UpdatePackage [{0}] to Gateway [{1}].", fileName, gatewayId);
+			}
 		}
 
 		/// <summary>
@@ -503,4 +700,22 @@ namespace UpFlux_WebService
 			_logger.LogInformation("VersionDataRequest sent to gateway [{0}].", gatewayId);
 		}
 	}
+	#endregion
 }
+
+#region supporting classes
+public class CommandMetadata
+{
+	public List<string> MachineIds { get; set; } = new();
+	public string Parameters { get; set; } = string.Empty;
+	public CommandType CommandType { get; set; }
+}
+
+public class UpdateMetadata
+{
+	public List<string> TargetDevices { get; set; } = new();
+	public string AppName { get; set; } = string.Empty;
+	public string Version { get; set; } = string.Empty;
+	public string FileName { get; set; } = string.Empty;
+}
+#endregion
