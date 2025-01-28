@@ -7,7 +7,7 @@ using Upflux_GatewaySimulator;
 Console.WriteLine("Starting gRPC Client...");
 
 // Create the gRPC channel
-var channel = GrpcChannel.ForAddress("http://upflux.eu:5002", new GrpcChannelOptions
+var channel = GrpcChannel.ForAddress("http://localhost:5002", new GrpcChannelOptions
 {
 	//Credentials = ChannelCredentials.Insecure, 
 	MaxReceiveMessageSize = 200 * 1024 * 1024,

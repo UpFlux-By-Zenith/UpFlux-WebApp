@@ -77,7 +77,6 @@ export const PasswordSettingsContent: React.FC = () => {
   };
 
   return (
-    <Layout>
     <Stack className="password-settings-content">
       {/* Account Settings and Password Buttons */}
       <Group className="setting-selector" align="center">
@@ -150,6 +149,5 @@ export const PasswordSettingsContent: React.FC = () => {
         </Button>
       </Box>
     </Stack>
-    </Layout>
   );
 };
