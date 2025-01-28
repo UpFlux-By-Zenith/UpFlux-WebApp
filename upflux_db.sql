@@ -8,7 +8,8 @@ USE upflux;
 CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(15) NOT NULL 
+    ip_address VARCHAR(15) NOT NULL ,
+    machine_name varchar(255) NOT NULL,
 );
 
 -- Create Users Table

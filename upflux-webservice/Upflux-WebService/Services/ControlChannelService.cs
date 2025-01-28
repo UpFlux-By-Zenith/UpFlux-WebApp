@@ -5,6 +5,7 @@ using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Core.Models;
 using Google.Protobuf.WellKnownTypes;
 using Upflux_WebService.Services.Interfaces;
+using static Upflux_WebService.Services.EntityQueryService;
 
 
 namespace UpFlux_WebService
@@ -142,6 +143,7 @@ namespace UpFlux_WebService
 			using var scope = _serviceScopeFactory.CreateScope();
 			var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
 			var generatedMachineIdRepository = scope.ServiceProvider.GetRequiredService<IGeneratedMachineIdRepository>();
+			var entityQueryService = scope.ServiceProvider.GetRequiredService<IEntityQueryService>();
 
 			var generatedId = await generatedMachineIdRepository.GetByMachineId(deviceUuid);
 			if (generatedId is null)
@@ -164,6 +166,7 @@ namespace UpFlux_WebService
 			{
 				MachineId = deviceUuid,
 				dateAddedOn = DateTime.UtcNow,
+				machineName = entityQueryService.GenerateUserId(DbGenerateId.MACHINE) ,
 				ipAddress = "NA"
 			};
 
