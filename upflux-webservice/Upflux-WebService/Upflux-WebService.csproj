@@ -46,4 +46,8 @@
     </Protobuf>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="logs\upflux-logs\" />
+  </ItemGroup>
+
 </Project>
