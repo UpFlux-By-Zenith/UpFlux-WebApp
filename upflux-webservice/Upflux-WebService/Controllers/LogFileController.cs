@@ -58,17 +58,15 @@ namespace Upflux_WebService.Controllers
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="deviceUuids"></param>
+		/// <param name="request"></param>
 		/// <returns></returns>
-		[HttpGet("admin/machine/download")]
-		public async Task<IActionResult> DownloadMachineLogs([FromQuery] string[] deviceUuids)
+		[HttpPost("admin/machine/download")]
+		public async Task<IActionResult> DownloadMachineLogs([FromBody] DeviceUuidRequest request)
 		{
 			try
 			{
-				// Call the LogFileService to handle log requests and create the ZIP archive
-				var archiveStream = await _logFileService.RequestLogsAndCreateArchiveAsync(_machineLogDirectoryPath, deviceUuids);
+				var archiveStream = await _logFileService.RequestLogsAndCreateArchiveAsync(_machineLogDirectoryPath, request.DeviceUuids);
 
-				// Return the ZIP archive as a file download
 				return File(archiveStream, "application/zip", "machine-logs.zip");
 			}
 			catch (DirectoryNotFoundException ex)
@@ -84,5 +82,29 @@ namespace Upflux_WebService.Controllers
 				return StatusCode(500, new { message = "An error occurred while processing the logs.", error = ex.Message });
 			}
 		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		[HttpGet("admin/machine/download-all")]
+		public async Task<IActionResult> ProcessAllMachines()
+		{
+			try
+			{
+				var archiveStream = await _logFileService.ProcessAllMachinesAndCreateArchiveAsync(_machineLogDirectoryPath);
+
+				return File(archiveStream, "application/zip", "machine-logs.zip");
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, "An error occurred while processing logs.");
+			}
+		}
 	}
+}
+
+public class DeviceUuidRequest
+{
+	public string[] DeviceUuids { get; set; }
 }
