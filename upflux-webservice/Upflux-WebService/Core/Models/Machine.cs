@@ -10,6 +10,10 @@ namespace Upflux_WebService.Core.Models
 		public string MachineId { get; set; }
 
 		[Required]
+		[Column("machine_name")]
+		public string machineName { get; set; }
+
+		[Required]
 		[Column("date_added")]
 		public DateTime dateAddedOn { get; set; }
 
