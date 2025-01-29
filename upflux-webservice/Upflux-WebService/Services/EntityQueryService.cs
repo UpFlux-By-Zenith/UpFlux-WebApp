@@ -15,7 +15,7 @@ namespace Upflux_WebService.Services
         private readonly ApplicationDbContext _context;
 		private readonly ILogger<EntityQueryService> _logger;
 
-		private enum DbGenerateId
+		public enum DbGenerateId
         {
             ADMIN,
             ENGINEER,
@@ -258,36 +258,36 @@ namespace Upflux_WebService.Services
             }
         }
 
+		public string GenerateUserId(DbGenerateId idType)
+		{
+			// Determine the prefix based on the ID type, defaulting to "E" for UserBase
+			string appendId = idType switch
+			{
+				DbGenerateId.ADMIN => "A",
+				DbGenerateId.MACHINE => "M",
+				_ => "E" // Default to "E" for UserBase
+			};
 
-        #endregion
+			Random random = new Random();
+			int newId;
 
-        #region private methods
-        private string GenerateUserId(DbGenerateId idType)
-        {
-            // Determine the prefix based on the ID type, defaulting to "E" for UserBase
-            string appendId = idType switch
-            {
-                DbGenerateId.ADMIN => "A",
-                DbGenerateId.MACHINE => "M",
-                _ => "E" // Default to "E" for UserBase
-            };
+			do
+			{
+				// Generate a random integer within a range (e.g., 100000 to 999999)
+				newId = random.Next(100000, 999999);
+			}
+			while (IsIdInUse(idType, appendId + newId)); // Check uniqueness in the appropriate DbSet
 
-            Random random = new Random();
-            int newId;
+			Console.WriteLine(appendId + newId);
 
-            do
-            {
-                // Generate a random integer within a range (e.g., 100000 to 999999)
-                newId = random.Next(100000, 999999);
-            }
-            while (IsIdInUse(idType, appendId + newId)); // Check uniqueness in the appropriate DbSet
+			return appendId + newId;
+		}
 
-            Console.WriteLine(appendId + newId);
+		#endregion
 
-            return appendId + newId;
-        }
+		#region private methods
 
-        private bool IsIdInUse(DbGenerateId idType, string generatedId)
+		private bool IsIdInUse(DbGenerateId idType, string generatedId)
         {
             // Dynamically check the appropriate DbSet for uniqueness
             return idType switch
