@@ -1,8 +1,23 @@
 // src/features/EngineerToken/GetEngineerToken.tsx
-import React, { useState } from "react";
-import { TextInput, Button, Stack, Box, Text } from "@mantine/core";
+import React, { useEffect, useState } from "react";
+import {
+  TextInput,
+  Button,
+  Stack,
+  Box,
+  Text,
+  MultiSelect,
+  ComboboxData,
+} from "@mantine/core";
 import { useAuth } from "../../common/authProvider/AuthProvider";
 import { getEngineerToken } from "../../api/adminApiActions";
+import { getALLMachineDetails as getAllMachineDetails } from "../../api/applicationsRequest";
+
+interface IMachineDetails {
+  machineId: number;
+  dateAddedOn: string;
+  ipAddress: string;
+}
 
 export const GetEngineerToken: React.FC = () => {
   // State for form fields
@@ -11,7 +26,7 @@ export const GetEngineerToken: React.FC = () => {
   const [machineIds, setMachineIds] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [token, setToken] = useState("");
-
+  const [multiSelectOptions, setMultiSelectOptions] = useState([]);
   const { authToken } = useAuth();
 
   // Handle form submission
@@ -29,6 +44,16 @@ export const GetEngineerToken: React.FC = () => {
 
     await getEngineerToken(payload, authToken);
   };
+
+  useEffect(() => {
+    getAllMachineDetails().then((res: IMachineDetails[]) => {
+      console.log(res);
+      const multiSelectOptions = res.map((val) => {
+        return { value: val.machineId, label: val.machineId };
+      });
+      setMultiSelectOptions(multiSelectOptions);
+    });
+  }, []);
 
   return (
     // <Box className="get-engineer-token-container">
@@ -51,12 +76,19 @@ export const GetEngineerToken: React.FC = () => {
         className="input-field"
       />
 
-      <TextInput
+      {/* <TextInput
         label="Machine IDs (comma-separated)"
         placeholder="e.g., Machine1, Machine2"
         value={machineIds}
         onChange={(e) => setMachineIds(e.target.value)}
         className="input-field"
+      /> */}
+
+      <MultiSelect
+        className="machine-selection"
+        data={multiSelectOptions}
+        label="Machine IDs"
+        placeholder="Select machines to give access to"
       />
 
       <Button onClick={handleSubmit} className="submit-button">

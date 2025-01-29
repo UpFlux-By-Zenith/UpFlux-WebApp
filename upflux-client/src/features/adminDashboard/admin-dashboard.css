@@ -41,3 +41,7 @@
 .admin-dashboard{
     padding: 24px;
 }
+
+.machine-selection{
+  width: max-content;
+}

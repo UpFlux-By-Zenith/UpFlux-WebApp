@@ -6,14 +6,21 @@ import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import "./update-management.css";
 import view from "../../assets/images/view.png";
 import updateIcon from "../../assets/images/updateIcon.jpg";	
+import { useSubscription } from "../reduxSubscription/useSubscription";
+import { useAuth } from "../../common/authProvider/AuthProvider";
 
-export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotification }) => {
+export const UpdateManagement: React.FC<{ addNotification: any }> = ({
+  addNotification,
+}) => {
   const [modalOpened, setModalOpened] = useState(false);
   const [machines, setMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { authToken } = useAuth();
+
+  useSubscription(authToken);
 
   // Fetch accessible machines on component load
   useEffect(() => {
@@ -54,7 +61,7 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotifi
 
   // Chart data for multiple measures
   const chartData = [
-    { name: "Alive", value: 2, color: "#40C057" },
+    { name: "Alive", value: machines.length, color: "#40C057" },
     { name: "Shutdown", value: 0, color: "#FA5252" },
     { name: "Unknown", value: 0, color: "#6c757d" },
   ];
@@ -69,17 +76,12 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotifi
 
       <Box className="content-wrapper">
         <Group className="overview-section">
-          <Box className="chart">
-            <DonutChart className="chart" withTooltip={false} data={chartData} />;
-            <Text className="chart-text">
-              Machines <br /> {machines.length}
-            </Text>
-          </Box>
+          <Box className="chart"></Box>
 
           <Stack className="legend">
             <Group className="legend-item">
               <Box className="circle green"></Box>
-              <Text size="sm">{2} Alive</Text>
+              <Text size="sm">{1} Alive</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
@@ -92,10 +94,16 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotifi
           </Stack>
 
           <Stack className="button-group">
-            <Button className="configure-button" onClick={() => setModalOpened(true)}>
+            <Button
+              className="configure-button"
+              onClick={() => setModalOpened(true)}
+            >
               Configure Update
             </Button>
-            <Button className="smart-button" onClick={() => navigate("/clustering")}>
+            <Button
+              className="smart-button"
+              onClick={() => navigate("/clustering")}
+            >
               Smart Update
             </Button>
           </Stack>
@@ -127,7 +135,10 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotifi
                       <Badge color="green">{machine.status || "Alive"}</Badge>
                     </Table.Td>
                     <Table.Td>
-                      <Link to="/version-control" state={{ machineId: machine.machineId }}>
+                      <Link
+                        to="/version-control"
+                        state={{ machineId: machine.machineId }}
+                      >
                         <img src={view} alt="view" className="view" />
                       </Link>
                     </Table.Td>
@@ -139,7 +150,12 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotifi
         </Box>
       </Box>
 
-      <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Configure Update" centered>
+      <Modal
+        opened={modalOpened}
+        onClose={() => setModalOpened(false)}
+        title="Configure Update"
+        centered
+      >
         <Box>
           <Text>Select Machines*</Text>
           <Select

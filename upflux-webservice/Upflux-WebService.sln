@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Upflux-WebService", "Upflux-WebService\Upflux-WebService.csproj", "{F19A9A8E-F41C-40DF-80B5-BE3968EB04CC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Upflux-GatewaySimulator", "..\Upflux-GatewaySimulator\Upflux-GatewaySimulator\Upflux-GatewaySimulator.csproj", "{8AF90E8F-A195-4BD3-9BED-31E0C29C84FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{F19A9A8E-F41C-40DF-80B5-BE3968EB04CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F19A9A8E-F41C-40DF-80B5-BE3968EB04CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F19A9A8E-F41C-40DF-80B5-BE3968EB04CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AF90E8F-A195-4BD3-9BED-31E0C29C84FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AF90E8F-A195-4BD3-9BED-31E0C29C84FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AF90E8F-A195-4BD3-9BED-31E0C29C84FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AF90E8F-A195-4BD3-9BED-31E0C29C84FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -14,94 +14,86 @@ import { UpdateManagement } from './features/updateManagement/UpdateManagement';
 import { VersionControl } from './features/versionControl/VersionControl';
 import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
 import { useState } from 'react';
-import { AccountSettings } from './features/accountSettings/AccountSettings';
+import { Provider } from "react-redux";
+import store from "./features/reduxSubscription/store";
 
 export const App = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   return (
-    <MantineProvider>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Home route */}
-            <Route path="/" element={<HomeRoute />} />
+    <Provider store={store}>
+      <MantineProvider>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              {/* Home route */}
+              <Route path="/" element={<HomeRoute />} />
 
-            {/* Login route */}
-            <Route path="/login" element={<LoginComponent />} />
+              {/* Login route */}
+              <Route path="/login" element={<LoginComponent />} />
 
-            {/* Admin login route */}
-            <Route path="/admin-login" element={<AdminLogin />} />
+              {/* Admin login route */}
+              <Route path="/admin-login" element={<AdminLogin />} />
 
-            {/* Admin protected routes */}
-            <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
-              <Route
-                path="/password-settings"
-                element={
-                  <Layout>
-                    <PasswordSettingsContent />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/admin-dashboard"
-                element={
-                  <Layout>
-                    <AdminDashboard />
-                  </Layout>
-                }
-              />
-            </Route>
+              {/* Admin protected routes */}
+              <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
+                <Route
+                  path="/password-settings"
+                  element={
+                    <Layout>
+                      <PasswordSettingsContent />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin-dashboard"
+                  element={
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
+                  }
+                />
+              </Route>
 
-            {/* Engineer protected routes */}
-            <Route element={<PrivateRoutes role={ROLES.ENGINEER} />}>
-              <Route
-                path="/update-management"
-                element={
-                  <Layout>
-                    <UpdateManagement addNotification={notifications}/>
-                  </Layout>
-                }
-              />
-              <Route
-                path="/clustering"
-                element={
-                  <Layout>
-                    <Clustering />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/version-control"
-                element={
-                  <Layout>
-                    <VersionControl />
-                  </Layout>
-                }
-              />
+              {/* Engineer protected routes */}
+              <Route element={<PrivateRoutes role={ROLES.ENGINEER} />}>
+                <Route
+                  path="/update-management"
+                  element={
+                    <Layout>
+                      <UpdateManagement addNotification={notifications} />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/clustering"
+                  element={
+                    <Layout>
+                      <Clustering />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/version-control"
+                  element={
+                    <Layout>
+                      <VersionControl />
+                    </Layout>
+                  }
+                />
 
-              <Route
-                path="/cluster-management"
-                element={
-                  <Layout>
-                    <ClusterManagement />
-                  </Layout>
-                }
-              />
-
-              <Route
-                path="/account-settings"
-                element={
-                  <Layout>
-                    <AccountSettings />
-                  </Layout>
-                }
-              />
-
-            </Route>
-
-          </Routes>
-        </Router>
-      </AuthProvider>
-    </MantineProvider>
+                <Route
+                  path="/cluster-management"
+                  element={
+                    <Layout>
+                      <ClusterManagement />
+                    </Layout>
+                  }
+                />
+              </Route>
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </MantineProvider>
+    </Provider>
   );
 };

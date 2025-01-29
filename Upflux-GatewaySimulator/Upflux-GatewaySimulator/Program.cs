@@ -92,48 +92,54 @@ void ShowMenu()
 
 async Task SendMonitoringData()
 {
-	Console.WriteLine("Enter UUID for monitoring data (leave blank to create a new one):");
-	string inputUuid = Console.ReadLine();
+    Console.WriteLine("Enter UUID for monitoring data (leave blank to create a new one):");
+    string inputUuid = Console.ReadLine();
 
-	if (string.IsNullOrWhiteSpace(inputUuid))
-	{
-		// Generate new UUID and mock data
-		inputUuid = Guid.NewGuid().ToString();
-		var newData = mockDataGenerator.GenerateMockData(inputUuid);
-		monitoringDataDict[inputUuid] = newData;
+    if (string.IsNullOrWhiteSpace(inputUuid))
+    {
+        // Generate a new UUID
+        inputUuid = Guid.NewGuid().ToString();
+        Console.WriteLine($"New UUID generated: {inputUuid}");
+    }
 
-		Console.WriteLine($"New UUID generated: {inputUuid}");
-	}
+    // Create a MockDataGenerator instance for this UUID
+    var mockDataGenerator = new MachineDataGenerator(inputUuid);
 
-	if (!monitoringDataDict.TryGetValue(inputUuid, out var monitoringData))
-	{
-		Console.WriteLine($"UUID {inputUuid} not found. Generating new data...");
-		monitoringData = mockDataGenerator.GenerateMockData(inputUuid);
-		monitoringDataDict[inputUuid] = monitoringData;
-	}
+    // Generate initial data and store it
+    var monitoringData = mockDataGenerator.GenerateMockData();
 
-	try
-	{
-		var controlMessage = new ControlMessage
-		{
-			SenderId = senderId,
-			MonitoringData = monitoringData
-		};
+    try
+    {
+        Console.WriteLine($"Started sending MonitoringData for UUID={inputUuid}...");
 
-		await call.RequestStream.WriteAsync(controlMessage);
-		Console.WriteLine($"Sent MonitoringData: UUID={inputUuid}, Timestamp={DateTime.UtcNow}");
+        while (true)
+        {
+            var controlMessage = new ControlMessage
+            {
+                SenderId = senderId,
+                MonitoringData = monitoringData
+            };
 
-		// Update the mock data for the next send
-		foreach (var data in monitoringData.AggregatedData)
-		{
-			mockDataGenerator.UpdateMockData(data);
-		}
-	}
-	catch (Exception ex)
-	{
-		Console.WriteLine($"Error sending monitoring data: {ex.Message}");
-	}
+            // Send the control message
+            await call.RequestStream.WriteAsync(controlMessage);
+            Console.WriteLine($"Sent MonitoringData: UUID={inputUuid}, Timestamp={DateTime.UtcNow}");
+
+            // Update the mock data for the next send
+            foreach (var data in monitoringData.AggregatedData)
+            {
+                mockDataGenerator.UpdateMockData(data);
+            }
+
+            // Wait for 5 seconds before the next update
+            await Task.Delay(5000);
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error sending monitoring data: {ex.Message}");
+    }
 }
+
 
 async Task SendLicenseRequest()
 {

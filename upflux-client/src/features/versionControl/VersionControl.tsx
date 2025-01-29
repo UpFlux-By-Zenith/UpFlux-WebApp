@@ -14,11 +14,16 @@ import {
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
 import { getMachineDetails } from "../../api/applicationsRequest";
+import { useSelector } from "react-redux";
+import { RootState } from "../reduxSubscription/store";
 
 export const VersionControl: React.FC = () => {
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
 
+  const machineMetrics = useSelector(
+    (state: RootState) => state.messages.messages
+  );
   // Retrieve machine ID from the route state
   const location = useLocation();
   const machineId = location.state?.machineId || "Unknown Machine";
@@ -31,12 +36,24 @@ export const VersionControl: React.FC = () => {
 
   // Mocked machine metrics data
   const metrics = [
-    { label: "CPU", value: 47 },
-    { label: "CPU Temp", value: 87 },
-    { label: "System Uptime", value: 67 },
-    { label: "Memory Usage", value: 39 },
-    { label: "Disk Usage", value: 47 },
-    { label: "Network Usage", value: 85 },
+    {
+      label: "CPU",
+      value: parseInt(machineMetrics[machineId].metrics.cpuUsage.toFixed()),
+    },
+    {
+      label: "CPU Temp",
+      value: parseInt(
+        machineMetrics[machineId].metrics.cpuTemperature.toFixed()
+      ),
+    },
+    {
+      label: "Memory Usage",
+      value: parseInt(machineMetrics[machineId].metrics.memoryUsage.toFixed()),
+    },
+    {
+      label: "Disk Usage",
+      value: parseInt(machineMetrics[machineId].metrics.diskUsage.toFixed()),
+    },
   ];
 
   // Determine the color based on the metric value
@@ -93,44 +110,53 @@ export const VersionControl: React.FC = () => {
         {/* Overview Section */}
         <Group className="overview-section">
           {/* Action Buttons */}
-          <Button className="softwareDropdown" onClick={() => setModalOpened(true)}>
+          <Button
+            className="softwareDropdown"
+            onClick={() => setModalOpened(true)}
+          >
             Configure App Version
           </Button>
         </Group>
 
         {/* Machine Metrics Section */}
         <Box className="metrics-container">
-        <SimpleGrid cols={6}>
-          {metrics.map((metric, index) => (
-            <RingProgress
-              key={index}
-              size={150}
-              thickness={10}
-              sections={[
-                { value: metric.value, color: getColor(metric.value) },
-                { value: 100 - metric.value, color: "gray" },
-              ]}
-              label={
-                <Box
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "100%",
-                  }}
-                >
-                  <Text size="sm" fw="bold">
-                    {metric.value}%
-                  </Text>
-                  <Text size="xs" mt="xs" fw="bold">
-                    {metric.label}
-                  </Text>
-                </Box>
-              }
-            />
-          ))}
-        </SimpleGrid>
+          <SimpleGrid cols={4}>
+            {metrics.map((metric, index) => (
+              <RingProgress
+                key={index}
+                roundCaps
+                size={150}
+                thickness={10}
+                sections={[
+                  { value: metric.value, color: getColor(metric.value) },
+                ]}
+                transitionDuration={250}
+                label={
+                  <Box
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100%",
+                    }}
+                  >
+                    <Text size="sm" fw="bold">
+                      {metric.value}%
+                    </Text>
+                    <Text size="xs" mt="xs" fw="bold">
+                      {metric.label}
+                    </Text>
+                  </Box>
+                }
+              />
+            ))}
+          </SimpleGrid>
+          <center>
+            <h2 style={{ textAlign: "center" }}>
+              System Uptime: {machineMetrics[machineId].metrics.systemUptime}
+            </h2>
+          </center>
         </Box>
 
         {/* Table Section */}
