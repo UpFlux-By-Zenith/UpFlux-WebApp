@@ -28,32 +28,32 @@ export interface MonitoringData {
   sensorData: SensorData;
 }
 
-interface MessagesState {
-  messages: Record<string, MonitoringData>; // Use Record with uuid as key
+interface MetricsState {
+  metrics: Record<string, MonitoringData>; // Use Record with uuid as key
 }
 
 // Initial state
-const initialState: MessagesState = {
-  messages: {}, // Start with an empty object
+const initialState: MetricsState = {
+  metrics: {}, // Start with an empty object
 };
 
 // Create the slice
-const messagesSlice = createSlice({
-  name: "messages",
+const metricsSlice = createSlice({
+  name: "metrics",
   initialState,
   reducers: {
-    addMessage: (state, action: PayloadAction<MonitoringData>) => {
+    addMetrics: (state, action: PayloadAction<MonitoringData>) => {
       const { uuid } = action.payload;
 
       // Replace or add the message using uuid as the key
-      state.messages[uuid] = action.payload;
+      state.metrics[uuid] = action.payload;
     },
-    clearMessages: (state) => {
-      state.messages = {}; // Reset the messages object
+    clearMetrics: (state) => {
+      state.metrics = {}; // Reset the messages object
     },
   },
 });
 
-export const { addMessage, clearMessages } = messagesSlice.actions;
-const messageReducer = messagesSlice.reducer;
-export default messageReducer;
+export const { addMetrics, clearMetrics } = metricsSlice.actions;
+const metricsReducer = metricsSlice.reducer;
+export default metricsReducer;

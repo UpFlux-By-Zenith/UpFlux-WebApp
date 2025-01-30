@@ -1,11 +1,11 @@
-import { Footer } from "../footer/Footer";
-import { Navbar } from "../navbar/Navbar";
+import { IconCopy, IconCheck, IconRotateClockwise } from '@tabler/icons-react';
 import { GetEngineerToken } from "./GetEngineerToken";
 import { PackageFileInput } from "./PackageFileInput";
 import "./admin-dashboard.css";
-import { Stack, Text } from "@mantine/core"; // Ensure this import matches your grid library
+import { ActionIcon, Button, CopyButton, Stack, Text, TextInput, Tooltip } from "@mantine/core"; // Ensure this import matches your grid library
 import { Grid } from "@mantine/core";
 import "@mantine/core/styles/Grid.css";
+import { ManageMachines } from './ManageMachines';
 export const AdminDashboard = () => {
   return (
     <>
@@ -22,9 +22,7 @@ export const AdminDashboard = () => {
           </Stack>
         </Grid.Col>
         <Grid.Col span={4}>
-          <Stack align="center" className="form-stack">
-            <Text className="form-title">Manage Machines</Text>
-          </Stack>
+          <ManageMachines />
         </Grid.Col>
         <Grid.Col span={4}>
           <Stack align="center" className="form-stack">

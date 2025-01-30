@@ -8,6 +8,7 @@ import view from "../../assets/images/view.png";
 import updateIcon from "../../assets/images/updateIcon.jpg";	
 import { useSubscription } from "../reduxSubscription/useSubscription";
 import { useAuth } from "../../common/authProvider/AuthProvider";
+import { deployPackage } from "../../api/applicationsRequest";
 
 export const UpdateManagement: React.FC<{ addNotification: any }> = ({
   addNotification,
@@ -44,19 +45,25 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
       return;
     }
 
-    // Create a new notification
-    const newNotification = {
-      id: Date.now(),
-      message: `Update started for ${selectedMachine} to ${selectedVersion}`,
-      image: updateIcon,
-      timestamp: new Date().toLocaleTimeString(),
-    };
+    deployPackage(selectedApp,selectedVersion,[selectedMachine]).then(() => {
 
-    // Add the new notification via the passed down addNotification function
-    addNotification(newNotification);
+      // Create a new notification
+      const newNotification = {
+        id: Date.now(),
+        message: `Update started for ${selectedMachine} to ${selectedVersion}`,
+        image: updateIcon,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+  
+      // Add the new notification via the passed down addNotification function
+      addNotification(newNotification);
+  
+      // Close modal
+      setModalOpened(false);
+    }).catch(()=>{
+      alert("Err")
+    })
 
-    // Close modal
-    setModalOpened(false);
   };
 
   // Chart data for multiple measures
@@ -65,6 +72,47 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
     { name: "Shutdown", value: 0, color: "#FA5252" },
     { name: "Unknown", value: 0, color: "#6c757d" },
   ];
+
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [availableVersions, setAvailableVersions] = useState([]);
+  const [availableApps, setAvailableApps] = useState([]);
+
+  // Simulate an API call to fetch the application list and versions
+  const fetchPackages = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/PackageManagement/packages', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`, // Get the token from localStorage (or sessionStorage)
+        },
+      });
+      const data = await response.json();
+      setAvailableApps(data); // Set available apps and versions in state
+    } catch (error) {
+      console.error('Error fetching packages:', error);
+      setAvailableApps([]); // Clear available apps on error
+    }
+  };
+
+  useEffect(() => {
+    // Fetch available applications and their versions on modal open
+    if (modalOpened) {
+      fetchPackages();
+    }
+  }, [modalOpened]);
+
+  const handleAppChange = (value) => {
+    setSelectedApp(value);
+
+    // Find the selected app and set available versions
+    const app = availableApps.find((app) => app.name === value);
+    if (app) {
+      setAvailableVersions(app.versions);
+      setSelectedVersion(app.versions[0]); // Optionally, set the first available version as default
+    } else {
+      setAvailableVersions([]);
+    }
+  };
 
   return (
     <Stack className="update-management-content">
@@ -150,30 +198,34 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
         </Box>
       </Box>
 
-      <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title="Configure Update"
-        centered
-      >
-        <Box>
-          <Text>Select Machines*</Text>
-          <Select
-            data={machines.map((machine) => `Machine ${machine.machineId}`)}
-            placeholder="Select Machines"
-            onChange={(value) => setSelectedMachine(value || null)}
-          />
-          <Text mt="md">Select Software Version*</Text>
-          <Select
-            data={["Version 2.5.0", "Version 1.8.2", "Version 3.1.0"]}
-            placeholder="Select Version"
-            onChange={(value) => setSelectedVersion(value || null)}
-          />
-          <Button mt="md" fullWidth onClick={handleDeploy}>
-            Deploy
-          </Button>
-        </Box>
-      </Modal>
+      <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Configure Update" centered>
+      <Box>
+        <Text>Select Machines*</Text>
+        <Select
+          data={machines.map((machine) => `${machine.machineId}`)}
+          placeholder="Select Machines"
+          onChange={(value) => setSelectedMachine(value || null)}
+        />
+
+        <Text mt="md">Select Application*</Text>
+        <Select
+          data={availableApps.map((app) => app.name)} // Populate based on available apps
+          placeholder="Select Application"
+          onChange={handleAppChange}
+        />
+
+        <Text mt="md">Select Software Version*</Text>
+        <Select
+          data={availableVersions} // Available versions will be updated based on app selection
+          placeholder="Select Version"
+          onChange={(value) => setSelectedVersion(value || null)}
+        />
+
+        <Button mt="md" fullWidth onClick={handleDeploy}>
+          Deploy
+        </Button>
+      </Box>
+    </Modal>
     </Stack>
   );
 };

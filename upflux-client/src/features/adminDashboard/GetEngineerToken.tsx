@@ -23,7 +23,7 @@ export const GetEngineerToken: React.FC = () => {
   // State for form fields
   const [engineerEmail, setEngineerEmail] = useState("");
   const [engineerName, setEngineerName] = useState("");
-  const [machineIds, setMachineIds] = useState("");
+  const [machineIds, setMachineIds] = useState([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [token, setToken] = useState("");
   const [multiSelectOptions, setMultiSelectOptions] = useState([]);
@@ -33,13 +33,11 @@ export const GetEngineerToken: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Split machineIds by commas and trim any extra spaces
-    const machineIdsArray = machineIds.split(",").map((id) => id.trim());
 
     const payload = {
       engineerEmail,
       engineerName,
-      machineIds: machineIdsArray,
+      machineIds: machineIds,
     };
 
     await getEngineerToken(payload, authToken);
@@ -85,13 +83,14 @@ export const GetEngineerToken: React.FC = () => {
       /> */}
 
       <MultiSelect
+        onChange={(va) => setMachineIds(va)}
         className="machine-selection"
         data={multiSelectOptions}
         label="Machine IDs"
         placeholder="Select machines to give access to"
       />
 
-      <Button onClick={handleSubmit} className="submit-button">
+      <Button color="rgba(0, 3, 255, 1)" onClick={handleSubmit} className="submit-button">
         Create Token
       </Button>
 

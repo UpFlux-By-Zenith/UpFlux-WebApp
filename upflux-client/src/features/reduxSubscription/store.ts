@@ -1,10 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
-import messageReducer from "./messageSlice";
+import metricsReducer from "./metricsSlice";
+import alertReducer from "./alertSlice";
 
 
 const store = configureStore({
   reducer: {
-    messages: messageReducer,
+    metrics: metricsReducer,
+    alerts:alertReducer,
   },
 });
 

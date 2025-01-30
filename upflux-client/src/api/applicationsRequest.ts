@@ -55,14 +55,14 @@ export const getMachineDetails = async (): Promise<MachineDetailsResponse | stri
 export const CreateSubscription = async (groupId: string) => {
   try {
 
-      // Retrieve the token from session storage
-  const authToken = sessionStorage.getItem('authToken');
-  console.log('authToken:', authToken);
+    // Retrieve the token from session storage
+    const authToken = sessionStorage.getItem('authToken');
+    console.log('authToken:', authToken);
 
-  if (!authToken) {
-    console.error('No authentication token found in session storage.');
-    return null;
-  }
+    if (!authToken) {
+      console.error('No authentication token found in session storage.');
+      return null;
+    }
 
     const response = await fetch("http://localhost:5000/api/Notification/create-group", {
       method: 'POST',
@@ -70,15 +70,15 @@ export const CreateSubscription = async (groupId: string) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`,
       },
-      body: JSON.stringify({groupid : groupId}),
+      body: JSON.stringify({ groupid: groupId }),
     });
 
-    const data = await response.json() ;
-    return data; 
-    
+    const data = await response.json();
+    return data;
+
   } catch (error) {
     console.error('Error during admin login request:', error);
-    return { "error" : error};
+    return { "error": error };
   }
 };
 
@@ -105,6 +105,75 @@ export const getALLMachineDetails = async () => {
       const data = await response.json();
       console.log('Machine details fetched successfully:', data);
       return data.accessibleMachines.result;
+    } else {
+      const errorData = await response.json();
+      console.error('Error fetching machine details:', errorData);
+      return errorData.message || 'Failed to fetch machine details.';
+    }
+  } catch (error) {
+    console.error('Error during fetch request:', error);
+    return 'An error occurred while fetching machine details.';
+  }
+};
+
+export const deployPackage = async (appName: string, ver: string, targetedMachines: string[]) => {
+  try {
+
+    // Retrieve the token from session storage
+    const authToken = sessionStorage.getItem('authToken');
+    console.log('authToken:', authToken);
+
+    if (!authToken) {
+      console.error('No authentication token found in session storage.');
+      return null;
+    }
+
+    const response = await fetch("http://localhost:5000/api/PackageManagement/packages/upload", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        name: appName,
+        version: ver,
+        targetDevices: targetedMachines
+      }),
+    });
+
+    const data = await response.json();
+    return data;
+
+  } catch (error) {
+    console.error('Error during deploy request:', error);
+    return { "error": error };
+  }
+}
+
+
+export const generateMachineId = async () => {
+  // Retrieve the token from session storage
+  const authToken = sessionStorage.getItem('authToken');
+  console.log('authToken:', authToken);
+
+  if (!authToken) {
+    console.error('No authentication token found in session storage.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(ADMIN_REQUEST_API.GENERATE_MACHINE_ID, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Include Bearer token
+      },
+    });
+
+    if (response.ok) {
+      const data: { machineId: string } = await response.json();
+      console.log('Machine details fetched successfully:', data);
+      return data.machineId;
     } else {
       const errorData = await response.json();
       console.error('Error fetching machine details:', errorData);

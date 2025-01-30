@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import * as signalR from "@microsoft/signalr";
 import { useDispatch } from "react-redux";
-import { addMessage, MonitoringData } from "./messageSlice";
+import { addMetrics, MonitoringData } from "./metricsSlice";
 import { CreateSubscription } from "../../api/applicationsRequest";
+import { addAlert, IAlertMessage } from "./alertSlice";
 
 const hubUrl = "http://localhost:5000/notificationHub"; // Replace with your SignalR hub URL
 
@@ -21,9 +22,15 @@ export const useSubscription = (groupId: string) => {
           .withAutomaticReconnect()
           .build();
 
-        connection.on("ReceiveMessage", (uri, message) => {
-          const parsedData: MonitoringData = JSON.parse(message);
-          dispatch(addMessage(parsedData));
+        connection.on("ReceiveMessage", (uri :string, message) => {
+          if(uri.endsWith("/alert")){
+            const parsedData: IAlertMessage = JSON.parse(message);
+            dispatch(addAlert(parsedData))
+          }else{
+
+            const parsedData: MonitoringData = JSON.parse(message);
+            dispatch(addMetrics(parsedData));
+          }
         });
 
         return connection.start();

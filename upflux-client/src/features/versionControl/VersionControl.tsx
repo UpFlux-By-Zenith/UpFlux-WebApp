@@ -22,7 +22,7 @@ export const VersionControl: React.FC = () => {
   const [modalOpened, setModalOpened] = useState(false);
 
   const machineMetrics = useSelector(
-    (state: RootState) => state.messages.messages
+    (state: RootState) => state.metrics.metrics
   );
   // Retrieve machine ID from the route state
   const location = useLocation();
