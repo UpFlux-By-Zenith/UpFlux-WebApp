@@ -5,6 +5,7 @@ import { ROLES, useAuth } from "../../common/authProvider/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { adminLogin } from "../../api/adminApiActions";
 import { LoginResponse } from "../../api/apiTypes";
+import "./adminLogin.css";
 
 interface AdminLoginFormState {
   email: string;
@@ -79,9 +80,9 @@ export const AdminLogin = () => {
             className="input-card"
           />
         </Box>
-        <Button className="login-button" onClick={handleSubmit}>Log in</Button>
+        <Button className="admin-login-button" onClick={handleSubmit}>Log in</Button>
         <Box className="forgot-password">
-          <a href="/password-settings" className="forgot-password-link">Forgotten your Password?</a>
+          <a href="/forgot-password" className="forgot-password-link">Forgotten your Password?</a>
         </Box>
       </Box>
     </Container>

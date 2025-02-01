@@ -15,93 +15,114 @@ import { VersionControl } from './features/versionControl/VersionControl';
 import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
 import { useState } from 'react';
 import { AccountSettings } from './features/accountSettings/AccountSettings';
+import { ForgotPassword } from './features/forgotPassword/ForgotPassword';
+
+// Import your SessionTimeout component
+import SessionTimeout from './features/sessionTimeout/SessionTimeout';
 
 export const App = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
+
+  // This function is called when the session times out.
+  const handleLogout = () => {
+    sessionStorage.removeItem('authToken');
+    window.location.href = '/login';
+  };
+
   return (
     <MantineProvider>
       <AuthProvider>
         <Router>
           <Routes>
-            {/* Home route */}
+            {/* Public Routes - No session timeout here */}
             <Route path="/" element={<HomeRoute />} />
-
-            {/* Login route */}
             <Route path="/login" element={<LoginComponent />} />
-
-            {/* Admin login route */}
             <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* Admin protected routes */}
-            <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
-              <Route
-                path="/password-settings"
-                element={
-                  <Layout>
-                    <PasswordSettingsContent />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/admin-dashboard"
-                element={
-                  <Layout>
-                    <AdminDashboard />
-                  </Layout>
-                }
-              />
-            </Route>
-
-            {/* Engineer protected routes */}
-            <Route element={<PrivateRoutes role={ROLES.ENGINEER} />}>
-              <Route
-                path="/update-management"
-                element={
-                  <Layout>
-                    <UpdateManagement addNotification={notifications}/>
-                  </Layout>
-                }
-              />
-              <Route
-                path="/clustering"
-                element={
-                  <Layout>
-                    <Clustering />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/version-control"
-                element={
-                  <Layout>
-                    <VersionControl />
-                  </Layout>
-                }
-              />
-
-              <Route
-                path="/cluster-management"
-                element={
-                  <Layout>
-                    <ClusterManagement />
-                  </Layout>
-                }
-              />
-
-              <Route
-                path="/account-settings"
-                element={
-                  <Layout>
-                    <AccountSettings />
-                  </Layout>
-                }
-              />
-
-            </Route>
-
+            {/* Protected Routes - Wrap with SessionTimeout */}
+            <Route
+              path="/*"
+              element={
+                <SessionTimeout onLogout={handleLogout}>
+                  <ProtectedRoutes notifications={notifications} />
+                </SessionTimeout>
+              }
+            />
           </Routes>
         </Router>
       </AuthProvider>
     </MantineProvider>
   );
 };
+
+// Protected routes component
+const ProtectedRoutes = ({ notifications }: { notifications: any[] }) => (
+  <Routes>
+    {/* Admin Protected Routes */}
+    <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
+      <Route
+        path="/password-settings"
+        element={
+          <Layout>
+            <PasswordSettingsContent />
+          </Layout>
+        }
+      />
+      <Route
+        path="/admin-dashboard"
+        element={
+          <Layout>
+            <AdminDashboard />
+          </Layout>
+        }
+      />
+    </Route>
+
+    <Route
+      path="/update-management"
+      element={
+        <Layout>
+          <UpdateManagement addNotification={notifications} />
+        </Layout>
+      }
+    />
+
+    {/* Engineer Protected Routes */}
+    <Route element={<PrivateRoutes role={ROLES.ENGINEER} />}>
+
+      <Route
+        path="/clustering"
+        element={
+          <Layout>
+            <Clustering />
+          </Layout>
+        }
+      />
+      <Route
+        path="/version-control"
+        element={
+          <Layout>
+            <VersionControl />
+          </Layout>
+        }
+      />
+      <Route
+        path="/cluster-management"
+        element={
+          <Layout>
+            <ClusterManagement />
+          </Layout>
+        }
+      />
+      <Route
+        path="/account-settings"
+        element={
+          <Layout>
+            <AccountSettings />
+          </Layout>
+        }
+      />
+    </Route>
+  </Routes>
+);

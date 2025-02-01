@@ -8,7 +8,8 @@ USE upflux;
 CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(15) NOT NULL 
+    ip_address VARCHAR(15) NOT NULL ,
+    machine_name varchar(255) NOT NULL,
 );
 
 -- Create Users Table
@@ -17,7 +18,7 @@ CREATE TABLE Users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     role ENUM('Admin', 'Engineer') NOT NULL,
-	last_login TIMESTAMP NOT NULL
+	last_login TIMESTAMP
 );
 
 -- Create Admin_Details Table 
@@ -32,7 +33,6 @@ CREATE TABLE Admin_Details (
 CREATE TABLE Licences (
     licence_key VARCHAR(255) NOT NULL PRIMARY KEY,
     machine_id VARCHAR(255) NOT NULL,
-    validity_status VARCHAR(50) NOT NULL,
     expiration_date TIMESTAMP NOT NULL,
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
 );
@@ -44,10 +44,13 @@ CREATE TABLE Credentials (
     machine_id VARCHAR(255) NOT NULL,                 
     access_granted_at TIMESTAMP NOT NULL,   
     expires_at TIMESTAMP NOT NULL,           
+    access_granted_by VARCHAR(50) NOT NULL,  
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
+    FOREIGN KEY (access_granted_by) REFERENCES Admin_Details(admin_id),
     UNIQUE (user_id, machine_id, credential_id)   
 );
+
 
 -- Create Packages Table
 CREATE TABLE Packages (
@@ -103,97 +106,82 @@ CREATE TABLE Application_Versions (
     FOREIGN KEY (updated_by) REFERENCES Users(user_id)
 );
 
+CREATE TABLE Generated_Machine_Ids (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    machine_id VARCHAR(36) NOT NULL UNIQUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 /*Show all tables present in the database*/
 SHOW TABLES;
 
-DESCRIBE Machines;
-
--- Inserting data into machine table
-INSERT INTO Machines (machine_id) VALUES
-('1'),
-('2'),
-('3');
-
-
--- View Machines table data
-SELECT * FROM Machines;
-
-/* Inserting data into Users */
-INSERT INTO Users (name, email, role) VALUES
-('Alice', 'alice@example.com', 'Admin'),
-('Bob', 'bob@example.com', 'Engineer'),
-('Charlie', 'charlie@example.com', 'Engineer');
-
--- View Users table data
-SELECT * FROM Users;
-
-/* Inserting data into Licences */
-INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date) VALUES
-('ABC123', '1', 'Valid', '2025-12-31 23:59:59'),
-('DEF456', '2', 'Expired', '2023-08-15 12:00:00'),
-('GHI789', '3', 'Valid', '2026-07-10 10:00:00');
-
--- View Licences table data
-SELECT * FROM Licences;
-
-/* Inserting data into Credentials */
 -- Insert into Machines
-INSERT INTO Machines (machine_id, date_added) 
-VALUES ('1', '2025-01-01 12:00:00'),
-       ('2', '2025-01-02 14:30:00'),
-       ('3', '2025-01-03 09:45:00');
+INSERT INTO Machines (machine_id, ip_address, machine_name) VALUES
+('MCH123ABC', '192.168.0.1', 'M456'),
+('MCH456DEF', '192.168.0.2', 'M789'),
+('MCH789GHI', '192.168.0.3', 'M321');
 
 -- Insert into Users
-INSERT INTO Users (user_id, name, email, role, last_login) 
-VALUES ('a1', 'Alice', 'alice@upflux.com', 'Admin', '2025-01-07 10:00:00'),
-       ('e1', 'Eve', 'eve@upflux.com', 'Engineer', '2025-01-07 11:00:00'),
-       ('e2', 'Eli', 'eli@upflux.com', 'Engineer', '2025-01-06 09:30:00');
+INSERT INTO Users (user_id, name, email, role, last_login) VALUES
+('E123', 'Alice Johnson', 'alice@example.com', 'Engineer', '2024-01-15 08:00:00'),
+('E456', 'Bob Smith', 'bob@example.com', 'Admin', '2024-01-16 09:30:00'),
+('E789', 'Charlie Davis', 'charlie@example.com', 'Engineer', '2024-01-17 10:15:00');
 
 -- Insert into Admin_Details
-INSERT INTO Admin_Details (admin_id, user_id, password_hash)
-VALUES ('a1', 'a1', 'hash_for_alice');
+INSERT INTO Admin_Details (admin_id, user_id, password_hash) VALUES
+('A123', 'E456', 'hash_password_1'),
+('A456', 'E456', 'hash_password_2'),
+('A789', 'E456', 'hash_password_3');
 
 -- Insert into Licences
-INSERT INTO Licences (licence_key, machine_id, validity_status, expiration_date)
-VALUES ('LIC-12345', '1', 'Valid', '2026-01-01 12:00:00'),
-       ('LIC-23456', '2', 'Expired', '2024-12-31 23:59:59'),
-       ('LIC-34567', '3', 'Revoked', '2025-06-01 00:00:00');
+INSERT INTO Licences (licence_key, machine_id, expiration_date) VALUES
+('LIC123ABC', 'MCH123ABC', '2025-01-15 00:00:00'),
+('LIC456DEF', 'MCH456DEF', '2025-02-20 00:00:00'),
+('LIC789GHI', 'MCH789GHI', '2025-03-25 00:00:00');
 
 -- Insert into Credentials
-INSERT INTO Credentials (user_id, machine_id, access_granted_at, expires_at)
-VALUES ('e1', '1', '2025-01-01 12:30:00', '2025-01-10 12:30:00'),
-       ('e2', '2', '2025-01-02 15:00:00', '2025-01-12 15:00:00'),
-       ('e1', '3', '2025-01-03 10:00:00', '2025-01-13 10:00:00');
+INSERT INTO Credentials (user_id, machine_id, access_granted_at, expires_at, access_granted_by) VALUES
+('E123', 'MCH123ABC', '2024-01-15 08:00:00', '2025-01-15 08:00:00', 'A123'),
+('E456', 'MCH456DEF', '2024-01-16 09:30:00', '2025-01-16 09:30:00', 'A456'),
+('E789', 'MCH789GHI', '2024-01-17 10:15:00', '2025-01-17 10:15:00', 'A789');
 
 -- Insert into Packages
-INSERT INTO Packages (version_number, package_size, package_signature, release_date)
-VALUES (1.0, 25.5, 'sig123', '2024-12-01 12:00:00'),
-       (1.1, 30.0, 'sig124', '2025-01-01 12:00:00'),
-       (1.2, 35.2, 'sig125', '2025-01-07 12:00:00');
+INSERT INTO Packages (version_number, package_size, package_signature, release_date) VALUES
+(1.0, 150.5, 'sig_abc123', '2024-01-10 00:00:00'),
+(1.1, 200.0, 'sig_def456', '2024-01-20 00:00:00'),
+(1.2, 250.75, 'sig_ghi789', '2024-01-30 00:00:00');
 
 -- Insert into Update_Logs
-INSERT INTO Update_Logs (package_id, user_id, machine_id, update_status, time_applied)
-VALUES (1, 'e1', '1', 'Completed', '2025-01-01 13:00:00'),
-       (2, 'e2', '2', 'Failed', '2025-01-02 16:00:00'),
-       (3, 'e1', '3', 'Pending', '2025-01-07 14:00:00');
+INSERT INTO Update_Logs (package_id, user_id, machine_id, update_status, time_applied) VALUES
+(1, 'E123', 'MCH123ABC', 'Completed', '2024-01-15 08:30:00'),
+(2, 'E456', 'MCH456DEF', 'Pending', '2024-01-16 10:00:00'),
+(3, 'E789', 'MCH789GHI', 'Failed', '2024-01-17 11:00:00');
 
 -- Insert into Action_Logs
-INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-VALUES ('a1', 'CREATE', 'Machine', '2025-01-01 12:10:00'),
-       ('e1', 'UPDATE', 'Licence', '2025-01-02 16:30:00'),
-       ('e2', 'DELETE', 'Credential', '2025-01-03 11:00:00');
+INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed) VALUES
+('E123', 'CREATE', 'Machine', '2024-01-15 08:45:00'),
+('E456', 'UPDATE', 'Package', '2024-01-16 10:15:00'),
+('E789', 'DELETE', 'Licence', '2024-01-17 11:30:00');
 
 -- Insert into Applications
-INSERT INTO Applications (machine_id, app_name, added_by, current_version)
-VALUES ('1', 'App One', 'a1', '1.0.0'),
-       ('2', 'App Two', 'e1', '2.1.0'),
-       ('3', 'App Three', 'e2', '1.3.5');
+INSERT INTO Applications (machine_id, app_name, added_by, current_version) VALUES
+('MCH123ABC', 'AppOne', 'E123', 'v1.0'),
+('MCH456DEF', 'AppTwo', 'E456', 'v1.1'),
+('MCH789GHI', 'AppThree', 'E789', 'v1.2');
 
 -- Insert into Application_Versions
-INSERT INTO Application_Versions (app_id, version_name, updated_by, date)
-VALUES ('1', '1.1.0', 'e1', '2025-01-05 14:00:00'),
-       ('2', '2.2.0', 'a1', '2025-01-06 16:30:00'),
-       ('3', '1.4.0', 'e2', '2025-01-07 11:00:00');
+INSERT INTO Application_Versions (app_id, version_name, updated_by, date) VALUES
+(1, 'v1.0.1', 'E123', '2024-01-15 09:00:00'),
+(2, 'v1.1.1', 'E456', '2024-01-16 10:30:00'),
+(3, 'v1.2.1', 'E789', '2024-01-17 11:45:00');
+
+-- Insert into Generated_Machine_Ids
+INSERT INTO Generated_Machine_Ids (machine_id) VALUES
+('UUID-1234-5678-ABCD'),
+('UUID-2345-6789-BCDE'),
+('UUID-3456-7890-CDEF');
+
+
 
 -- View Action Logs table data
 SELECT * FROM Action_Logs;

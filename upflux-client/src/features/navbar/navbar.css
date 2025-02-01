@@ -45,6 +45,7 @@
   }
   
   .notif-bell {
+    margin-top: 6px;
     width: 28px;
     height: 28px;
     cursor: pointer;
@@ -71,3 +72,8 @@
   border: 2px solid white;
 }
 
+.nav-logo{
+  width: 80px !important;
+  height: 6ss0px !important;
+  margin-bottom: 25px;
+}
