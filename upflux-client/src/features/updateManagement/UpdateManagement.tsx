@@ -70,9 +70,9 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({ addNotifi
       <Box className="content-wrapper">
         <Group className="overview-section">
           <Box className="chart">
-            <DonutChart className="chart" withTooltip={false} data={chartData} />;
+            <DonutChart className="chart" withTooltip={false} data={chartData} />
             <Text className="chart-text">
-              Machines <br /> {machines.length}
+            <br/>  Machines <br /> {machines.length}
             </Text>
           </Box>
 
