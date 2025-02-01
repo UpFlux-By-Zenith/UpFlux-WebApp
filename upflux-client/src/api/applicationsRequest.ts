@@ -1,4 +1,6 @@
-import { ADMIN_REQUEST_API, DATA_REQUEST_API } from './apiConsts';
+import { IMachineLicense } from '../features/adminDashboard/ManageMachines';
+import { IEngineers } from '../features/adminDashboard/ViewEngineers';
+import { ADMIN_REQUEST_API, DATA_REQUEST_API, LICENCE_APIS } from './apiConsts';
 
 interface MachineDetailsResponse {
   applications: {
@@ -20,7 +22,6 @@ interface MachineDetailsResponse {
 export const getMachineDetails = async (): Promise<MachineDetailsResponse | string | null> => {
   // Retrieve the token from session storage
   const authToken = sessionStorage.getItem('authToken');
-  console.log('authToken:', authToken);
 
   if (!authToken) {
     console.error('No authentication token found in session storage.');
@@ -38,7 +39,6 @@ export const getMachineDetails = async (): Promise<MachineDetailsResponse | stri
 
     if (response.ok) {
       const data: MachineDetailsResponse = await response.json();
-      console.log('Machine details fetched successfully:', data);
       return data;
     } else {
       const errorData = await response.json();
@@ -57,7 +57,6 @@ export const CreateSubscription = async (groupId: string) => {
 
     // Retrieve the token from session storage
     const authToken = sessionStorage.getItem('authToken');
-    console.log('authToken:', authToken);
 
     if (!authToken) {
       console.error('No authentication token found in session storage.');
@@ -77,15 +76,13 @@ export const CreateSubscription = async (groupId: string) => {
     return data;
 
   } catch (error) {
-    console.error('Error during admin login request:', error);
     return { "error": error };
   }
 };
 
-export const getALLMachineDetails = async () => {
+export const getAllMachineDetails = async () => {
   // Retrieve the token from session storage
   const authToken = sessionStorage.getItem('authToken');
-  console.log('authToken:', authToken);
 
   if (!authToken) {
     console.error('No authentication token found in session storage.');
@@ -103,7 +100,6 @@ export const getALLMachineDetails = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Machine details fetched successfully:', data);
       return data.accessibleMachines.result;
     } else {
       const errorData = await response.json();
@@ -121,7 +117,6 @@ export const deployPackage = async (appName: string, ver: string, targetedMachin
 
     // Retrieve the token from session storage
     const authToken = sessionStorage.getItem('authToken');
-    console.log('authToken:', authToken);
 
     if (!authToken) {
       console.error('No authentication token found in session storage.');
@@ -154,7 +149,6 @@ export const deployPackage = async (appName: string, ver: string, targetedMachin
 export const generateMachineId = async () => {
   // Retrieve the token from session storage
   const authToken = sessionStorage.getItem('authToken');
-  console.log('authToken:', authToken);
 
   if (!authToken) {
     console.error('No authentication token found in session storage.');
@@ -162,7 +156,7 @@ export const generateMachineId = async () => {
   }
 
   try {
-    const response = await fetch(ADMIN_REQUEST_API.GENERATE_MACHINE_ID, {
+    const response = await fetch(LICENCE_APIS.GENERATE_MACHINE_ID, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -172,7 +166,6 @@ export const generateMachineId = async () => {
 
     if (response.ok) {
       const data: { machineId: string } = await response.json();
-      console.log('Machine details fetched successfully:', data);
       return data.machineId;
     } else {
       const errorData = await response.json();
@@ -184,3 +177,84 @@ export const generateMachineId = async () => {
     return 'An error occurred while fetching machine details.';
   }
 };
+
+export const getMachinesWithLicense = async () => {
+  // Retrieve the token from session storage
+  const authToken = sessionStorage.getItem('authToken');
+
+  if (!authToken) {
+    console.error('No authentication token found in session storage.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(ADMIN_REQUEST_API.GET_MACHINES_WITH_LICENSE, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Include Bearer token
+      },
+    });
+    if (response.ok) {
+      const data: IMachineLicense[] = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.error('Error during fetch request:', error);
+    return 'An error occurred while fetching machine details.';
+  }
+};
+
+export const getAllEngineers = async () => {
+  // Retrieve the token from session storage
+  const authToken = sessionStorage.getItem('authToken');
+
+  if (!authToken) {
+    console.error('No authentication token found in session storage.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(ADMIN_REQUEST_API.GET_ALL_ENGINEERS, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Include Bearer token
+      },
+    });
+    if (response.ok) {
+      const data: IEngineers[] = await response.json();
+      console.log('Machine details fetched successfully:', data);
+      return data;
+    }
+  } catch (error) {
+    return 'An error occurred while fetching machine details.';
+  }
+}
+
+export const getAllMachinesWithApps = async () => {
+  // Retrieve the token from session storage
+  const authToken = sessionStorage.getItem('authToken');
+
+  if (!authToken) {
+    console.error('No authentication token found in session storage.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(ADMIN_REQUEST_API.GET_ALL_MACHINES_WITH_APPS, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Include Bearer token
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.error('Error during fetch request:', error);
+    return 'An error occurred while fetching machine details.';
+  }
+}

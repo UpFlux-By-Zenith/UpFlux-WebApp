@@ -42,9 +42,10 @@ export const PackageFileInput = () => {
   };
 
   return (
-    <Stack align="center" className="form-stack">
+    <Stack align="center" className="form-stack logs">
       <Text className="form-title">Get Signed Update Package</Text>
       <FileInput
+        className={"file-input"}
         clearable
         label="Upload files"
         placeholder="Upload files"

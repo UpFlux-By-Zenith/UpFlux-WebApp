@@ -74,7 +74,7 @@ public class PackageManagementController : ControllerBase
             {
                 FileName = "gpg",
                 Arguments =
-                    $"--batch --pinentry-mode=loopback --passphrase \"admin\" --yes --armor --output \"{signedFilePath}\" --detach-sign --default-key \"49FA55F02ADF3C914E0ABBC4E5C81D52A866B46B\" \"{filePath}\"",
+                    $"--batch --pinentry-mode=loopback --passphrase \"admin\" --yes --armor --output \"{signedFilePath}\" --detach-sign --default-key \"87405E96DD54A18C1CAA0726F4F7BB6424ED59BF\" \"{filePath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false

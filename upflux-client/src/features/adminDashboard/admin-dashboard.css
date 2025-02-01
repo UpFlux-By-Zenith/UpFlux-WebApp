@@ -1,47 +1,76 @@
 .get-engineer-token-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .form-stack {
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-  }
-  
-  .form-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 20px;
-  }
-  
-  .input-field {
-    width: 100%;
-  }
-  
-  .submit-button {
-    width: 100%;
-  }
-  
-  .token-display {
-    margin-top: 20px;
-    font-size: 16px;
-    color: green;
-    word-break: break-word;
-  }
-  
-  .error-message {
-    margin-top: 20px;
-    font-size: 16px;
-    color: red;
-  }
-
-.admin-dashboard{
-    padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.machine-selection{
+.form-stack {
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.logs {
+  width: fit-content !important;
+}
+
+.form-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.input-field {
+  width: 100%;
+}
+
+.submit-button {
+  width: 100%;
+}
+
+.token-display {
+  margin-top: 20px;
+  font-size: 16px;
+  color: green;
+  word-break: break-word;
+}
+
+.error-message {
+  margin-top: 20px;
+  font-size: 16px;
+  color: red;
+}
+
+.admin-dashboard {
+  padding: 20px;
+  gap: 20px;
+}
+
+.left-column {
+  border-right: 2px solid #e0e0e0;
+  /* Separator between columns */
+  padding-right: 20px;
+}
+
+.right-column {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.machine-selection {
   width: max-content;
+}
+
+.file-input {
+  max-width: 100px;
+  max-height: 100px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.app-table {
+  height: 200px !important;
 }

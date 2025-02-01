@@ -16,7 +16,9 @@ export const AUTH_API = {
 
 export const ADMIN_REQUEST_API = {
   GET_ALL_MACHINES: `${API_BASE_URL}/api/auth/admin/get-all-machines`,
-  GENERATE_MACHINE_ID: `${API_BASE_URL}/api/Licence/admin/generateId`
+  GET_MACHINES_WITH_LICENSE: `${API_BASE_URL}/api/Admin/machinesWithLicenses`,
+  GET_ALL_ENGINEERS: `${API_BASE_URL}/api/Admin/engineers`,
+  GET_ALL_MACHINES_WITH_APPS: `${API_BASE_URL}/api/Admin/machines/applications`
 }
 
 //DataRequest-related endpoints
@@ -25,4 +27,7 @@ export const DATA_REQUEST_API = {
   GET_MACHINE_DETAILS: `${API_BASE_URL}/api/DataRequest/applications`,
 };
 
-
+export const LICENCE_APIS = {
+  REGISTRATION: `${API_BASE_URL}/api/Licence/admin/register`,
+  GENERATE_MACHINE_ID: `${API_BASE_URL}/api/Licence/admin/generateId`
+}

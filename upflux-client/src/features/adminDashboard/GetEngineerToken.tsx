@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { useAuth } from "../../common/authProvider/AuthProvider";
 import { getEngineerToken } from "../../api/adminApiActions";
-import { getALLMachineDetails as getAllMachineDetails } from "../../api/applicationsRequest";
+import { getAllMachineDetails } from "../../api/applicationsRequest";
 
 interface IMachineDetails {
   machineId: number;
@@ -83,8 +83,8 @@ export const GetEngineerToken: React.FC = () => {
       /> */}
 
       <MultiSelect
+        width={300}
         onChange={(va) => setMachineIds(va)}
-        className="machine-selection"
         data={multiSelectOptions}
         label="Machine IDs"
         placeholder="Select machines to give access to"

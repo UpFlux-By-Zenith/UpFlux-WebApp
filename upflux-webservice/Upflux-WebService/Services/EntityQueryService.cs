@@ -7,6 +7,7 @@ using Upflux_WebService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Upflux_WebService.Services.Enums;
 using System.Data;
+using Upflux_WebService.Core.DTOs;
 
 namespace Upflux_WebService.Services;
 
@@ -290,6 +291,50 @@ public class EntityQueryService : IEntityQueryService
         Console.WriteLine(appendId + newId);
 
         return appendId + newId;
+    }
+
+    public async Task<List<Users>> GetAllEngineers()
+    {
+        return await _context.Users
+            .Where(u => u.Role == UserRole.Engineer) // Filters only Engineers
+            .ToListAsync();
+    }
+
+    public async Task<List<MachineWithLicenceDto>> GetAllMachinesWithLicences()
+    {
+        return await _context.Machines
+            .GroupJoin(
+                _context.Licences,
+                machine => machine.MachineId,
+                licence => licence.MachineId,
+                (machine, licences) => new { machine, licences }
+            )
+            .SelectMany(
+                m => m.licences.DefaultIfEmpty(), // Ensures machines without licences are included
+                (m, licence) => new MachineWithLicenceDto
+                {
+                    MachineId = m.machine.MachineId,
+                    MachineName = m.machine.machineName,
+                    DateAddedOn = m.machine.dateAddedOn,
+                    IpAddress = m.machine.ipAddress,
+
+                    // Licence details (can be null if no licence exists)
+                    LicenceKey = licence != null ? licence.LicenceKey : null,
+                    ValidityStatus = licence != null ? licence.ValidityStatus : null,
+                    ExpirationDate = licence != null ? licence.ExpirationDate : null
+                }
+            )
+            .ToListAsync();
+    }
+
+    public async Task<List<Machine>> GetListOfMachinesWithApplications()
+    {
+        var machinesWithApplications = await _context.Machines
+            .Include(m => m.Applications) // Including related Applications
+            .ThenInclude(a => a.Versions) // Including related Application Versions
+            .ToListAsync();
+
+        return machinesWithApplications;
     }
 
     #endregion
