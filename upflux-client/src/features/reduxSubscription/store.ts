@@ -1,12 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
 import metricsReducer from "./metricsSlice";
 import alertReducer from "./alertSlice";
+import connectionReducer from "./connectionSlice";
 
 
 const store = configureStore({
   reducer: {
     metrics: metricsReducer,
-    alerts:alertReducer,
+    alerts: alertReducer,
+    connectionStatus: connectionReducer
   },
 });
 

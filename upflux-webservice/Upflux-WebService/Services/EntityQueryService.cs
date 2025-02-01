@@ -337,6 +337,7 @@ public class EntityQueryService : IEntityQueryService
         return machinesWithApplications;
     }
 
+
     #endregion
 
     #region private methods

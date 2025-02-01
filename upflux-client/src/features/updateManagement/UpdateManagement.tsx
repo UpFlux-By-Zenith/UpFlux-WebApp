@@ -5,14 +5,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import "./update-management.css";
 import view from "../../assets/images/view.png";
-import updateIcon from "../../assets/images/updateIcon.jpg";	
+import updateIcon from "../../assets/images/updateIcon.jpg";
 import { useSubscription } from "../reduxSubscription/useSubscription";
 import { useAuth } from "../../common/authProvider/AuthProvider";
-import { deployPackage } from "../../api/applicationsRequest";
+import { deployPackage, getRunningMachinesApplications } from "../../api/applicationsRequest";
+import { notifications } from "@mantine/notifications";
 
-export const UpdateManagement: React.FC<{ addNotification: any }> = ({
-  addNotification,
-}) => {
+export const UpdateManagement = () => {
   const [modalOpened, setModalOpened] = useState(false);
   const [machines, setMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +34,14 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
       }
       setLoading(false);
     };
+
+    const getRunningMachines = async () => {
+      await getRunningMachinesApplications().then(res => {
+        console.log(res)
+      })
+    }
+
+    getRunningMachines()
     fetchMachines();
   }, []);
 
@@ -45,7 +52,7 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
       return;
     }
 
-    deployPackage(selectedApp,selectedVersion,[selectedMachine]).then(() => {
+    deployPackage(selectedApp, selectedVersion, [selectedMachine]).then(() => {
 
       // Create a new notification
       const newNotification = {
@@ -54,13 +61,11 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
         image: updateIcon,
         timestamp: new Date().toLocaleTimeString(),
       };
-  
-      // Add the new notification via the passed down addNotification function
-      addNotification(newNotification);
-  
+
+
       // Close modal
       setModalOpened(false);
-    }).catch(()=>{
+    }).catch(() => {
       alert("Err")
     })
 
@@ -115,6 +120,7 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
   };
 
   return (
+
     <Stack className="update-management-content">
       <Box className="header">
         <Text size="xl" fw={700}>
@@ -199,33 +205,33 @@ export const UpdateManagement: React.FC<{ addNotification: any }> = ({
       </Box>
 
       <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Configure Update" centered>
-      <Box>
-        <Text>Select Machines*</Text>
-        <Select
-          data={machines.map((machine) => `${machine.machineId}`)}
-          placeholder="Select Machines"
-          onChange={(value) => setSelectedMachine(value || null)}
-        />
+        <Box>
+          <Text>Select Machines*</Text>
+          <Select
+            data={machines.map((machine) => `${machine.machineId}`)}
+            placeholder="Select Machines"
+            onChange={(value) => setSelectedMachine(value || null)}
+          />
 
-        <Text mt="md">Select Application*</Text>
-        <Select
-          data={availableApps.map((app) => app.name)} // Populate based on available apps
-          placeholder="Select Application"
-          onChange={handleAppChange}
-        />
+          <Text mt="md">Select Application*</Text>
+          <Select
+            data={availableApps.map((app) => app.name)} // Populate based on available apps
+            placeholder="Select Application"
+            onChange={handleAppChange}
+          />
 
-        <Text mt="md">Select Software Version*</Text>
-        <Select
-          data={availableVersions} // Available versions will be updated based on app selection
-          placeholder="Select Version"
-          onChange={(value) => setSelectedVersion(value || null)}
-        />
+          <Text mt="md">Select Software Version*</Text>
+          <Select
+            data={availableVersions} // Available versions will be updated based on app selection
+            placeholder="Select Version"
+            onChange={(value) => setSelectedVersion(value || null)}
+          />
 
-        <Button mt="md" fullWidth onClick={handleDeploy}>
-          Deploy
-        </Button>
-      </Box>
-    </Modal>
+          <Button mt="md" fullWidth onClick={handleDeploy}>
+            Deploy
+          </Button>
+        </Box>
+      </Modal>
     </Stack>
   );
 };

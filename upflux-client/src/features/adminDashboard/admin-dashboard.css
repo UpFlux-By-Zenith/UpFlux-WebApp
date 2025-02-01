@@ -64,12 +64,11 @@
   width: max-content;
 }
 
-.file-input {
-  max-width: 100px;
+/* .file-input {
+  max-width: 200px;
   max-height: 100px;
   overflow: hidden;
-  white-space: nowrap;
-}
+} */
 
 .app-table {
   height: 200px !important;

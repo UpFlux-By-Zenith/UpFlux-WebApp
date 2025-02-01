@@ -18,7 +18,6 @@ import { Provider } from "react-redux";
 import store from "./features/reduxSubscription/store";
 
 export const App = () => {
-  const [notifications, setNotifications] = useState<any[]>([]);
   return (
     <Provider store={store}>
       <MantineProvider>
@@ -60,7 +59,7 @@ export const App = () => {
                   path="/update-management"
                   element={
                     <Layout>
-                      <UpdateManagement addNotification={notifications} />
+                      <UpdateManagement />
                     </Layout>
                   }
                 />
