@@ -130,7 +130,12 @@ export const UpdateManagement = () => {
 
       <Box className="content-wrapper">
         <Group className="overview-section">
-          <Box className="chart"></Box>
+          <Box className="chart">
+            <DonutChart className="chart" withTooltip={false} data={chartData} />
+            <Text className="chart-text">
+              <br />  Machines <br /> {machines.length}
+            </Text>
+          </Box>
 
           <Stack className="legend">
             <Group className="legend-item">

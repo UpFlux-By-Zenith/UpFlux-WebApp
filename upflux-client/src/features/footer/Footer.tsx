@@ -10,7 +10,7 @@ export const Footer = () => {
       <Divider className="footer-line" />
 
       <div className="footer-bottom">
-        <Text size="sm" className="copyright">
+        <Text size="sm" className="upflux-copyright">
           Copyright © 2024 UpFlux all rights reserved
         </Text>
 

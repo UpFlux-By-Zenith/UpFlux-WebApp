@@ -25,7 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomePage }) => {
           <Image src={logo} alt="Logo" className="logo" />
         ) : (
           <Link to="/update-management">
-            <Image src={logo} alt="Logo" className="logo" />
+            <Image src={logo} alt="Logo" className="nav-logo" />
           </Link>
         )}
       </div>

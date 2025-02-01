@@ -29,11 +29,16 @@
     padding: 0 20px; 
 }
 
-.copyright {
+.upflux-copyright {
     text-align: right;
-    margin: 0;
-    padding-right: 20px;
+    margin-left: -40px;
+    padding-right: 50px;
 }
+
+.mantine-focus-auto.upflux-copyright {
+    margin-left: -20px !important;    
+  }
+  
 
 .footer-links {
     display: flex;
@@ -62,3 +67,4 @@
         padding-left: 0;
     }
 }
+
