@@ -65,6 +65,10 @@
     margin-bottom:20px;	
 }
 
+.login-button m_77c9d27d {
+    background-color: #1E2ADF !important;
+  }
+
 .forgot-password {
     margin-top: 15px;
 }
@@ -145,6 +149,3 @@
     background-color: #1E2ADF;
 }
 
-.m_77c9d27d {
-    background-color: #1E2ADF !important;
-  }

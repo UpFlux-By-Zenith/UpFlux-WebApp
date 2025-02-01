@@ -111,9 +111,6 @@ export const LoginComponent: React.FC = () => {
             </Box>
           </Box>
           <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>
-          <Box className="forgot-password">
-            <a href="/password-settings" className="forgot-password-link">Forgotten your Password?</a>
-          </Box>
         </Box>
       </Container>
     </>

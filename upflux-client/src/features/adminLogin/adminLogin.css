@@ -54,3 +54,10 @@
 .mantine-focus-auto mantine-active login-button m_77c9d27d mantine-Button-root m_87cf2631 mantine-UnstyledButton-root {
   background-color: #1a73e8;
 }
+
+.admin-login-button{
+  background-color: #1E2ADF !important;
+}
+
+
+

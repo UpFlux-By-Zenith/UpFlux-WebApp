@@ -8,7 +8,7 @@ interface SessionTimeoutProps {
 }
 
 const SessionTimeout = ({ children, onLogout }: SessionTimeoutProps) => {
-  // Define durations (in milliseconds and seconds)
+  // Define durations 
   const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes inactivity
   const WARNING_COUNTDOWN_SECONDS = 60; // 60 seconds warning
 
@@ -105,7 +105,6 @@ useEffect(() => {
         <Button onClick={handleStayLoggedIn}>Stay Logged In</Button>
       </Modal>
 
-      {/* Render the rest of your application */}
       {children}
     </>
   );

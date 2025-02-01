@@ -15,6 +15,7 @@ import { VersionControl } from './features/versionControl/VersionControl';
 import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
 import { useState } from 'react';
 import { AccountSettings } from './features/accountSettings/AccountSettings';
+import { ForgotPassword } from './features/forgotPassword/ForgotPassword';
 
 // Import your SessionTimeout component
 import SessionTimeout from './features/sessionTimeout/SessionTimeout';
@@ -37,6 +38,7 @@ export const App = () => {
             <Route path="/" element={<HomeRoute />} />
             <Route path="/login" element={<LoginComponent />} />
             <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Protected Routes - Wrap with SessionTimeout */}
             <Route
