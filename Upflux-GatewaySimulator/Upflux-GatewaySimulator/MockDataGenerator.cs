@@ -31,8 +31,8 @@ namespace Upflux_GatewaySimulator
 						BytesReceived = Random.Next(1000, 100000) // Random bytes received
 					},
 					CpuTemperature = Random.NextDouble() * 100, // Random CPU temperature
-					SystemUptime = Random.NextDouble() * 10000 // Random system uptime
-				},
+					SystemUptime = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds // Epoch time in seconds
+                },
 				SensorData = new SensorData
 				{
 					RedValue = Random.Next(0, 256), // Random Red value (0-255)
@@ -61,8 +61,8 @@ namespace Upflux_GatewaySimulator
 						BytesReceived = Random.Next(1000, 100000)
 					},
 					CpuTemperature = Random.NextDouble() * 100,
-					SystemUptime = Random.NextDouble() * 10000
-				},
+					SystemUptime = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds // Epoch time in seconds
+                },
 				SensorData = new SensorData
 				{
 					RedValue = Random.Next(0, 256),

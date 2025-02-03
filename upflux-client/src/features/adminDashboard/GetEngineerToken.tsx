@@ -1,34 +1,57 @@
 // src/features/EngineerToken/GetEngineerToken.tsx
-import React, { useState } from "react";
-import { TextInput, Button, Stack, Box, Text } from "@mantine/core";
+import React, { useEffect, useState } from "react";
+import {
+  TextInput,
+  Button,
+  Stack,
+  Box,
+  Text,
+  MultiSelect,
+  ComboboxData,
+} from "@mantine/core";
 import { useAuth } from "../../common/authProvider/AuthProvider";
 import { getEngineerToken } from "../../api/adminApiActions";
+import { getAllMachineDetails } from "../../api/applicationsRequest";
+
+interface IMachineDetails {
+  machineId: number;
+  dateAddedOn: string;
+  ipAddress: string;
+}
 
 export const GetEngineerToken: React.FC = () => {
   // State for form fields
   const [engineerEmail, setEngineerEmail] = useState("");
   const [engineerName, setEngineerName] = useState("");
-  const [machineIds, setMachineIds] = useState("");
+  const [machineIds, setMachineIds] = useState([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [token, setToken] = useState("");
-
+  const [multiSelectOptions, setMultiSelectOptions] = useState([]);
   const { authToken } = useAuth();
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Split machineIds by commas and trim any extra spaces
-    const machineIdsArray = machineIds.split(",").map((id) => id.trim());
 
     const payload = {
       engineerEmail,
       engineerName,
-      machineIds: machineIdsArray,
+      machineIds: machineIds,
     };
 
     await getEngineerToken(payload, authToken);
   };
+
+  useEffect(() => {
+    getAllMachineDetails().then((res: IMachineDetails[]) => {
+      console.log(res);
+      const multiSelectOptions = res.map((val) => {
+        return { value: val.machineId, label: val.machineId };
+      });
+      setMultiSelectOptions(multiSelectOptions);
+    });
+  }, []);
 
   return (
     // <Box className="get-engineer-token-container">
@@ -51,15 +74,23 @@ export const GetEngineerToken: React.FC = () => {
         className="input-field"
       />
 
-      <TextInput
+      {/* <TextInput
         label="Machine IDs (comma-separated)"
         placeholder="e.g., Machine1, Machine2"
         value={machineIds}
         onChange={(e) => setMachineIds(e.target.value)}
         className="input-field"
+      /> */}
+
+      <MultiSelect
+        width={300}
+        onChange={(va) => setMachineIds(va)}
+        data={multiSelectOptions}
+        label="Machine IDs"
+        placeholder="Select machines to give access to"
       />
 
-      <Button onClick={handleSubmit} className="submit-button">
+      <Button color="rgba(0, 3, 255, 1)" onClick={handleSubmit} className="submit-button">
         Create Token
       </Button>
 

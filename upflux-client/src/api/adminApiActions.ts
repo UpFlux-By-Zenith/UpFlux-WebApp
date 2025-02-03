@@ -1,4 +1,4 @@
-import { AUTH_API } from './apiConsts';
+import { AUTH_API, LICENCE_APIS } from './apiConsts';
 import { AdminLoginPayload, EngineerTokenPayload, LoginResponse } from './apiTypes';
 
 
@@ -14,17 +14,17 @@ export const adminLogin = async (payload: AdminLoginPayload) => {
     });
 
     const data = await response.json() as LoginResponse;
-    return data; 
-    
+    return data;
+
   } catch (error) {
     console.error('Error during admin login request:', error);
-    return { "error" : error} as LoginResponse;
+    return { "error": error } as LoginResponse;
   }
 };
 
 
 
-export const getEngineerToken = async (payload: EngineerTokenPayload , adminAuthToken:string): Promise<void> => {
+export const getEngineerToken = async (payload: EngineerTokenPayload, adminAuthToken: string): Promise<void> => {
   try {
     // Make the API request with the Bearer token
     const response = await fetch(AUTH_API.GET_ENGINEER_TOKEN, {
@@ -60,3 +60,35 @@ export const getEngineerToken = async (payload: EngineerTokenPayload , adminAuth
     console.error('Error during engineer token request:', error);
   }
 };
+
+export const createMachineLicense = async (machineId: string) => {
+  try {
+
+    // Retrieve the token from session storage
+    const authToken = sessionStorage.getItem('authToken');
+    console.log('authToken:', authToken);
+
+    if (!authToken) {
+      console.error('No authentication token found in session storage.');
+      return null;
+    }
+    // Make the API request with the Bearer token
+    const response = await fetch(LICENCE_APIS.REGISTRATION, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Add the Bearer token
+      },
+      body: JSON.stringify({ machineId }),
+    });
+
+    if (response.ok) {
+      return response.json()
+    } else {
+      const errorData = await response.json();
+      console.error('Error fetching engineer token:', errorData);
+    }
+  } catch (error) {
+    console.error('Error during engineer token request:', error);
+  }
+}

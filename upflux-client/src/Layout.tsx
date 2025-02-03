@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Navbar } from "./features/navbar/Navbar"; 
-import { Footer } from "./features/footer/Footer"; 
-
+import { Navbar } from "./features/navbar/Navbar";
+import { Footer } from "./features/footer/Footer";
+import { Notifications } from "@mantine/notifications";
+import '@mantine/notifications/styles.css';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -15,8 +16,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div>
-      <Navbar onHomePage={false} notifications={notifications} />  
+      <Navbar onHomePage={false} notifications={notifications} />
       <main>
+        <Notifications />
         {/* Pass addNotification to child components that need it */}
         {React.Children.map(children, (child) => {
           if (React.isValidElement(child) && child.props) {
@@ -25,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           return child;
         })}
       </main>
-      <Footer /> 
+      <Footer />
     </div>
   );
 };

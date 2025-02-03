@@ -15,10 +15,13 @@ interface AdminLoginFormState {
 export const AdminLogin = () => {
   const [formState, setFormState] = useState<AdminLoginFormState>({ email: '', password: '' });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate()
 
-  
+
+  if (isAuthenticated) {
+    navigate('/admin-dashboard');
+  }
   const handleInputChange = (field: keyof AdminLoginFormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormState({ ...formState, [field]: event.target.value });
   };
@@ -26,39 +29,39 @@ export const AdminLogin = () => {
   const handleSubmit = async () => {
     // Reset error message
     setErrorMessage(null);
-  
+
     // Basic validation
     if (!formState.email || !formState.password) {
       setErrorMessage("Both email and password are required.");
       return;
     }
-  
+
     try {
       // Send login request to API
-      const response : LoginResponse = await adminLogin({
+      const response: LoginResponse = await adminLogin({
         email: formState.email,
         password: formState.password,
-      }) ;
-  
+      });
+
       // Check if the response has an error field
       if (response.error) {
         setErrorMessage(response.error); // Display the error message
         return; // Stop further execution
       } else {
-        
+
         // Save the token to local storage and proceed
         login(ROLES.ADMIN, response.token);
-    
+
         // Redirect or handle successful login
         navigate("/admin-dashboard");
       }
-  
+
     } catch (error) {
       // Handle unexpected errors
       setErrorMessage("An unexpected error occurred. Please try again later.");
     }
   };
-  
+
 
   return (
     <Container className="login-container">

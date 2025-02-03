@@ -203,7 +203,7 @@ namespace Upflux_WebService.Services
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(30),
+                expires: DateTime.UtcNow.AddMinutes(30).AddHours(8),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

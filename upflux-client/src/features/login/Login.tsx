@@ -16,7 +16,11 @@ export const LoginComponent: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    navigate('/update-management');
+  }
 
   const handleInputChange = (field: keyof LoginFormState) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -94,23 +98,35 @@ export const LoginComponent: React.FC = () => {
         {isLoggedIn && <h4>You have been logged in successfully</h4>}
         <Box className="main-card">
           <Image src={logo} alt="UpFlux Logo" className="upflux-logo" />
-          <Box className="error-message-container" style={{ color: 'red', fontWeight: 'bold' }}>
-            {errorMessage && <Text className={`error-message ${errorMessage ? 'active' : ''}`}>{errorMessage}</Text>}
+          <Box
+            className="error-message-container"
+            style={{ color: "red", fontWeight: "bold" }}
+          >
+            {errorMessage && (
+              <Text className={`error-message ${errorMessage ? "active" : ""}`}>
+                {errorMessage}
+              </Text>
+            )}
           </Box>
 
           <Box className="input-field-box">
             <Box className="file-input-box">
-              <label htmlFor="tokenFile" className="file-label">Token File</label>
+              <label htmlFor="tokenFile" className="file-label">
+                Token File
+              </label>
               <input
                 type="file"
                 id="tokenFile"
                 accept=".json"
-                onChange={handleInputChange('tokenFile')}
+                onChange={handleInputChange("tokenFile")}
                 className="file-input"
               />
             </Box>
           </Box>
           <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>
+          <Box className="admin-login-switch">
+            <a href="/admin-login" className="admin-login-link">Administrator login</a>
+          </Box>
         </Box>
       </Container>
     </>
