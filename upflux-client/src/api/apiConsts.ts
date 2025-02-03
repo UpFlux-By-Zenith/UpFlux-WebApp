@@ -28,7 +28,14 @@ export const DATA_REQUEST_API = {
   GET_RUNNING_APPS: `${API_BASE_URL}/api/DataRequest/engineer/machines-application`
 };
 
+export const PACKAGE_DEPOYMENT = {
+  GET_AVAILABLE_PACKAGES: `${API_BASE_URL}/api/PackageManagement/packages `,
+  DEPLOYMENT: `${API_BASE_URL}/api/PackageManagement/upload `
+}
+
 export const LICENCE_APIS = {
   REGISTRATION: `${API_BASE_URL}/api/Licence/admin/register`,
   GENERATE_MACHINE_ID: `${API_BASE_URL}/api/Licence/admin/generateId`
 }
+
+export const ROLLBACK = `${API_BASE_URL}/api/Command/rollback`

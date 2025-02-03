@@ -16,11 +16,12 @@ import "./versionControl.css";
 import { getMachineDetails } from "../../api/applicationsRequest";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
+import { IApplications } from "../reduxSubscription/applicationVersions";
 
 export const VersionControl: React.FC = () => {
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
-
+  const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
   const machineMetrics = useSelector(
     (state: RootState) => state.metrics.metrics
   );
@@ -34,25 +35,34 @@ export const VersionControl: React.FC = () => {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const formatUptime = (seconds: number): string => {
+    const days = Math.floor(seconds / (24 * 3600));
+    const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    return `${days}d ${hours}h ${minutes}m`;
+  };
+
+
   // Mocked machine metrics data
   const metrics = [
     {
       label: "CPU",
-      value: parseInt(machineMetrics[machineId].metrics.cpuUsage.toFixed()),
+      value: parseInt(machineMetrics[machineId]?.metrics.cpuUsage.toFixed()) || 0,
     },
     {
       label: "CPU Temp",
       value: parseInt(
-        machineMetrics[machineId].metrics.cpuTemperature.toFixed()
-      ),
+        machineMetrics[machineId]?.metrics.cpuTemperature.toFixed()
+      ) || 0,
     },
     {
       label: "Memory Usage",
-      value: parseInt(machineMetrics[machineId].metrics.memoryUsage.toFixed()),
+      value: parseInt(machineMetrics[machineId]?.metrics.memoryUsage.toFixed()) || 0,
     },
     {
       label: "Disk Usage",
-      value: parseInt(machineMetrics[machineId].metrics.diskUsage.toFixed()),
+      value: parseInt(machineMetrics[machineId]?.metrics.diskUsage.toFixed()) || 0,
     },
   ];
 
@@ -110,12 +120,12 @@ export const VersionControl: React.FC = () => {
         {/* Overview Section */}
         <Group className="overview-section">
           {/* Action Buttons */}
-          <Button
+          {/* <Button
             className="softwareDropdown"
             onClick={() => setModalOpened(true)}
           >
             Configure App Version
-          </Button>
+          </Button> */}
         </Group>
 
         {/* Machine Metrics Section */}
@@ -154,7 +164,7 @@ export const VersionControl: React.FC = () => {
           </SimpleGrid>
           <center>
             <h2 style={{ textAlign: "center" }}>
-              System Uptime: {machineMetrics[machineId].metrics.systemUptime}
+              System Uptime: {formatUptime(machineMetrics[machineId]?.metrics.systemUptime || 0)}
             </h2>
           </center>
         </Box>
@@ -175,12 +185,12 @@ export const VersionControl: React.FC = () => {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {appVersions.map((appVersion, index) => (
+                {applications[machineId].VersionNames.map((appVersion, index) => (
                   <Table.Tr key={index}>
-                    <Table.Td>{appVersion.appName}</Table.Td>
-                    <Table.Td>{appVersion.appVersion}</Table.Td>
+                    <Table.Td>UpFlux-Monitoring-Service</Table.Td>
+                    <Table.Td>{appVersion}</Table.Td>
                     <Table.Td>Jane Smith</Table.Td>
-                    <Table.Td>{appVersion.lastUpdate}</Table.Td>
+                    <Table.Td>Jan 10 2024</Table.Td>
                     <Table.Td>Alice Cole</Table.Td>
                   </Table.Tr>
                 ))}

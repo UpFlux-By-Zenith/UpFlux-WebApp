@@ -1,6 +1,6 @@
 import { IMachineLicense } from '../features/adminDashboard/ManageMachines';
 import { IEngineers } from '../features/adminDashboard/ViewEngineers';
-import { ADMIN_REQUEST_API, DATA_REQUEST_API, LICENCE_APIS } from './apiConsts';
+import { ADMIN_REQUEST_API, DATA_REQUEST_API, LICENCE_APIS, PACKAGE_DEPOYMENT, ROLLBACK } from './apiConsts';
 
 interface MachineDetailsResponse {
   applications: {
@@ -278,6 +278,68 @@ export const getRunningMachinesApplications = async () => {
     });
     if (response.ok) {
       const data = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.error('Error during fetch request:', error);
+    return 'An error occurred while fetching machine details.';
+  }
+}
+
+
+
+export const getAvailablePackages = async () => {
+  // Retrieve the token from session storage
+  const authToken = sessionStorage.getItem('authToken');
+
+  if (!authToken) {
+    console.error('No authentication token found in session storage.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(PACKAGE_DEPOYMENT.GET_AVAILABLE_PACKAGES, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Include Bearer token
+      },
+    });
+    if (response.ok) {
+      const data: IPackagesOnCloud[] = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.error('Error during fetch request:', error);
+    return 'An error occurred while fetching machine details.';
+  }
+}
+
+export interface IPackagesOnCloud {
+  name: string,
+  versions: string[]
+}
+
+export const doRollback = async (versionId: string, deviceId: string) => {
+  // Retrieve the token from session storage
+  const authToken = sessionStorage.getItem('authToken');
+
+  if (!authToken) {
+    console.error('No authentication token found in session storage.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${ROLLBACK}?version=${versionId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Include Bearer token
+      },
+      body: JSON.stringify([deviceId])
+    });
+    if (response.ok) {
+      const data: IPackagesOnCloud[] = await response.json();
       return data;
     }
   } catch (error) {

@@ -3,20 +3,16 @@ import { Container, Image, Menu, Text, Group, Avatar } from "@mantine/core";
 import { Link } from "react-router-dom";
 import logo from "../../assets/logos/logo-no-name.png";
 import "./navbar.css";
+import { useAuth } from "../../common/authProvider/AuthProvider";
 
 interface NavbarProps {
   onHomePage: boolean;
   notifications: any[];
 }
 
-interface Notification {
-  id: number;
-  message: string;
-  image: string;
-  timestamp: string;
-}
-
 export const Navbar: React.FC<NavbarProps> = ({ onHomePage }) => {
+
+  const { logout } = useAuth()
 
   return (
     <Container fluid className="navbar">
@@ -46,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomePage }) => {
                   <Link to="/account-settings">Profile</Link>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  <Menu.Item component={Link} to="/">Logout</Menu.Item>
+                  <Menu.Item component={Link} onClick={logout} to="/">Logout</Menu.Item>
                 </Menu.Dropdown>
               </Menu>
             </li>

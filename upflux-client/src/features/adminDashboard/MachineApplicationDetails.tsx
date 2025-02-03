@@ -40,12 +40,12 @@ export const MachineApplicationDetails = () => {
 
     }, [])
 
-    const machineOptions = machines.map((machine) => ({
+    const machineOptions = machines?.map((machine) => ({
         value: machine.machineId,
         label: machine.machineName,
     }));
 
-    const selectedMachineData = machines.find(
+    const selectedMachineData = machines?.find(
         (machine) => machine.machineId === selectedMachine
     );
 
@@ -60,7 +60,7 @@ export const MachineApplicationDetails = () => {
                 onChange={setSelectedMachine}
             />
             {selectedMachineData && (
-                <Table className="app-table">
+                <Table >
                     <Table.Thead>
                         <Table.Tr>
                             <Table.Th>Application Name</Table.Th>

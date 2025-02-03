@@ -4,6 +4,7 @@ using UpFlux_WebService.Protos;
 using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Core.Models;
 using Google.Protobuf.WellKnownTypes;
+using Newtonsoft.Json;
 using Upflux_WebService.Services.Interfaces;
 using static Upflux_WebService.Services.EntityQueryService;
 
@@ -276,7 +277,7 @@ namespace UpFlux_WebService
             // notification
             using var scope = _serviceScopeFactory.CreateScope();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-            await notificationService.SendMessageToUriAsync($"{alert.Source}/alert", alert.ToString());
+            await notificationService.SendMessageToUriAsync($"alert", alert.ToString());
 
             // Send an alertResponse back
             if (_connectedGateways.TryGetValue(gatewayId, out var writer))
@@ -328,6 +329,7 @@ namespace UpFlux_WebService
             // need to keep track the user who initiated rollback (since it affects application table) - not done
             // might want to add engineer email parameter at SendUpdatePackage (used by controller), update interface, and update controller
 
+            var alert = new AlertMessage();
             using var scope = _serviceScopeFactory.CreateScope();
             var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
@@ -337,9 +339,10 @@ namespace UpFlux_WebService
                 var application = await applicationRepository.GetByMachineId(machineId);
                 if (application == null)
                 {
+                    alert.Message = $"Failed to process rollback for MachineId: {machineId}. No application found.";
                     _logger.LogWarning("No application found for MachineId: {0}. Skipping processing.", machineId);
-                    await notificationService.SendMessageToUriAsync("Alert/Command",
-                        $"Failed to process rollback for MachineId: {machineId}. No application found.");
+                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+
 
                     return;
                 }
@@ -358,7 +361,8 @@ namespace UpFlux_WebService
 
                     // send succes notification
                     var successMessage = $"MachineId: {machineId} successfully rolled back to version: {parameters}.";
-                    await notificationService.SendMessageToUriAsync("Alert/Command", successMessage);
+                    alert.Message = successMessage;
+                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
 
                     _logger.LogInformation(
                         "Successfully processed rollback for MachineId: {0}, CommandId: {1}. Updated to version: {2}",
@@ -369,9 +373,9 @@ namespace UpFlux_WebService
                     // failure
                     _logger.LogWarning("Rollback command failed for MachineId: {0}, CommandId: {1}.", machineId,
                         req.CommandId);
-
                     var failureMessage = $"Rollback failed for MachineId: {machineId}. CommandId: {req.CommandId}.";
-                    await notificationService.SendMessageToUriAsync("Alert/Command", failureMessage);
+                    alert.Message = failureMessage;
+                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
                 }
             }
             catch (Exception ex)
@@ -379,9 +383,9 @@ namespace UpFlux_WebService
                 // notifcation for error?
                 _logger.LogError(ex, "Error while processing rollback for MachineId: {0}, CommandId: {1}.", machineId,
                     req.CommandId);
-
-                await notificationService.SendMessageToUriAsync("Alert/Command",
-                    $"An error occurred while processing rollback for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}");
+                alert.Message =
+                    $"An error occurred while processing rollback for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}";
+                await notificationService.SendMessageToUriAsync("alert", alert.ToString());
             }
         }
 
@@ -474,7 +478,6 @@ namespace UpFlux_WebService
             // currently updating database (trusting gateway)
 
             //same case with available versions (just logging it currently)
-
             if (!resp.Success)
             {
                 _logger.LogWarning("Gateway [{0}] reported version data request failed: {1}", gatewayId, resp.Message);
@@ -485,6 +488,7 @@ namespace UpFlux_WebService
 
                 using var scope = _serviceScopeFactory.CreateScope();
                 var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
+                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
                 foreach (var dv in resp.DeviceVersionsList)
                 {
@@ -519,10 +523,51 @@ namespace UpFlux_WebService
 
                     if (dv.Available.Count > 0)
                     {
+                        List<string> versions = new();
                         _logger.LogInformation("  AVAILABLE:");
-                        foreach (var av in dv.Available)
-                            _logger.LogInformation("    - Version={0}, InstalledAt={1}",
-                                av.Version, av.InstalledAt.ToDateTime());
+                        foreach (var av in dv.Available) versions.Add(av.Version);
+                        // var newVersion = new ApplicationVersion
+                        // {
+                        //     AppId = application.AppId,
+                        //     VersionName = av.Version,
+                        //     UpdatedBy = "E11111", // Adjust this based on actual updater
+                        //     Date = av.InstalledAt.ToDateTime(),
+                        //     DeviceUuid = dv.DeviceUuid
+                        // };
+                        //
+                        // await notificationService.SendMessageToUriAsync("versions",
+                        //     JsonConvert.SerializeObject(newVersion));
+                        // var existingVersion = application.Versions.FirstOrDefault(v => v.VersionName == av.Version);
+                        // if (existingVersion == null)
+                        // {
+                        //     var newVersion = new ApplicationVersion
+                        //     {
+                        //         AppId = application.AppId,
+                        //         VersionName = av.Version,
+                        //         UpdatedBy = "E11111", // Adjust this based on actual updater
+                        //         Date = av.InstalledAt.ToDateTime()
+                        //     };
+                        //     
+                        //     application.Versions.Add(newVersion);
+                        //     _logger.LogInformation("Added new available version: {0} for machine {1}", av.Version,
+                        //         dv.DeviceUuid);
+                        // }
+                        // else
+                        // {
+                        //     _logger.LogInformation("Version {0} already exists for machine {1}", av.Version,
+                        //         dv.DeviceUuid);
+                        // }
+                        var newVersion = new ApplicationVersions
+                        {
+                            AppId = application.AppId,
+                            VersionNames = versions,
+                            UpdatedBy = "E11111", // Adjust this based on actual updater
+                            DeviceUuid = dv.DeviceUuid
+                        };
+
+                        await notificationService.SendMessageToUriAsync("versions",
+                            JsonConvert.SerializeObject(newVersion));
+                        await applicationRepository.SaveChangesAsync();
                     }
                     else
                     {
@@ -560,7 +605,7 @@ namespace UpFlux_WebService
                 LicenseResponse = licenseResponse
             };
 
-            if (_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
+            if (_connectedGateways.TryGetValue(gatewayId, out var writer))
                 try
                 {
                     await writer.WriteAsync(responseMessage);

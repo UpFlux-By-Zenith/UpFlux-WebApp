@@ -1,6 +1,6 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { MantineProvider } from '@mantine/core';
+import { createTheme, MantineProvider } from '@mantine/core';
 import { HomeRoute } from './HomeRoute';
 import { LoginComponent } from './features/login/Login';
 import { AdminLogin } from './features/adminLogin/AdminLogin';
@@ -19,6 +19,8 @@ import { ForgotPassword } from './features/forgotPassword/ForgotPassword';
 
 // Import your SessionTimeout component
 import SessionTimeout from './features/sessionTimeout/SessionTimeout';
+import { Provider } from 'react-redux';
+import store from './features/reduxSubscription/store';
 
 export const App = () => {
 
@@ -28,30 +30,34 @@ export const App = () => {
     window.location.href = '/login';
   };
 
-  return (
-    <MantineProvider>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Public Routes - No session timeout here */}
-            <Route path="/" element={<HomeRoute />} />
-            <Route path="/login" element={<LoginComponent />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* Protected Routes - Wrap with SessionTimeout */}
-            <Route
-              path="/*"
-              element={
-                <SessionTimeout onLogout={handleLogout}>
-                  <ProtectedRoutes />
-                </SessionTimeout>
-              }
-            />
-          </Routes>
-        </Router>
-      </AuthProvider>
-    </MantineProvider>
+  return (
+    <Provider store={store}>
+
+      <MantineProvider >
+        <AuthProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes - No session timeout here */}
+              <Route path="/" element={<HomeRoute />} />
+              <Route path="/login" element={<LoginComponent />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+
+              {/* Protected Routes - Wrap with SessionTimeout */}
+              <Route
+                path="/*"
+                element={
+                  <SessionTimeout onLogout={handleLogout}>
+                    <ProtectedRoutes />
+                  </SessionTimeout>
+                }
+              />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </MantineProvider>
+    </Provider>
   );
 };
 

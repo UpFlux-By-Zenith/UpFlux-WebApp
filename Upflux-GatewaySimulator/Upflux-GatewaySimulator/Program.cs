@@ -331,7 +331,8 @@ async Task HandleVersionDataRequest(VersionDataRequest request)
     Console.WriteLine("Preparing mock data for VersionDataResponse...");
 
     // Example UUIDs and version configuration
-    var deviceUuids = new[] { "1", "2", "should not be there" };
+    var deviceUuids = new[]
+        { "13f04e54-f3ea-4071-bf3b-85077155d845", "be489eee-d175-43d8-8cb8-2a03aba05566", "should not be there" };
     var versionDataResponse = new VersionDataResponse
     {
         Success = true,
@@ -351,12 +352,12 @@ async Task HandleVersionDataRequest(VersionDataRequest request)
         {
             new()
             {
-                Version = "v1.1.0",
+                Version = "v1.1.0-alpha",
                 InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-5))
             },
             new()
             {
-                Version = "v1.2.0",
+                Version = "v1.2.0-test",
                 InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-2))
             }
         };

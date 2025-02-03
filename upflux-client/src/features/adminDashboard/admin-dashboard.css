@@ -59,17 +59,3 @@
   flex-direction: column;
   gap: 20px;
 }
-
-.machine-selection {
-  width: max-content;
-}
-
-/* .file-input {
-  max-width: 200px;
-  max-height: 100px;
-  overflow: hidden;
-} */
-
-.app-table {
-  height: 200px !important;
-}

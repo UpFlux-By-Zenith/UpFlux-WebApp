@@ -16,7 +16,11 @@ export const LoginComponent: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    navigate('/update-management');
+  }
 
   const handleInputChange = (field: keyof LoginFormState) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -120,6 +124,9 @@ export const LoginComponent: React.FC = () => {
             </Box>
           </Box>
           <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>
+          <Box className="admin-login-switch">
+            <a href="/admin-login" className="admin-login-link">Administrator login</a>
+          </Box>
         </Box>
       </Container>
     </>

@@ -2,13 +2,15 @@ import { configureStore } from "@reduxjs/toolkit";
 import metricsReducer from "./metricsSlice";
 import alertReducer from "./alertSlice";
 import connectionReducer from "./connectionSlice";
+import applicationReducer from "./applicationVersions";
 
 
 const store = configureStore({
   reducer: {
     metrics: metricsReducer,
     alerts: alertReducer,
-    connectionStatus: connectionReducer
+    connectionStatus: connectionReducer,
+    applications: applicationReducer
   },
 });
 

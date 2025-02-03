@@ -51,4 +51,6 @@ public interface IEntityQueryService
     /// </summary>
     /// <returns></returns>
     Task<List<Machine>> GetListOfMachinesWithApplications();
+
+    Task<List<Machine>> GetListOfMachinesWithApplications(List<string> machineIds);
 }

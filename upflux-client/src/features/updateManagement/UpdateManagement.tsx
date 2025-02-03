@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select } from "@mantine/core";
+import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select, Title } from "@mantine/core";
 import { DonutChart } from "@mantine/charts";
 import { Link, useNavigate } from "react-router-dom";
 import { getAccessibleMachines } from "../../api/accessMachinesRequest";
@@ -8,8 +8,12 @@ import view from "../../assets/images/view.png";
 import updateIcon from "../../assets/images/updateIcon.jpg";
 import { useSubscription } from "../reduxSubscription/useSubscription";
 import { useAuth } from "../../common/authProvider/AuthProvider";
-import { deployPackage, getRunningMachinesApplications } from "../../api/applicationsRequest";
+import { deployPackage, doRollback, getRunningMachinesApplications } from "../../api/applicationsRequest";
 import { notifications } from "@mantine/notifications";
+import { IApplications } from "../reduxSubscription/applicationVersions";
+import { useSelector } from "react-redux";
+import { RootState } from "../reduxSubscription/store";
+import { ConfigureUpdate } from "./ConfigureUpdate";
 
 export const UpdateManagement = () => {
   const [modalOpened, setModalOpened] = useState(false);
@@ -18,7 +22,10 @@ export const UpdateManagement = () => {
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [updateModal, setUpdateModal] = useState<boolean>(false)
+  const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
   const { authToken } = useAuth();
+
 
   useSubscription(authToken);
 
@@ -46,28 +53,9 @@ export const UpdateManagement = () => {
   }, []);
 
   // Handle Deploy Button Click
-  const handleDeploy = () => {
-    if (!selectedMachine || !selectedVersion) {
-      alert("Please select both a machine and a version.");
-      return;
-    }
+  const handleRollback = () => {
 
-    deployPackage(selectedApp, selectedVersion, [selectedMachine]).then(() => {
-
-      // Create a new notification
-      const newNotification = {
-        id: Date.now(),
-        message: `Update started for ${selectedMachine} to ${selectedVersion}`,
-        image: updateIcon,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-
-      // Close modal
-      setModalOpened(false);
-    }).catch(() => {
-      alert("Err")
-    })
+    doRollback(selectedVersion, selectedMachine)
 
   };
 
@@ -77,10 +65,9 @@ export const UpdateManagement = () => {
     { name: "Shutdown", value: 0, color: "#FA5252" },
     { name: "Unknown", value: 0, color: "#6c757d" },
   ];
-
-  const [selectedApp, setSelectedApp] = useState(null);
-  const [availableVersions, setAvailableVersions] = useState([]);
-  const [availableApps, setAvailableApps] = useState([]);
+  const [selectedApp, setSelectedApp] = useState<string | null>(null);
+  const [availableApps, setAvailableApps] = useState<any[]>([]);
+  const [availableVersions, setAvailableVersions] = useState<any[]>([]);
 
   // Simulate an API call to fetch the application list and versions
   const fetchPackages = async () => {
@@ -99,6 +86,28 @@ export const UpdateManagement = () => {
     }
   };
 
+  // Fetch data from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/DataRequest/engineer/engineer-applications", {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`, // Get the token from localStorage (or sessionStorage)
+          },
+        }
+        );
+        const data = await response.json();
+        setMachines(data); // Set the machines data
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    // fetchData();
+  }, []);
+
   useEffect(() => {
     // Fetch available applications and their versions on modal open
     if (modalOpened) {
@@ -106,14 +115,56 @@ export const UpdateManagement = () => {
     }
   }, [modalOpened]);
 
-  const handleAppChange = (value) => {
-    setSelectedApp(value);
+  // Fetch data from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/DataRequest/engineer/engineer-applications"
+        );
+        const data = await response.json();
+        setMachines(data); // Set the machines data
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
 
-    // Find the selected app and set available versions
-    const app = availableApps.find((app) => app.name === value);
-    if (app) {
-      setAvailableVersions(app.versions);
-      setSelectedVersion(app.versions[0]); // Optionally, set the first available version as default
+    fetchData();
+  }, []);
+
+  // Handle machine selection
+  const handleMachineChange = (value: string | null) => {
+    setSelectedMachine(value);
+    if (value) {
+      // Find the selected machine and set its applications
+      const selectedMachineData = machines?.find(
+        (machine) => machine.machineId === value
+      );
+      if (selectedMachineData) {
+        setAvailableApps(selectedMachineData.applications);
+      } else {
+        setAvailableApps([]);
+      }
+    } else {
+      setAvailableApps([]);
+    }
+    setSelectedApp(null); // Reset selected app
+    setAvailableVersions([]); // Reset available versions
+  };
+
+  const machineIds = machines.map(m => m.machineId)
+
+  // Handle application selection
+  const handleAppChange = (value: string | null) => {
+    setSelectedApp(value);
+    if (value) {
+      // Find the selected application and set its versions
+      const selectedAppData = true
+      if (selectedAppData) {
+        setAvailableVersions(applications[selectedMachine].VersionNames);
+      } else {
+        setAvailableVersions([]);
+      }
     } else {
       setAvailableVersions([]);
     }
@@ -123,9 +174,9 @@ export const UpdateManagement = () => {
 
     <Stack className="update-management-content">
       <Box className="header">
-        <Text size="xl" fw={700}>
-          Update Management
-        </Text>
+        <Title>
+          Engineer Dashboard
+        </Title>
       </Box>
 
       <Box className="content-wrapper">
@@ -140,7 +191,7 @@ export const UpdateManagement = () => {
           <Stack className="legend">
             <Group className="legend-item">
               <Box className="circle green"></Box>
-              <Text size="sm">{1} Alive</Text>
+              <Text size="sm">{3} Alive</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
@@ -154,12 +205,21 @@ export const UpdateManagement = () => {
 
           <Stack className="button-group">
             <Button
+              color="rgba(0, 3, 255, 1)"
               className="configure-button"
-              onClick={() => setModalOpened(true)}
+              onClick={() => setUpdateModal(true)}
             >
               Configure Update
             </Button>
             <Button
+              color="rgba(0, 3, 255, 1)"
+              className="configure-button"
+              onClick={() => setModalOpened(true)}
+            >
+              Configure Rollback
+            </Button>
+            <Button
+              color="rgba(0, 3, 255, 1)"
               className="smart-button"
               onClick={() => navigate("/clustering")}
             >
@@ -175,6 +235,7 @@ export const UpdateManagement = () => {
             <Table className="machine-table" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th>Machine Name</Table.Th>
                   <Table.Th>Machine ID</Table.Th>
                   <Table.Th>IP Address</Table.Th>
                   <Table.Th>Last Update</Table.Th>
@@ -184,8 +245,9 @@ export const UpdateManagement = () => {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {machines.map((machine) => (
+                {machines?.map((machine) => (
                   <Table.Tr key={machine.machineId}>
+                    <Table.Td>{machine.machineName}</Table.Td>
                     <Table.Td>{machine.machineId}</Table.Td>
                     <Table.Td>{machine.ipAddress || "N/A"}</Table.Td>
                     <Table.Td>{"02/08/2024"}</Table.Td>
@@ -208,31 +270,58 @@ export const UpdateManagement = () => {
           )}
         </Box>
       </Box>
-
-      <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Configure Update" centered>
+      <ConfigureUpdate setModalOpened={setUpdateModal} modalOpened={updateModal} machineIds={machineIds} />
+      <Modal
+        opened={modalOpened}
+        onClose={() => setModalOpened(false)}
+        title="Configure Rollback"
+        centered
+      >
         <Box>
           <Text>Select Machines*</Text>
           <Select
-            data={machines.map((machine) => `${machine.machineId}`)}
+            data={Object.keys(applications).map((machineid) => ({
+              value: machineid,
+              label: machineid, // Use machineName if available, otherwise use machineId
+            }))}
             placeholder="Select Machines"
-            onChange={(value) => setSelectedMachine(value || null)}
+            onChange={handleMachineChange}
           />
 
-          <Text mt="md">Select Application*</Text>
-          <Select
-            data={availableApps.map((app) => app.name)} // Populate based on available apps
-            placeholder="Select Application"
-            onChange={handleAppChange}
-          />
+          {selectedMachine && (
+            <>
+              <Text mt="md">Select Application*</Text>
+              <Select
+                data={[{
+                  value: "UpFlux-Monitoring-Service",
+                  label: "UpFlux-Monitoring-Service",
+                }]}
+                placeholder="Select Application"
+                onChange={handleAppChange}
+              />
+            </>
+          )}
 
-          <Text mt="md">Select Software Version*</Text>
-          <Select
-            data={availableVersions} // Available versions will be updated based on app selection
-            placeholder="Select Version"
-            onChange={(value) => setSelectedVersion(value || null)}
-          />
+          {selectedApp && (
+            <>
+              <Text mt="md">Select Software Version*</Text>
+              <Select
+                data={availableVersions.map((version) => ({
+                  value: version,
+                  label: `${version} (on device)`,
+                }))}
+                placeholder="Select Version"
+                onChange={(value) => setSelectedVersion(value || null)}
+              />
+            </>
+          )}
 
-          <Button mt="md" fullWidth onClick={handleDeploy}>
+          <Button
+            color="rgba(0, 3, 255, 1)"
+            mt="md"
+            fullWidth
+            onClick={handleRollback}
+          >
             Deploy
           </Button>
         </Box>

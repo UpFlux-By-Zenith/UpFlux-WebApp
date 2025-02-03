@@ -337,6 +337,16 @@ public class EntityQueryService : IEntityQueryService
         return machinesWithApplications;
     }
 
+    public async Task<List<Machine>> GetListOfMachinesWithApplications(List<string> machineIds)
+    {
+        var machinesWithLicencesAndApplications = await _context.Machines
+            .Where(m => machineIds.Contains(m.MachineId)) // Filtering by provided machine IDs
+            .Include(m => m.Applications) // Including related Applications
+            .ThenInclude(a => a.Versions) // Including related Application Versions
+            .ToListAsync();
+
+        return machinesWithLicencesAndApplications;
+    }
 
     #endregion
 

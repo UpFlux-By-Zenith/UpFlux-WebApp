@@ -39,11 +39,9 @@ public class NotificationService : INotificationService
             {
                 GroupUriMapping[groupId] = new List<string>();
 
-                foreach (var machineId in machineIds)
-                {
-                    await AddUriToGroupAsync(groupId, machineId);
-                    await AddUriToGroupAsync(groupId, $"{machineId}/alert");
-                }
+                await AddUriToGroupAsync(groupId, "alert");
+                await AddUriToGroupAsync(groupId, "versions");
+                foreach (var machineId in machineIds) await AddUriToGroupAsync(groupId, machineId);
 
                 _logger.LogInformation("Group created successfully with ID: {GroupId}", groupId);
             }
