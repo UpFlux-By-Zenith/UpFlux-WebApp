@@ -30,10 +30,10 @@ jobs:
       run: dotnet publish -r linux-x64 --self-contained false -c Release -o ./publish
       working-directory: upflux-webservice/Upflux-WebService
 
-    - name: Debug: Check Published Files
+    - name: "Debug - Check Published Files"
       run: |
         if [ -d "./publish" ]; then
-          echo "✅ Publish directory exists. Listing contents:"
+          echo "✔️ Publish directory exists. Listing contents..."
           ls -R ./publish
         else
           echo "❌ Publish directory not found!"
