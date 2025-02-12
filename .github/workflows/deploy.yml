@@ -30,7 +30,7 @@ jobs:
       run: dotnet publish -r linux-x64 --self-contained false -c Release -o ../publish
       working-directory: upflux-webservice/Upflux-WebService
 
-    - name: Debug: Check Published Files
+    - name: "Debug: Check Published Files"
       run: |
         echo "🔍 Checking workspace structure..."
         ls -R $GITHUB_WORKSPACE
