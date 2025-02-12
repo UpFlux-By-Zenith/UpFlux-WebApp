@@ -16,7 +16,7 @@ jobs:
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.x' 
 
     - name: Restore dependencies
       run: dotnet restore
@@ -27,31 +27,33 @@ jobs:
       working-directory: upflux-webservice/Upflux-WebService
 
     - name: Publish .NET application
-      run: dotnet publish -r linux-x64 --self-contained false -c Release -o ../publish
+      run: dotnet publish -r linux-x64 --self-contained false -c Release -o ./publish
       working-directory: upflux-webservice/Upflux-WebService
 
-    - name: "Debug: Check Published Files"
+    - name: Ensure `appsettings.json` is in `publish/`
       run: |
-        echo "🔍 Checking workspace structure..."
-        ls -R $GITHUB_WORKSPACE
-        echo "🔍 Checking publish directory..."
-        if [ -d "upflux-webservice/publish" ]; then
-          echo "✔️ Publish directory exists. Listing contents..."
-          ls -R upflux-webservice/publish
-        else
-          echo "❌ Publish directory not found!"
-          exit 1
-        fi
+        cp upflux-webservice/appsettings.json upflux-webservice/publish/ || echo "⚠️ appsettings.json not found!"
+        cp upflux-webservice/appsettings.Production.json upflux-webservice/publish/ || echo "⚠️ appsettings.Production.json not found!"
+
+    - name: Debug: Check Published Files Before Deploying
+      run: ls -la upflux-webservice/publish/
 
     - name: Set up SSH key for EC2 access
       uses: webfactory/ssh-agent@v0.8.0
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-    - name: Copy published files to EC2 (Including Dockerfile)
+    - name: Copy published files & Dockerfile to EC2
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/upflux"
-        scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* upflux-webservice/Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/upflux"
+        scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* upflux-webservice/Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/upflux/
+
+    - name: Debug: Check Files on EC2 Before Docker Build
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          echo '🔍 Checking contents of /home/ubuntu/upflux/:'
+          ls -la /home/ubuntu/upflux/
+        "
 
     - name: Build and Run Docker on EC2
       run: |
@@ -70,7 +72,12 @@ jobs:
           sudo docker build -t upflux-webservice . &&
           
           # Run the container
-          sudo docker run -d --name upflux-webservice -p 5000:5000 -p 5002:5002 --restart always upflux-webservice
+          sudo docker run -d --name upflux-webservice \
+            -p 5000:5000 -p 5002:5002 \
+            -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -e JWT_ISSUER="${{ secrets.JWT_ISSUER }}" \
+            -e JWT_AUDIENCE="${{ secrets.JWT_AUDIENCE }}" \
+            --restart always upflux-webservice
         "
 
     - name: Verify Deployment
