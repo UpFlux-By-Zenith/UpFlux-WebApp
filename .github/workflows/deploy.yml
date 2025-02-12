@@ -48,7 +48,7 @@ jobs:
         ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/upflux"
         scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* upflux-webservice/Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/upflux/
 
-    - name: "Debug: Check Files on EC2 Before Docker Build
+    - name: "Debug: Check Files on EC2 Before Docker Build"
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
           echo '🔍 Checking contents of /home/ubuntu/upflux/:'
