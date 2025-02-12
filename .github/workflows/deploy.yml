@@ -35,7 +35,7 @@ jobs:
         cp upflux-webservice/appsettings.json upflux-webservice/publish/ || echo "⚠️ appsettings.json not found!"
         cp upflux-webservice/appsettings.Production.json upflux-webservice/publish/ || echo "⚠️ appsettings.Production.json not found!"
 
-    - name: Debug: Check Published Files Before Deploying
+    - name: "Debug: Check Published Files Before Deploying"
       run: ls -la upflux-webservice/publish/
 
     - name: Set up SSH key for EC2 access
@@ -48,7 +48,7 @@ jobs:
         ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/upflux"
         scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* upflux-webservice/Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/upflux/
 
-    - name: Debug: Check Files on EC2 Before Docker Build
+    - name: "Debug: Check Files on EC2 Before Docker Build
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
           echo '🔍 Checking contents of /home/ubuntu/upflux/:'
