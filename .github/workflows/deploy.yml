@@ -48,10 +48,10 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-    - name: Copy published files to EC2
+    - name: Copy published files to EC2 (Including Dockerfile)
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/upflux"
-        scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
+        scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* upflux-webservice/Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
 
     - name: Build and Run Docker on EC2
       run: |
