@@ -3,7 +3,7 @@ name: Deploy UpFlux WebService to EC2
 on:
   push:
     branches:
-      - deploy  # Trigger deployment when pushing to the deploy branch
+      - deploy
 
 jobs:
   deploy:
@@ -16,16 +16,19 @@ jobs:
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '8.0.x'  # Match your project's .NET version
+        dotnet-version: '8.0.x' 
 
     - name: Restore dependencies
       run: dotnet restore
+      working-directory: upflux-webservice/Upflux-WebService
 
     - name: Build .NET application
       run: dotnet build --configuration Release --no-restore
+      working-directory: upflux-webservice/Upflux-WebService
 
     - name: Publish .NET application
       run: dotnet publish -c Release -o ./publish
+      working-directory: upflux-webservice/Upflux-WebService
 
     - name: Set up SSH key for EC2 access
       uses: webfactory/ssh-agent@v0.8.0
