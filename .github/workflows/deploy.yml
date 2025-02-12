@@ -27,7 +27,7 @@ jobs:
       working-directory: upflux-webservice/Upflux-WebService
 
     - name: Publish .NET application
-      run: dotnet publish -c Release -o ./publish
+      run: dotnet publish -r linux-x64 --self-contained false -c Release -o ./publish
       working-directory: upflux-webservice/Upflux-WebService
 
     - name: Set up SSH key for EC2 access
