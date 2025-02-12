@@ -1,4 +1,4 @@
-name: Deploy UpFlux WebService to EC2
+name: UpFlux Webservice Deployment
 
 on:
   push:
