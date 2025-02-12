@@ -41,7 +41,7 @@ obj/
 # ASP.NET Core
 ###############################
 # Configuration files
-appsettings*.json
+
 
 # Published files
 wwwroot/
