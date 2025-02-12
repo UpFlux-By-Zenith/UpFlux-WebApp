@@ -27,8 +27,12 @@ jobs:
       working-directory: upflux-webservice/Upflux-WebService
 
     - name: Publish .NET application
-      run: dotnet publish -r linux-x64 --self-contained false -c Release -o ./publish
+      run: dotnet publish -r linux-x64 --self-contained false -c Release -o upflux-webservice/Upflux-WebService/publish
       working-directory: upflux-webservice/Upflux-WebService
+
+    - name: Debug: Check Published Files
+      run: |
+        ls -la upflux-webservice/Upflux-WebService/publish || echo "Publish directory not found!"
 
     - name: Set up SSH key for EC2 access
       uses: webfactory/ssh-agent@v0.8.0
@@ -37,10 +41,8 @@ jobs:
 
     - name: Copy published files to EC2
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-          mkdir -p ~/upflux &&
-          rm -rf ~/upflux/*"
-        scp -o StrictHostKeyChecking=no -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/upflux"
+        scp -o StrictHostKeyChecking=no -r upflux-webservice/Upflux-WebService/publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
 
     - name: Build and Run Docker on EC2
       run: |
