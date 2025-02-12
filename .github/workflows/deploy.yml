@@ -1,0 +1,56 @@
+name: Deploy UpFlux WebService to EC2
+
+on:
+  push:
+    branches:
+      - deploy  # Trigger deployment when pushing to the deploy branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'  # Match your project's .NET version
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build .NET application
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Publish .NET application
+      run: dotnet publish -c Release -o ./publish
+
+    - name: Set up SSH key for EC2 access
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+    - name: Copy published files to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          mkdir -p ~/upflux &&
+          rm -rf ~/upflux/*"
+        scp -o StrictHostKeyChecking=no -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
+
+    - name: Build and Run Docker on EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          cd ~/upflux &&
+          sudo docker build -t upflux-webservice . &&
+          sudo docker stop upflux-webservice || true &&
+          sudo docker rm upflux-webservice || true &&
+          sudo docker run -d --name upflux-webservice -p 5000:5000 -p 5002:5002 --restart always upflux-webservice
+        "
+
+    - name: Verify Deployment
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          sudo docker ps
+        "
