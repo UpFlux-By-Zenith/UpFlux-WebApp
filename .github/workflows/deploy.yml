@@ -16,7 +16,7 @@ jobs:
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '8.0.x' 
+        dotnet-version: '8.0.x'
 
     - name: Restore dependencies
       run: dotnet restore
@@ -27,14 +27,17 @@ jobs:
       working-directory: upflux-webservice/Upflux-WebService
 
     - name: Publish .NET application
-      run: dotnet publish -r linux-x64 --self-contained false -c Release -o ./publish
+      run: dotnet publish -r linux-x64 --self-contained false -c Release -o ../publish
       working-directory: upflux-webservice/Upflux-WebService
 
-    - name: "Debug - Check Published Files"
+    - name: Debug: Check Published Files
       run: |
-        if [ -d "./publish" ]; then
+        echo "🔍 Checking workspace structure..."
+        ls -R $GITHUB_WORKSPACE
+        echo "🔍 Checking publish directory..."
+        if [ -d "upflux-webservice/publish" ]; then
           echo "✔️ Publish directory exists. Listing contents..."
-          ls -R ./publish
+          ls -R upflux-webservice/publish
         else
           echo "❌ Publish directory not found!"
           exit 1
@@ -48,7 +51,7 @@ jobs:
     - name: Copy published files to EC2
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/upflux"
-        scp -o StrictHostKeyChecking=no -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
+        scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
 
     - name: Build and Run Docker on EC2
       run: |
