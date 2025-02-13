@@ -1,0 +1,86 @@
+name: UpFlux Webservice Deployment
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: upflux-webservice/Upflux-WebService
+
+    - name: Build .NET application
+      run: dotnet build --configuration Release --no-restore
+      working-directory: upflux-webservice/Upflux-WebService
+
+    - name: Publish .NET application
+      run: dotnet publish -r linux-x64 --self-contained false -c Release -o ../publish
+      working-directory: upflux-webservice/Upflux-WebService
+
+    - name: "Debug: Check Published Files"
+      run: |
+        echo "🔍 Checking workspace structure..."
+        ls -R $GITHUB_WORKSPACE
+        echo "🔍 Checking publish directory..."
+        if [ -d "upflux-webservice/publish" ]; then
+          echo "✔️ Publish directory exists. Listing contents..."
+          ls -R upflux-webservice/publish
+        else
+          echo "❌ Publish directory not found!"
+          exit 1
+        fi
+
+    - name: Set up SSH key for EC2 access
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+    - name: Copy published files to EC2 (Including Dockerfile)
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/upflux"
+        scp -o StrictHostKeyChecking=no -r upflux-webservice/publish/* upflux-webservice/Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/upflux/
+
+    - name: Copy appsettings.json from /config to /upflux
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          cp /home/ubuntu/config/appsettings.json /home/ubuntu/upflux/
+        "
+
+    - name: Build and Run Docker on EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          cd /home/ubuntu/upflux &&
+          export DOCKER_BUILDKIT=1 &&
+          
+          # Kill any process using port 5002
+          sudo fuser -k 5002/tcp || true &&
+          
+          # Stop and remove old containers
+          sudo docker stop upflux-webservice || true &&
+          sudo docker rm upflux-webservice || true &&
+          
+          # Build the new image
+          sudo docker build -t upflux-webservice . &&
+          
+          # Run the container
+          sudo docker run -d --name upflux-webservice -p 5000:5000 -p 5002:5002 --restart always upflux-webservice
+        "
+
+    - name: Verify Deployment
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          sudo docker ps
+        "
