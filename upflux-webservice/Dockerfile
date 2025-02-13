@@ -5,6 +5,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY ./ ./
+COPY /home/ubuntu/config/appsettings.json ./appsettings.json 
 
 EXPOSE 5000
 EXPOSE 5002
