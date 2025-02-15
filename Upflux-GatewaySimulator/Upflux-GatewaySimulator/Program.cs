@@ -7,7 +7,7 @@ using Upflux_GatewaySimulator;
 Console.WriteLine("Starting gRPC Client...");
 
 // Create the gRPC channel
-var channel = GrpcChannel.ForAddress("http://localhost:5022", new GrpcChannelOptions
+var channel = GrpcChannel.ForAddress("http://localhost:5002", new GrpcChannelOptions
 {
     //Credentials = ChannelCredentials.Insecure, 
     MaxReceiveMessageSize = 200 * 1024 * 1024,
@@ -32,6 +32,10 @@ var mockDataGenerator = new MockDataGenerator();
 
 // Dictionary to store and reuse UUIDs for monitoring data
 var monitoringDataDict = new Dictionary<string, MonitoringDataMessage>();
+
+// A= full success B=partial success C=failure
+string commandSuccessResponse = "C";
+string updateSuccessResponse = "A";
 
 // Task for receiving messages from the server
 var receiveTask = Task.Run(async () =>
@@ -388,41 +392,60 @@ async Task HandleVersionDataRequest(VersionDataRequest request)
     }
 }
 
-
+// HandleCommandRequest now uses the global currentExecutionMode
 async Task HandleCommandRequest(CommandRequest commandRequest)
 {
-    try
-    {
-        Console.WriteLine(
-            $"Received CommandRequest: CommandId={commandRequest.CommandId}, CommandType={commandRequest.CommandType}, Parameters={commandRequest.Parameters}");
+	try
+	{
+		Console.WriteLine($"Received CommandRequest: CommandId={commandRequest.CommandId}, CommandType={commandRequest.CommandType}, Parameters={commandRequest.Parameters}");
 
-        // Simulate executing the command (e.g., mock implementation)
-        Console.WriteLine("Executing command...");
-        await Task.Delay(1000); // Simulate execution time
-        Console.WriteLine(
-            $"Command {commandRequest.CommandId} of type {commandRequest.CommandType} executed successfully.");
+		var targetDevices = commandRequest.TargetDevices.ToList();
+		var devicesSucceeded = new List<string>();
+		var devicesFailed = new List<string>();
 
-        // Send CommandResponse back to the server
-        var commandResponse = new CommandResponse
-        {
-            CommandId = commandRequest.CommandId,
-            Success = true,
-            Details = $"Command {commandRequest.CommandId} executed successfully."
-        };
+		switch (commandSuccessResponse)
+		{
+			case "A": // Full success
+				devicesSucceeded = targetDevices;
+				break;
+			case "B": // Partial success
+				devicesSucceeded = targetDevices.Take(targetDevices.Count / 2).ToList();
+				devicesFailed = targetDevices.Skip(targetDevices.Count / 2).ToList();
+				break;
+			case "C": // No success
+				devicesFailed = targetDevices;
+				break;
+			default:
+				devicesSucceeded = targetDevices;
+				break;
+		}
 
-        var controlMessage = new ControlMessage
-        {
-            SenderId = senderId,
-            CommandResponse = commandResponse
-        };
+		string details = devicesFailed.Count == 0
+			? $"Rollback succeeded on {string.Join(", ", devicesSucceeded)}"
+			: devicesSucceeded.Count == 0
+				? $"Rollback failed on {string.Join(", ", devicesFailed)}"
+				: $"Rollback partial success: succeeded on {string.Join(", ", devicesSucceeded)}, failed on {string.Join(", ", devicesFailed)}";
 
-        await call.RequestStream.WriteAsync(controlMessage);
-        Console.WriteLine($"Sent CommandResponse for CommandId={commandRequest.CommandId}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error handling CommandRequest: {ex.Message}");
-    }
+		var commandResponse = new CommandResponse
+		{
+			CommandId = commandRequest.CommandId,
+			Success = devicesFailed.Count == 0,
+			Details = details
+		};
+
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			CommandResponse = commandResponse
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent CommandResponse for CommandId={commandRequest.CommandId} with details: {details}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error handling CommandRequest: {ex.Message}");
+	}
 }
 
 async Task SendMonitoringDataBatch()
@@ -491,23 +514,50 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
 
         Console.WriteLine($"UpdatePackage saved to: {filePath}");
 
-        // Send an acknowledgment back to the server
-        var updateAck = new UpdateAck
-        {
-            FileName = updatePackage.FileName,
-            Success = true,
-            Details = "Update package received and saved successfully."
-        };
+		// Simulate success/failure for target devices
+		List<string> succeededDevices = new List<string>();
+		List<string> failedDevices = new List<string>();
+        var targetDevices = updatePackage.TargetDevices;
 
-        var ackMessage = new ControlMessage
-        {
-            SenderId = senderId,
-            UpdateAck = updateAck
-        };
+		switch (updateSuccessResponse)
+		{
+			case "A":
+				succeededDevices.AddRange(targetDevices);
+				break;
+			case "B":
+				int halfCount = targetDevices.Count / 2;
+				succeededDevices.AddRange(targetDevices.Take(halfCount));
+				failedDevices.AddRange(targetDevices.Skip(halfCount));
+				break;
+			case "C":
+				failedDevices.AddRange(targetDevices);
+				break;
+			default:
+				Console.WriteLine("Invalid simulatedOutcome provided. Defaulting to success.");
+				succeededDevices.AddRange(targetDevices);
+				break;
+		}
 
-        await call.RequestStream.WriteAsync(ackMessage);
-        Console.WriteLine($"Sent UpdateAck for FileName={updatePackage.FileName}");
-    }
+		// Create detail message
+		string detailMsg = $"Succeeded on: {string.Join(", ", succeededDevices)}; Failed on: {string.Join(", ", failedDevices)}.";
+
+		// Send an acknowledgment back to the server
+		var updateAck = new UpdateAck
+		{
+			FileName = updatePackage.FileName,
+			Success = failedDevices.Count == 0, // Success if no failures
+			Details = detailMsg
+		};
+
+		var ackMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			UpdateAck = updateAck
+		};
+
+		await call.RequestStream.WriteAsync(ackMessage);
+		Console.WriteLine($"Sent UpdateAck for FileName={updatePackage.FileName}: {detailMsg}");
+	}
     catch (Exception ex)
     {
         Console.WriteLine($"Error handling UpdatePackage: {ex.Message}");

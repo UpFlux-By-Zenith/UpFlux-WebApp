@@ -32,14 +32,14 @@ public class ApplicationVersions
     [Required]
     [ForeignKey("app_id")]
     [Column("app_id")]
-    public int AppId { get; set; } // Foreign key to Application
+    public int AppId { get; set; } 
 
     [Required] [Column("version_name")] public List<string> VersionNames { get; set; }
 
     [Required] [Column("updated_by")] public string UpdatedBy { get; set; }
 
-    [JsonIgnore] // Prevent serialization of the Application property
-    public Application Application { get; set; } // Navigation property to Application
+    [JsonIgnore] 
+    public Application Application { get; set; } 
 
     public string DeviceUuid { get; set; }
 }
