@@ -558,7 +558,7 @@ CREATE TRIGGER LogUserInsert
 AFTER INSERT ON Users
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Users');
+    CALL LogAction('CREATE', 'Users');
 END //
 
 DELIMITER ;
@@ -570,7 +570,7 @@ CREATE TRIGGER LogUserUpdate
 AFTER UPDATE ON Users
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Users');
+    CALL LogAction('UPDATE', 'Users');
 END //
 
 DELIMITER ;
@@ -583,7 +583,7 @@ CREATE TRIGGER LogUserDelete
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Users');
+    CALL LogAction('DELETE', 'Users');
 END //
 
 DELIMITER ;
@@ -597,7 +597,7 @@ CREATE TRIGGER LogMachineInsert
 AFTER INSERT ON Machines
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Machines');
+    CALL LogAction('CREATE', 'Machines');
 END //
 
 DELIMITER ;
@@ -609,7 +609,7 @@ CREATE TRIGGER LogMachineUpdate
 AFTER UPDATE ON Machines
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Machines');
+    CALL LogAction('UPDATE', 'Machines');
 END //
 
 DELIMITER ;
@@ -621,7 +621,7 @@ CREATE TRIGGER LogMachineDelete
 AFTER DELETE ON Machines
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Machines');
+    CALL LogAction('DELETE', 'Machines');
 END //
 
 DELIMITER ;
@@ -635,7 +635,7 @@ CREATE TRIGGER LogLicenseInsert
 AFTER INSERT ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Licences');
+    CALL LogAction('CREATE', 'Licences');
 END //
 
 DELIMITER ;
@@ -647,7 +647,7 @@ CREATE TRIGGER LogLicenceUpdate
 AFTER UPDATE ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Licences');
+    CALL LogAction('UPDATE', 'Licences');
 END //
 
 DELIMITER ;
@@ -659,7 +659,7 @@ CREATE TRIGGER LogLicenceDelete
 AFTER DELETE ON Licences
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Licences');
+    CALL LogAction('DELETE', 'Licences');
 END //
 
 DELIMITER ;
@@ -673,7 +673,7 @@ CREATE TRIGGER LogCredentialInsert
 AFTER INSERT ON Credentials
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Credentials');
+    CALL LogAction('CREATE', 'Credentials');
 END //
 
 DELIMITER ;
@@ -685,7 +685,7 @@ CREATE TRIGGER LogCredentialUpdate
 AFTER UPDATE ON Credentials
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Credentials');
+    CALL LogAction('UPDATE', 'Credentials');
 END //
 
 DELIMITER ;
@@ -697,7 +697,7 @@ CREATE TRIGGER LogCredentialDelete
 AFTER DELETE ON Credentials
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Credentials');
+    CALL LogAction('DELETE', 'Credentials');
 END //
 
 DELIMITER ;
@@ -711,7 +711,7 @@ CREATE TRIGGER LogPackageInsert
 AFTER INSERT ON Packages
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Packages');
+    CALL LogAction('CREATE', 'Packages');
 END //
 
 DELIMITER ;
@@ -723,7 +723,7 @@ CREATE TRIGGER LogPackageUpdate
 AFTER UPDATE ON Packages
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Packages');
+    CALL LogAction('UPDATE', 'Packages');
 END //
 
 DELIMITER ;
@@ -735,7 +735,7 @@ CREATE TRIGGER LogPackageDelete
 AFTER DELETE ON Packages
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Packages');
+    CALL LogAction('DELETE', 'Packages');
 END //
 
 DELIMITER ;

@@ -118,11 +118,6 @@ CREATE TABLE User_Context (
     user_id VARCHAR(50) NOT NULL
 );
 
-/*
-INSERT INTO User_Context (user_id) VALUES ('user123')
-ON DUPLICATE KEY UPDATE user_id = 'user123';
-*/
-
 /*Show all tables present in the database*/
 SHOW TABLES;
 
@@ -521,14 +516,18 @@ SHOW GRANTS FOR 'mark123'@'%';
 DELIMITER //
 
 CREATE PROCEDURE LogAction(
-    IN p_user_id VARCHAR(50),
     IN p_action_type VARCHAR(10),
     IN p_entity_name VARCHAR(255)
 )
 BEGIN
+    DECLARE v_user_id VARCHAR(50);
+
+    SELECT user_id INTO v_user_id FROM User_Context WHERE session_id = CONNECTION_ID();
+
     INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (p_user_id, p_action_type, p_entity_name, NOW());
-END //
+    VALUES (v_user_id, p_action_type, p_entity_name, NOW());
+END//
+
 
 DELIMITER ;
 
@@ -559,7 +558,7 @@ CREATE TRIGGER LogUserInsert
 AFTER INSERT ON Users
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Users');
+    CALL LogAction('CREATE', 'Users');
 END //
 
 DELIMITER ;
@@ -571,7 +570,7 @@ CREATE TRIGGER LogUserUpdate
 AFTER UPDATE ON Users
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Users');
+    CALL LogAction('UPDATE', 'Users');
 END //
 
 DELIMITER ;
@@ -584,7 +583,7 @@ CREATE TRIGGER LogUserDelete
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Users');
+    CALL LogAction('DELETE', 'Users');
 END //
 
 DELIMITER ;
@@ -598,7 +597,7 @@ CREATE TRIGGER LogMachineInsert
 AFTER INSERT ON Machines
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Machines');
+    CALL LogAction(CREATE', 'Machines');
 END //
 
 DELIMITER ;
@@ -610,7 +609,7 @@ CREATE TRIGGER LogMachineUpdate
 AFTER UPDATE ON Machines
 FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Machines');
+    CALL LogAction('UPDATE', 'Machines');
 END //
 
 DELIMITER ;
