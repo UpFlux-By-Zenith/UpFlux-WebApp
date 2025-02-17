@@ -177,9 +177,9 @@ INSERT INTO Application_Versions (app_id, version_name, updated_by, date) VALUES
 
 -- Insert into Generated_Machine_Ids
 INSERT INTO Generated_Machine_Ids (machine_id) VALUES
-('UUID-1234-5678-ABCD'),
-('UUID-2345-6789-BCDE'),
-('UUID-3456-7890-CDEF');
+('123e4567-e89b-12d3-a456-426614174000'),
+('987f6543-e21b-34c2-b789-526613274111'),
+('456a1234-b56c-45f1-c321-626612374222');
 
 
 

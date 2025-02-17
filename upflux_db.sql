@@ -112,6 +112,16 @@ CREATE TABLE Generated_Machine_Ids (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- User context table for keeping track of currently logged in user ids
+CREATE TABLE User_Context (
+    session_id VARCHAR(128) PRIMARY KEY DEFAULT (CONNECTION_ID()),
+    user_id VARCHAR(50) NOT NULL
+);
+
+INSERT INTO User_Context (user_id) VALUES ('user123')
+ON DUPLICATE KEY UPDATE user_id = 'user123';
+
+
 /*Show all tables present in the database*/
 SHOW TABLES;
 
@@ -729,23 +739,6 @@ BEGIN
 END //
 
 DELIMITER ;
-
-
--- Trigger for updating the status of a licence to 'Expired'
-DELIMITER //
-
-CREATE TRIGGER UpdateLicenseValidity
-BEFORE UPDATE ON Licences
-FOR EACH ROW
-BEGIN
-    -- Check if the expiration date has passed, and update the validity_status
-    IF NEW.expiration_date < NOW() AND OLD.validity_status != 'Expired' THEN
-        SET NEW.validity_status = 'Expired';
-    END IF;
-END //
-
-DELIMITER ;
-
 
 -- Trigger for inserting new credentials 
 DELIMITER //
