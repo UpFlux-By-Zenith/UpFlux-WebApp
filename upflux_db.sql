@@ -9,7 +9,7 @@ CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL,
+    machine_name varchar(255) NOT NULL
 );
 
 -- Create Users Table
@@ -43,7 +43,7 @@ CREATE TABLE Credentials (
     user_id VARCHAR(50) NOT NULL,                  
     machine_id VARCHAR(255) NOT NULL,                 
     access_granted_at TIMESTAMP NOT NULL,   
-    expires_at TIMESTAMP NOT NULL,           
+    expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,           
     access_granted_by VARCHAR(50) NOT NULL,  
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
@@ -91,6 +91,7 @@ CREATE TABLE Applications (
     app_name VARCHAR(255) NOT NULL,
     added_by VARCHAR(50) NOT NULL,
     current_version VARCHAR(50) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (added_by) REFERENCES Users(user_id),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
 );
@@ -98,12 +99,10 @@ CREATE TABLE Applications (
 -- Create Application_Versions Table
 CREATE TABLE Application_Versions (
     version_id INT AUTO_INCREMENT PRIMARY KEY,  
-    app_id INT NOT NULL,
+    machine_id VARCHAR(255) NOT NULL,
     version_name VARCHAR(50) NOT NULL, 
-    updated_by VARCHAR(50) NOT NULL,
     date TIMESTAMP NOT NULL,
-    FOREIGN KEY (app_id) REFERENCES Applications(app_id),
-    FOREIGN KEY (updated_by) REFERENCES Users(user_id)
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
 );
 
 CREATE TABLE Generated_Machine_Ids (
@@ -170,10 +169,10 @@ INSERT INTO Applications (machine_id, app_name, added_by, current_version) VALUE
 ('MCH789GHI', 'AppThree', 'E789', 'v1.2');
 
 -- Insert into Application_Versions
-INSERT INTO Application_Versions (app_id, version_name, updated_by, date) VALUES
-(1, 'v1.0.1', 'E123', '2024-01-15 09:00:00'),
-(2, 'v1.1.1', 'E456', '2024-01-16 10:30:00'),
-(3, 'v1.2.1', 'E789', '2024-01-17 11:45:00');
+INSERT INTO Application_Versions (machine_id, version_name,  date) VALUES
+('MCH123ABC', 'v1.0.1', '2024-01-15 09:00:00'),
+('MCH123ABC', 'v1.1.1', '2024-01-16 10:30:00'),
+('MCH123ABC', 'v1.2.1', '2024-01-17 11:45:00');
 
 -- Insert into Generated_Machine_Ids
 INSERT INTO Generated_Machine_Ids (machine_id) VALUES

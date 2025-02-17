@@ -44,18 +44,38 @@ public class ApplicationVersions
     public string DeviceUuid { get; set; }
 }
 
+/// <summary>
+/// 
+/// </summary>
 public class Application
 {
-    [Key] [Column("app_id")] public int AppId { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [Key][Column("app_id")] public int AppId { get; set; }
 
-    [Required] [Column("machine_id")] public string MachineId { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [Required][Column("machine_id")] public string MachineId { get; set; } = string.Empty;
 
-    [Required] [Column("app_name")] public string AppName { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [Required][Column("app_name")] public string AppName { get; set; } = string.Empty;
 
-    [Required] [Column("added_by")] public string AddedBy { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [Required][Column("added_by")] public string AddedBy { get; set; } = string.Empty;
 
-    [Required] [Column("current_version")] public string CurrentVersion { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [Required][Column("current_version")] public string CurrentVersion { get; set; } = string.Empty;
 
-    // Navigation property for related versions
-    public ICollection<ApplicationVersion> Versions { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+	[Column("updated_at")] public DateTime UpdatedAt { get; set; }
 }
