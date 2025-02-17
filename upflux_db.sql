@@ -511,8 +511,7 @@ SHOW GRANTS FOR 'john'@'%';
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
 
---Stored Procedures
-
+-- Stored Procedures with SIGNAL Error Handling
 DELIMITER //
 
 CREATE PROCEDURE LogAction(
@@ -521,260 +520,173 @@ CREATE PROCEDURE LogAction(
 )
 BEGIN
     DECLARE v_user_id VARCHAR(50);
-
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogAction procedure';
+    END;
+    
     SELECT user_id INTO v_user_id FROM User_Context WHERE session_id = CONNECTION_ID();
-
+    
     INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
     VALUES (v_user_id, p_action_type, p_entity_name, NOW());
 END//
 
-
 DELIMITER ;
 
--- Triggers
-
--- For testing triggers as a specific user:
-SET @current_user_id = a1;
-
--- Trigger for deleting a users associated admin details whenever they are removed from the users table
+-- Triggers with SIGNAL Error Handling
 DELIMITER //
 CREATE TRIGGER DeleteAdminDetails
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    -- Check if the deleted user was an Admin
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in DeleteAdminDetails trigger';
+    END;
+    
     IF OLD.role = 'Admin' THEN
-        -- Delete corresponding entry from Admin_Details
-        DELETE FROM Admin_Details
-        WHERE user_id = OLD.user_id;
+        DELETE FROM Admin_Details WHERE user_id = OLD.user_id;
     END IF;
 END //
 DELIMITER ;
 
--- Trigger for adding entry to action_logs when a user performs an Insert
+-- Generalized Logging Triggers with Error Handling
 DELIMITER //
-
-CREATE TRIGGER LogUserInsert
-AFTER INSERT ON Users
-FOR EACH ROW
+CREATE TRIGGER LogUserInsert AFTER INSERT ON Users FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogUserInsert trigger';
+    END;
     CALL LogAction('CREATE', 'Users');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update
-DELIMITER //
-
-CREATE TRIGGER LogUserUpdate
-AFTER UPDATE ON Users
-FOR EACH ROW
+CREATE TRIGGER LogUserUpdate AFTER UPDATE ON Users FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogUserUpdate trigger';
+    END;
     CALL LogAction('UPDATE', 'Users');
 END //
 
-DELIMITER ;
-
-
--- Trigger for adding entry to action_logs when a user performs a Delete
-DELIMITER //
-
-CREATE TRIGGER LogUserDelete
-AFTER DELETE ON Users
-FOR EACH ROW
+CREATE TRIGGER LogUserDelete AFTER DELETE ON Users FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogUserDelete trigger';
+    END;
     CALL LogAction('DELETE', 'Users');
 END //
 
-DELIMITER ;
-
--- Machines Triggers
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Machines
-DELIMITER //
-
-CREATE TRIGGER LogMachineInsert
-AFTER INSERT ON Machines
-FOR EACH ROW
+CREATE TRIGGER LogMachineInsert AFTER INSERT ON Machines FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogMachineInsert trigger';
+    END;
     CALL LogAction('CREATE', 'Machines');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Machines
-DELIMITER //
-
-CREATE TRIGGER LogMachineUpdate
-AFTER UPDATE ON Machines
-FOR EACH ROW
+CREATE TRIGGER LogMachineUpdate AFTER UPDATE ON Machines FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogMachineUpdate trigger';
+    END;
     CALL LogAction('UPDATE', 'Machines');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Machines
-DELIMITER //
-
-CREATE TRIGGER LogMachineDelete
-AFTER DELETE ON Machines
-FOR EACH ROW
+CREATE TRIGGER LogMachineDelete AFTER DELETE ON Machines FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogMachineDelete trigger';
+    END;
     CALL LogAction('DELETE', 'Machines');
 END //
 
-DELIMITER ;
-
--- Licences
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Licences
-DELIMITER //
-
-CREATE TRIGGER LogLicenseInsert
-AFTER INSERT ON Licences
-FOR EACH ROW
+CREATE TRIGGER LogLicenceInsert AFTER INSERT ON Licences FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogLicenceInsert trigger';
+    END;
     CALL LogAction('CREATE', 'Licences');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Licences
-DELIMITER //
-
-CREATE TRIGGER LogLicenceUpdate
-AFTER UPDATE ON Licences
-FOR EACH ROW
+CREATE TRIGGER LogLicenceUpdate AFTER UPDATE ON Licences FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogLicenceUpdate trigger';
+    END;
     CALL LogAction('UPDATE', 'Licences');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Licences
-DELIMITER //
-
-CREATE TRIGGER LogLicenceDelete
-AFTER DELETE ON Licences
-FOR EACH ROW
+CREATE TRIGGER LogLicenceDelete AFTER DELETE ON Licences FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogLicenceDelete trigger';
+    END;
     CALL LogAction('DELETE', 'Licences');
 END //
 
-DELIMITER ;
-
--- Credentials
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialInsert
-AFTER INSERT ON Credentials
-FOR EACH ROW
+CREATE TRIGGER LogCredentialInsert AFTER INSERT ON Credentials FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogCredentialInsert trigger';
+    END;
     CALL LogAction('CREATE', 'Credentials');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialUpdate
-AFTER UPDATE ON Credentials
-FOR EACH ROW
+CREATE TRIGGER LogCredentialUpdate AFTER UPDATE ON Credentials FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogCredentialUpdate trigger';
+    END;
     CALL LogAction('UPDATE', 'Credentials');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialDelete
-AFTER DELETE ON Credentials
-FOR EACH ROW
+CREATE TRIGGER LogCredentialDelete AFTER DELETE ON Credentials FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogCredentialDelete trigger';
+    END;
     CALL LogAction('DELETE', 'Credentials');
 END //
 
-DELIMITER ;
-
--- Packages 
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Packages
-DELIMITER //
-
-CREATE TRIGGER LogPackageInsert
-AFTER INSERT ON Packages
-FOR EACH ROW
+CREATE TRIGGER LogPackageInsert AFTER INSERT ON Packages FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogPackageInsert trigger';
+    END;
     CALL LogAction('CREATE', 'Packages');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Packages
-DELIMITER //
-
-CREATE TRIGGER LogPackageUpdate
-AFTER UPDATE ON Packages
-FOR EACH ROW
+CREATE TRIGGER LogPackageUpdate AFTER UPDATE ON Packages FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogPackageUpdate trigger';
+    END;
     CALL LogAction('UPDATE', 'Packages');
 END //
 
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Packages
-DELIMITER //
-
-CREATE TRIGGER LogPackageDelete
-AFTER DELETE ON Packages
-FOR EACH ROW
+CREATE TRIGGER LogPackageDelete AFTER DELETE ON Packages FOR EACH ROW
 BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogPackageDelete trigger';
+    END;
     CALL LogAction('DELETE', 'Packages');
 END //
 
-DELIMITER ;
-
--- Trigger for inserting new credentials 
-DELIMITER //
-
-CREATE TRIGGER LogCredentialsInsert
-AFTER INSERT ON Credentials
-FOR EACH ROW
-BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'CREATE', 'Credentials', NOW());
-END //
-
-DELIMITER ;
-
--- Trigger for updating credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialsUpdate
-AFTER UPDATE ON Credentials
-FOR EACH ROW
-BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'UPDATE', 'Credentials', NOW());
-END //
-
-DELIMITER ;
-
--- Trigger for deleting credentials
-DELIMITER //
-CREATE TRIGGER LogCredentialsDelete
-AFTER DELETE ON Credentials
-FOR EACH ROW
-BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'DELETE', 'Credentials', NOW());
-END //
 DELIMITER ;
 
 
