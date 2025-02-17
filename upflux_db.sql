@@ -118,10 +118,6 @@ CREATE TABLE User_Context (
     user_id VARCHAR(50) NOT NULL
 );
 
-INSERT INTO User_Context (user_id) VALUES ('user123')
-ON DUPLICATE KEY UPDATE user_id = 'user123';
-
-
 /*Show all tables present in the database*/
 SHOW TABLES;
 
@@ -520,14 +516,18 @@ SHOW GRANTS FOR 'mark123'@'%';
 DELIMITER //
 
 CREATE PROCEDURE LogAction(
-    IN p_user_id VARCHAR(50),
     IN p_action_type VARCHAR(10),
     IN p_entity_name VARCHAR(255)
 )
 BEGIN
+    DECLARE v_user_id VARCHAR(50);
+
+    SELECT user_id INTO v_user_id FROM User_Context WHERE session_id = CONNECTION_ID();
+
     INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (p_user_id, p_action_type, p_entity_name, NOW());
-END //
+    VALUES (v_user_id, p_action_type, p_entity_name, NOW());
+END//
+
 
 DELIMITER ;
 
