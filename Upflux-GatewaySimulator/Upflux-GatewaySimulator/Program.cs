@@ -35,7 +35,7 @@ var monitoringDataDict = new Dictionary<string, MonitoringDataMessage>();
 
 // A= full success B=partial success C=failure
 string commandSuccessResponse = "C";
-string updateSuccessResponse = "A";
+string updateSuccessResponse = "B";
 
 // Task for receiving messages from the server
 var receiveTask = Task.Run(async () =>
@@ -336,7 +336,8 @@ async Task HandleVersionDataRequest(VersionDataRequest request)
 
     // Example UUIDs and version configuration
     var deviceUuids = new[]
-        { "13f04e54-f3ea-4071-bf3b-85077155d845", "be489eee-d175-43d8-8cb8-2a03aba05566", "should not be there" };
+        { "test1", "test2", "test3" };
+
     var versionDataResponse = new VersionDataResponse
     {
         Success = true,
@@ -348,7 +349,7 @@ async Task HandleVersionDataRequest(VersionDataRequest request)
         /// set current version here
         var currentVersion = new UpFlux_GatewaySimulator.Protos.VersionInfo
         {
-            Version = "v100",
+            Version = "100",
             InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-7))
         };
 
@@ -364,7 +365,7 @@ async Task HandleVersionDataRequest(VersionDataRequest request)
                 Version = "v1.2.0-test",
                 InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-2))
             }
-        };
+		};
 
         versionDataResponse.DeviceVersionsList.Add(new DeviceVersions
         {

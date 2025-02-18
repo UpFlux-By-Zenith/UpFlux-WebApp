@@ -4,39 +4,54 @@ using System.Text.Json.Serialization;
 
 namespace Upflux_WebService.Core.Models;
 
+/// <summary>
+/// Presents the available versions inside a machine
+/// </summary>
 public class ApplicationVersion
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [Key] [Column("version_id")] public int VersionId { get; set; }
 
+    /// <summary>
+    /// 
+    /// </summary>
     [Required]
-    [ForeignKey("app_id")]
-    [Column("app_id")]
-    public int AppId { get; set; } // Foreign key to Application
+    [ForeignKey("machine_id")]
+    [Column("machine_id")]
+    public string MachineId { get; set; } = string.Empty;
 
-    [Required] [Column("version_name")] public string VersionName { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [Required]
+    [Column("version_name")]
+    public string VersionName { get; set; } = string.Empty;
 
-    [Required] [Column("updated_by")] public string UpdatedBy { get; set; }
-
-    [Required] [Column("date")] public DateTime Date { get; set; }
-
-    [JsonIgnore] // Prevent serialization of the Application property
-    public Application Application { get; set; } // Navigation property to Application
-
-    public string DeviceUuid { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [Required]
+    [Column("date")]
+    public DateTime Date { get; set; }
 }
 
+// TODO: Remove when application version is handled by control channel service
 public class ApplicationVersions
 {
     [Key] [Column("version_id")] public int VersionId { get; set; }
 
     [Required]
-    [ForeignKey("app_id")]
-    [Column("app_id")]
+    [ForeignKey("machine_id")]
+    [Column("machine_id")]
     public int AppId { get; set; } 
 
-    [Required] [Column("version_name")] public List<string> VersionNames { get; set; }
+    [Required] [Column("version_name")]
+    public List<string> VersionNames { get; set; }
 
-    [Required] [Column("updated_by")] public string UpdatedBy { get; set; }
+    [Required] [Column("updated_by")] 
+    public string UpdatedBy { get; set; }
 
     [JsonIgnore] 
     public Application Application { get; set; } 

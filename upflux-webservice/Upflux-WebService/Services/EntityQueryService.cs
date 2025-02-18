@@ -150,7 +150,7 @@ public class EntityQueryService : IEntityQueryService
         var userId = GenerateUserId(DbGenerateId.ENGINEER);
 
         // Create a new UserBase object
-        var newUser = new Users
+        var newUser = new User
         {
             UserId = userId,
             Email = email,
@@ -294,7 +294,7 @@ public class EntityQueryService : IEntityQueryService
         return appendId + newId;
     }
 
-    public async Task<List<Users>> GetAllEngineers()
+    public async Task<List<User>> GetAllEngineers()
     {
         return await _context.Users
             .Where(u => u.Role == UserRole.Engineer) // Filters only Engineers

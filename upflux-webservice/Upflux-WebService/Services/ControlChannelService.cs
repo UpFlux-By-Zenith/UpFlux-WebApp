@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Upflux_WebService.Services.Interfaces;
 using static Upflux_WebService.Services.EntityQueryService;
 using System.Text.RegularExpressions;
+using Upflux_WebService.Repository;
 
 
 namespace UpFlux_WebService
@@ -321,6 +322,7 @@ namespace UpFlux_WebService
 			}
 		}
 
+		// TODO: use getVersionn Data to update database instead of doing it manually. do it in forntend maybe?
 		/// <summary>
 		/// update application database if rollback is succesful
 		/// </summary>
@@ -336,14 +338,14 @@ namespace UpFlux_WebService
 
 			try
 			{
-				var application = await applicationRepository.GetByMachineId(machineId);
-				if (application == null)
-				{
-					alert.Message = $"Failed to process rollback for MachineId: {machineId}. No application found.";
-					_logger.LogWarning("No application found for MachineId: {0}. Skipping processing.", machineId);
-					await notificationService.SendMessageToUriAsync("alert", alert.ToString());
-					return;
-				}
+				//var application = await applicationRepository.GetByMachineId(machineId);
+				//if (application == null)
+				//{
+				//	alert.Message = $"Failed to process rollback for MachineId: {machineId}. No application found.";
+				//	_logger.LogWarning("No application found for MachineId: {0}. Skipping processing.", machineId);
+				//	await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+				//	return;
+				//}
 
 				// in case of partial success
 				var (succeededDevices, failedDevices) = string.IsNullOrWhiteSpace(req.Details)
@@ -354,6 +356,13 @@ namespace UpFlux_WebService
 
 				if (isSuccess)
 				{
+
+					var application = await applicationRepository.GetByMachineId(machineId);
+					if (application is null)
+					{
+						// add
+					}
+
 					await HandleSuccessfulRollback(machineId, parameters, req, application, applicationRepository, notificationService, alert);
 				}
 				else
@@ -376,6 +385,8 @@ namespace UpFlux_WebService
 			application.CurrentVersion = parameters;
 			applicationRepository.Update(application);
 			await applicationRepository.SaveChangesAsync();
+
+			// await SendVersionDataRequestAsync("gateway-patrick-1234");
 
 			var successMessage = $"MachineId: {machineId} successfully rolled back to version: {parameters}.";
 			alert.Message = successMessage;
@@ -454,15 +465,27 @@ namespace UpFlux_WebService
 
 				foreach (var deviceUuid in metadata.TargetDevices)
 				{
-					var application = await applicationRepository.GetByMachineId(deviceUuid);
-					if (application == null)
-					{
-						await LogAndNotifyFailure(notificationService, deviceUuid, req.FileName, metadata.AppName);
-						continue;
-					}
-
 					if (succeededDevices.Contains(deviceUuid))
 					{
+						var application = await applicationRepository.GetByMachineId(deviceUuid);
+						if (application == null)
+						{
+							//await LogAndNotifyFailure(notificationService, deviceUuid, req.FileName, metadata.AppName);
+							var newApp = new Application
+							{
+								MachineId = deviceUuid,
+								AppName = metadata.AppName,
+								AddedBy = metadata.UserId,
+								CurrentVersion = metadata.Version,
+								UpdatedAt = DateTime.UtcNow
+							};
+
+							await applicationRepository.AddAsync(newApp);
+							await applicationRepository.SaveChangesAsync();
+
+							continue;
+						}
+
 						await UpdateApplicationAndNotify(applicationRepository, notificationService, application, metadata, deviceUuid);
 					}
 					else
@@ -483,13 +506,18 @@ namespace UpFlux_WebService
 			}
 		}
 
+		// TODO: test with real gateway calling version data info after updating could be a better way than updating manually
+		// or maybe call getversion info after every rollback/update
 		private async Task UpdateApplicationAndNotify(IApplicationRepository repository, INotificationService notificationService, Application application, UpdateMetadata metadata, string deviceUuid)
 		{
 			application.CurrentVersion = metadata.Version;
 			application.AppName = metadata.AppName;
+			application.AddedBy = metadata.UserId;
 
 			repository.Update(application);
 			await repository.SaveChangesAsync();
+
+			//await SendVersionDataRequestAsync("gateway-patrick-1234");
 
 			_logger.LogInformation(
 				"Successfully updated application for DeviceUuid: {0} to version: {1}, AppName: {2}",
@@ -498,6 +526,7 @@ namespace UpFlux_WebService
 			await notificationService.SendMessageToUriAsync("Alert/Update",
 				$"DeviceUuid: {deviceUuid} successfully updated to version: {metadata.Version}, AppName: {metadata.AppName}.");
 		}
+
 
 		private async Task LogAndNotifyFailure(INotificationService notificationService, string deviceUuid, string fileName, string appName)
 		{
@@ -552,90 +581,147 @@ namespace UpFlux_WebService
 			}
 			else
 			{
+				if (resp.DeviceVersionsList == null || !resp.DeviceVersionsList.Any())
+				{
+					_logger.LogWarning("Gateway [{0}] reported no devices in VersionDataResponse.", gatewayId);
+					return;
+				}
+
 				_logger.LogInformation("VersionDataResponse from [{0}]: {1}", gatewayId, resp.Message);
 
 				using var scope = _serviceScopeFactory.CreateScope();
 				var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
+				var applicationVersionRepository = scope.ServiceProvider.GetRequiredService<IApplicationVersionRepository>();
+				var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
 				var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
 				foreach (var dv in resp.DeviceVersionsList)
 				{
+					var machineExists = await machineRepository.GetByIdAsync(dv.DeviceUuid);
+					if (machineExists is null)
+					{
+						_logger.LogError("Foreign Key Violation: Machine UUID [{0}] does not exist in Machines table. Skipping insert.",
+							dv.DeviceUuid);
+						continue; 
+					}
+
 					_logger.LogInformation(" Device={0}", dv.DeviceUuid);
 
+					// if there are no Application (current running service) in the database add the "current" of the gRPC version data info (if it is not null)
+					// if theres is an Application for the UUID update it if it is a different version
 					var application = await applicationRepository.GetByMachineId(dv.DeviceUuid);
 					if (application is null)
 					{
-						// or add it to application database?
-						_logger.LogInformation(
-							$"machine: [{dv.DeviceUuid}] have an applicatiuon running that is not in the database");
-						continue;
-					}
-
-					if (dv.Current != null)
-					{
-						if (application.CurrentVersion != dv.Current.Version)
+						if (dv.Current is not null)
 						{
-							application.CurrentVersion = dv.Current.Version;
-							applicationRepository.Update(application);
+							var newApp = new Application
+							{
+								MachineId = dv.DeviceUuid,
+								AppName = "Monitoring Service",
+								AddedBy = "Found on Machine", // because if this happens that mean the package didnt come from the front end where the user will be detected
+								CurrentVersion = dv.Current.Version,
+								UpdatedAt = DateTime.UtcNow
+							};
+
+							await applicationRepository.AddAsync(newApp);
 							await applicationRepository.SaveChangesAsync();
 						}
 
-						var installed = dv.Current.InstalledAt.ToDateTime();
-						_logger.LogInformation("  CURRENT => Version={0}, InstalledAt={1}", dv.Current.Version,
-							installed);
+						_logger.LogInformation(
+							$"machine: [{dv.DeviceUuid}] have an application running that is not in the cloud database");
 					}
 					else
 					{
-						_logger.LogInformation("  CURRENT => (none)");
+						// if current is not null and different than the one in Application table; update the table
+						if (dv.Current != null)
+						{
+							if (application.CurrentVersion != dv.Current.Version)
+							{
+								application.CurrentVersion = dv.Current.Version;
+								application.UpdatedAt = dv.Current.InstalledAt.ToDateTime();
+
+								applicationRepository.Update(application);
+								await applicationRepository.SaveChangesAsync();
+							}
+							else {
+								_logger.LogInformation($"No Database update required for Current Application Running in {dv.DeviceUuid}");
+							}
+
+							_logger.LogInformation("  CURRENT => Version={0}, InstalledAt={1}", dv.Current.Version,
+								dv.Current.InstalledAt.ToDateTime());
+						}
+						else
+						{
+							_logger.LogInformation("  CURRENT => (none)");
+						}
 					}
 
+					// if there are available versions in the message find in database a version with the same machineid and version name combination
+					// get all versions in database with machineid. cross check with version data response
+					// if the versions in the database contains a version that is not in the machine delete from database and add from the version data response
 					if (dv.Available.Count > 0)
 					{
-						List<string> versions = new();
 						_logger.LogInformation("  AVAILABLE:");
-						foreach (var av in dv.Available) versions.Add(av.Version);
-						// var newVersion = new ApplicationVersion
-						// {
-						//     AppId = application.AppId,
-						//     VersionName = av.Version,
-						//     UpdatedBy = "E11111", // Adjust this based on actual updater
-						//     Date = av.InstalledAt.ToDateTime(),
-						//     DeviceUuid = dv.DeviceUuid
-						// };
-						//
-						// await notificationService.SendMessageToUriAsync("versions",
-						//     JsonConvert.SerializeObject(newVersion));
-						// var existingVersion = application.Versions.FirstOrDefault(v => v.VersionName == av.Version);
-						// if (existingVersion == null)
-						// {
-						//     var newVersion = new ApplicationVersion
-						//     {
-						//         AppId = application.AppId,
-						//         VersionName = av.Version,
-						//         UpdatedBy = "E11111", // Adjust this based on actual updater
-						//         Date = av.InstalledAt.ToDateTime()
-						//     };
-						//     
-						//     application.Versions.Add(newVersion);
-						//     _logger.LogInformation("Added new available version: {0} for machine {1}", av.Version,
-						//         dv.DeviceUuid);
-						// }
-						// else
-						// {
-						//     _logger.LogInformation("Version {0} already exists for machine {1}", av.Version,
-						//         dv.DeviceUuid);
-						// }
-						var newVersion = new ApplicationVersions
-						{
-							AppId = application.AppId,
-							VersionNames = versions,
-							UpdatedBy = "E11111", // Adjust this based on actual updater
-							DeviceUuid = dv.DeviceUuid
-						};
 
-						await notificationService.SendMessageToUriAsync("versions",
-							JsonConvert.SerializeObject(newVersion));
-						await applicationRepository.SaveChangesAsync();
+						foreach (var av in dv.Available)
+						{
+							_logger.LogInformation($"Version: {av.Version}, Release Date: {av.InstalledAt}");
+						}
+
+						// Get all versions from the database for this machine and the one from incoming data
+						List<ApplicationVersion> availableVersions = await applicationVersionRepository.GetVersionsByMachineId(dv.DeviceUuid);
+						var incomingVersionNames = dv.Available
+							.Select(av => av.Version)
+							.ToHashSet();
+
+						// Find versions in the database that are not in the incoming data (to delete)
+						var versionsToDelete = availableVersions
+							.Where(v => !incomingVersionNames.Contains(v.VersionName))
+							.ToList();
+
+						// Delete versions that are no longer on the machine
+						if (versionsToDelete.Any())
+						{
+							foreach (var version in versionsToDelete)
+							{
+								_logger.LogInformation("Deleting outdated version {0} from database for Machine [{1}]",
+									version.VersionName, dv.DeviceUuid);
+
+								applicationVersionRepository.Remove(version);
+							}
+						}
+						else { 
+							_logger.LogInformation($"No database deletes required for application version for device: {dv.DeviceUuid}");
+						}
+
+						// Find versions from incoming data that are not in the database (to add)
+						var existingVersionNames = availableVersions.Select(v => v.VersionName).ToHashSet();
+						var versionsToAdd = dv.Available
+							.Where(av => !existingVersionNames.Contains(av.Version))
+							.ToHashSet();
+
+						// Add new versions that are missing in the database
+						if (versionsToAdd.Any())
+						{
+							foreach (var version in versionsToAdd)
+							{
+								var newVersion = new ApplicationVersion
+								{
+									MachineId = dv.DeviceUuid,
+									VersionName = version.Version,
+									Date = version.InstalledAt.ToDateTime()
+								};
+
+								_logger.LogInformation($"Adding new version {version.Version} to database");
+								await applicationVersionRepository.AddAsync(newVersion);
+							}
+						}
+						else
+						{
+							_logger.LogInformation($"No database ammends required for application version for device {dv.DeviceUuid}");
+						}
+
+						await applicationVersionRepository.SaveChangesAsync();
 					}
 					else
 					{
@@ -692,11 +778,14 @@ namespace UpFlux_WebService
 		/// <summary>
 		/// Sends a command request (e.g. ROLLBACK) to a connected gateway.
 		/// </summary>
-		public async Task SendCommandToGatewayAsync(string gatewayId,
+		public async Task SendCommandToGatewayAsync(
+			string gatewayId,
 			string commandId,
 			CommandType cmdType,
 			string parameters,
-			params string[] targetDevices)
+			string userEmail,
+			params string[] targetDevices
+			)
 		{
 			if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
 			{
@@ -767,8 +856,18 @@ namespace UpFlux_WebService
 		/// Sends an update package to the gateway, which should forward/install it on the specified devices.
 		/// </summary>
 		public async Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData,
-			string[] targetDevices, string appName, string version)
+			string[] targetDevices, string appName, string version, string userEmail)
 		{
+			using var scope = _serviceScopeFactory.CreateScope();
+			var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+
+			var user = await userRepository.GetUserByEmail(userEmail);
+			if (user is null)
+			{
+				_logger.LogWarning("Update package upload failed. Invalid user email");
+				return;
+			}
+
 			if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
 			{
 				_logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
@@ -793,7 +892,8 @@ namespace UpFlux_WebService
 				TargetDevices = targetDevices.ToList(),
 				AppName = appName,
 				Version = version,
-				FileName = fileName
+				FileName = fileName,
+				UserId = user.UserId
 			};
 
 			try
@@ -844,6 +944,8 @@ public class CommandMetadata
 	public string Parameters { get; set; } = string.Empty;
 
 	public CommandType CommandType { get; set; }
+
+	public string UserId { get; set; } = string.Empty;
 }
 
 public class UpdateMetadata
@@ -855,6 +957,8 @@ public class UpdateMetadata
 	public string Version { get; set; } = string.Empty;
 
 	public string FileName { get; set; } = string.Empty;
+
+	public string UserId { get; set; } = string.Empty;
 }
 
 #endregion

@@ -35,7 +35,7 @@ namespace Upflux_WebService.Services.Interfaces
 		/// <param name="parameters"></param>
 		/// <param name="targetDevices"></param>
 		/// <returns></returns>
-		Task SendCommandToGatewayAsync(string gatewayId, string commandId, CommandType cmdType, string parameters, params string[] targetDevices);
+		Task SendCommandToGatewayAsync(string gatewayId, string commandId, CommandType cmdType, string parameters, string userEmail, params string[] targetDevices );
 
 		/// <summary>
 		/// 
@@ -46,7 +46,7 @@ namespace Upflux_WebService.Services.Interfaces
 		/// <param name="targetDevices"></param>
 		/// <param name="appName"></param>
 		/// <returns></returns>
-		Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices, string appName, string version);
+		Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices, string appName, string version, string userEmail);
 
 		/// <summary>
 		/// 

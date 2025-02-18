@@ -39,7 +39,7 @@ public interface IEntityQueryService
     /// Returns list of all engineers
     /// </summary>
     /// <returns></returns>
-    Task<List<Users>> GetAllEngineers();
+    Task<List<User>> GetAllEngineers();
 
     /// <summary>
     /// Returns Machine with respective license

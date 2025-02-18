@@ -76,19 +76,19 @@ public class DataRequestController : ControllerBase
     /// <summary>
     /// Get applications running on machines
     /// </summary>
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
     [HttpGet("engineer/machines-application")]
     public async Task<IActionResult> GetRunningApplications()
     {
         try
         {
-            var engineerEmail = GetClaimValue(ClaimTypes.Email);
-            var machineIds = GetClaimValue("MachineIds");
+            //var engineerEmail = GetClaimValue(ClaimTypes.Email);
+            //var machineIds = GetClaimValue("MachineIds");
 
-            //Ensure claims exist
+            ////Ensure claims exist
 
-            if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-                return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+            //if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+            //    return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
 
             // Send version data request via control channel service
             await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
@@ -97,7 +97,7 @@ public class DataRequestController : ControllerBase
             return Ok(new
             {
                 Message = "Version data request sent successfully.",
-                EngineerEmail = engineerEmail,
+                //EngineerEmail = engineerEmail,
                 Timestamp = DateTime.UtcNow
             });
         }

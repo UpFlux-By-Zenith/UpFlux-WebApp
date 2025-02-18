@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using Upflux_WebService.Core.Models.Enums;
 
-public class Users
+public class User
 {
     [Key]
     [Required]
