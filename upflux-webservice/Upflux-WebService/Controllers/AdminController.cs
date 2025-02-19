@@ -76,10 +76,11 @@ public class AdminController : ControllerBase
         return Ok(machinesWithLicense);
     }
 
-    [HttpGet("machines/applications")]
-    public async Task<IActionResult> GetAllMachinesWithApplications()
-    {
-        var machinesWithApplications = await _entityQuery.GetListOfMachinesWithApplications();
-        return Ok(machinesWithApplications);
-    }
+    // TODO: API Cleanup (Regarding application table changes)
+    //[HttpGet("machines/applications")]
+    //public async Task<IActionResult> GetAllMachinesWithApplications()
+    //{
+    //    var machinesWithApplications = await _entityQuery.GetListOfMachinesWithApplications();
+    //    return Ok(machinesWithApplications);
+    //}
 }

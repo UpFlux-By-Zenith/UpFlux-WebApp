@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Security.Claims;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
@@ -168,13 +169,20 @@ public class PackageManagementController : ControllerBase
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpPost("packages/upload")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
+	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+	public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
     {
         if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
             return BadRequest("Package name and version are required.");
 
-        var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
+		var engineerEmail = GetClaimValue(ClaimTypes.Email);
+		var machineIds = GetClaimValue("MachineIds");
+
+		//Ensure claims exist
+		if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+		    return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+
+		var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
         if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
 
         var packageFile = Directory.GetFiles(packageDirectory).FirstOrDefault(f => f.Contains(request.Version));
@@ -184,7 +192,7 @@ public class PackageManagementController : ControllerBase
         {
             var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
             await _controlChannelService.SendUpdatePackageAsync(_gatewayId, Path.GetFileName(packageFile), packageData,
-                request.TargetDevices, request.Name, request.Version);
+                request.TargetDevices, request.Name, request.Version, engineerEmail);
 
             return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
         }
@@ -207,4 +215,11 @@ public class PackageManagementController : ControllerBase
         public string Version { get; set; } // Package version
         public string[] TargetDevices { get; set; } // Target devices
     }
+
+    #region helper methods
+    private string? GetClaimValue(string claimType)
+	{
+		return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+	}
+	#endregion
 }

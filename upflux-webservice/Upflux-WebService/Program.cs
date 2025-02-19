@@ -84,12 +84,14 @@ public class Program
             .AddScoped<IGeneratedMachineIdService, GeneratedMachineIdService>()
             .AddScoped<IGeneratedMachineIdRepository, GeneratedMachineIdRepository>()
             .AddScoped<IApplicationRepository, ApplicationRepository>()
-            .AddScoped<ILicenceRepository, LicenceRepository>()
+			.AddScoped<IApplicationVersionRepository, ApplicationVersionRepository>()
+			.AddScoped<ILicenceRepository, LicenceRepository>()
             .AddScoped<IMachineRepository, MachineRepository>()
             .AddScoped<IEntityQueryService, EntityQueryService>()
             .AddScoped<INotificationService, NotificationService>()
             .AddScoped<ILogFileService, LogFileService>()
-            .AddSingleton<ControlChannelService>()
+			.AddScoped<IUserRepository, UserRepository>()
+			.AddSingleton<ControlChannelService>()
             .AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 
         // Load JWT settings from configuration

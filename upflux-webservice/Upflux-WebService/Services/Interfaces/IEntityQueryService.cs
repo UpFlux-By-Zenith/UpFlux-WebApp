@@ -26,11 +26,12 @@ public interface IEntityQueryService
 
     Task<DbErrorEnum> CheckEngineerLogin(string email);
 
+    // TODO: API Cleanup (regarding application table changes)
     /// <summary>
     /// Retrieves all applications with their versions.
     /// </summary>
     /// <returns>A list of applications along with their versions.</returns>
-    Task<List<Application>> GetApplicationsWithVersionsAsync();
+    //Task<List<Application>> GetApplicationsWithVersionsAsync();
 
     string GenerateUserId(DbGenerateId idType);
 
@@ -38,7 +39,7 @@ public interface IEntityQueryService
     /// Returns list of all engineers
     /// </summary>
     /// <returns></returns>
-    Task<List<Users>> GetAllEngineers();
+    Task<List<User>> GetAllEngineers();
 
     /// <summary>
     /// Returns Machine with respective license
@@ -46,11 +47,12 @@ public interface IEntityQueryService
     /// <returns></returns>
     Task<List<MachineWithLicenceDto>> GetAllMachinesWithLicences();
 
-    /// <summary>
-    /// Returns Machines with its respective applications withs versions
-    /// </summary>
-    /// <returns></returns>
-    Task<List<Machine>> GetListOfMachinesWithApplications();
+	//TODO: API Cleanup (regarding application table changes)
+	/// <summary>
+	/// Returns Machines with its respective applications withs versions
+	/// </summary>
+	/// <returns></returns>
+	//Task<List<Machine>> GetListOfMachinesWithApplications();
 
-    Task<List<Machine>> GetListOfMachinesWithApplications(List<string> machineIds);
+	//Task<List<Machine>> GetListOfMachinesWithApplications(List<string> machineIds);
 }
