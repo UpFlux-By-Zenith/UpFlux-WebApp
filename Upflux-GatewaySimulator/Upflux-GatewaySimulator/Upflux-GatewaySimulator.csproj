@@ -25,4 +25,9 @@
     <Protobuf Include="Protos\controlchannel.proto" GrpcServices="Client" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Current\" />
+    <Folder Include="Available\" />
+  </ItemGroup>
+
 </Project>

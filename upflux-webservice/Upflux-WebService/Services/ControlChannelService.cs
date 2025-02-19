@@ -1,14 +1,12 @@
-﻿using Grpc.Core;
+﻿using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using System.Collections.Concurrent;
-using UpFlux_WebService.Protos;
-using Upflux_WebService.Repository.Interfaces;
-using Upflux_WebService.Core.Models;
-using Google.Protobuf.WellKnownTypes;
-using Newtonsoft.Json;
-using Upflux_WebService.Services.Interfaces;
-using static Upflux_WebService.Services.EntityQueryService;
 using System.Text.RegularExpressions;
-using Upflux_WebService.Repository;
+using Upflux_WebService.Core.Models;
+using Upflux_WebService.Repository.Interfaces;
+using Upflux_WebService.Services.Interfaces;
+using UpFlux_WebService.Protos;
+using static Upflux_WebService.Services.EntityQueryService;
 
 
 namespace UpFlux_WebService
@@ -308,7 +306,7 @@ namespace UpFlux_WebService
 
 				foreach (var machineId in metadata.MachineIds)
 					if (metadata.CommandType == CommandType.Rollback)
-						await ProcessMachineRollbackResponse(machineId, metadata.Parameters, req);
+						await ProcessMachineRollbackResponse(machineId, metadata, req);
 
 				_commandIdToMetadataMap.TryRemove(req.CommandId, out _);
 
@@ -326,7 +324,7 @@ namespace UpFlux_WebService
 		/// <summary>
 		/// update application database if rollback is succesful
 		/// </summary>
-		private async Task ProcessMachineRollbackResponse(string machineId, string parameters, CommandResponse req)
+		private async Task ProcessMachineRollbackResponse(string machineId, CommandMetadata metadata, CommandResponse req)
 		{
 			// TODO: need to keep track the user who initiated rollback (since it affects application table) - not done
 			// might want to add engineer email parameter at SendUpdatePackage (used by controller), update interface, and update controller
@@ -338,6 +336,7 @@ namespace UpFlux_WebService
 
 			try
 			{
+				// not needed user can only select
 				//var application = await applicationRepository.GetByMachineId(machineId);
 				//if (application == null)
 				//{
@@ -356,14 +355,26 @@ namespace UpFlux_WebService
 
 				if (isSuccess)
 				{
-
 					var application = await applicationRepository.GetByMachineId(machineId);
 					if (application is null)
 					{
-						// add
-					}
+						// should not happen means that package is not uploaded through front end
+						var newApp = new Application
+						{
+							MachineId = machineId,
+							AppName = "Monitoring Service",
+							AddedBy = metadata.UserId, // because if this happens that mean the package didnt come from the front end where the user will be detected
+							CurrentVersion = metadata.Parameters,
+							UpdatedAt = DateTime.UtcNow
+						};
 
-					await HandleSuccessfulRollback(machineId, parameters, req, application, applicationRepository, notificationService, alert);
+						await applicationRepository.AddAsync(newApp);
+						await applicationRepository.SaveChangesAsync();
+					}
+					else
+					{
+						await HandleSuccessfulRollback(machineId, metadata, req, application, applicationRepository, notificationService, alert);
+					}
 				}
 				else
 				{
@@ -378,21 +389,23 @@ namespace UpFlux_WebService
 			}
 		}
 
-		private async Task HandleSuccessfulRollback(string machineId, string parameters, CommandResponse req, Application application, IApplicationRepository applicationRepository, INotificationService notificationService, AlertMessage alert)
+		private async Task HandleSuccessfulRollback(string machineId, CommandMetadata metadata, CommandResponse req, Application application, IApplicationRepository applicationRepository, INotificationService notificationService, AlertMessage alert)
 		{
-			_logger.LogInformation("Processing successful CommandResponse for MachineId: {0}, CommandId: {1}, Parameters: {2}", machineId, req.CommandId, parameters);
+			_logger.LogInformation("Processing successful CommandResponse for MachineId: {0}, CommandId: {1}, Parameters: {2}", machineId, req.CommandId, metadata);
 
-			application.CurrentVersion = parameters;
+			application.CurrentVersion = metadata.Parameters;
+			application.AddedBy = metadata.UserId;
+			
 			applicationRepository.Update(application);
 			await applicationRepository.SaveChangesAsync();
 
 			// await SendVersionDataRequestAsync("gateway-patrick-1234");
 
-			var successMessage = $"MachineId: {machineId} successfully rolled back to version: {parameters}.";
+			var successMessage = $"MachineId: {machineId} successfully rolled back to version: {metadata}.";
 			alert.Message = successMessage;
 			await notificationService.SendMessageToUriAsync("alert", alert.ToString());
 
-			_logger.LogInformation("Successfully processed rollback for MachineId: {0}, CommandId: {1}. Updated to version: {2}", machineId, req.CommandId, parameters);
+			_logger.LogInformation("Successfully processed rollback for MachineId: {0}, CommandId: {1}. Updated to version: {2}", machineId, req.CommandId, metadata);
 		}
 
 		private async Task HandleFailedRollback(string machineId, CommandResponse req, INotificationService notificationService, AlertMessage alert)
@@ -612,13 +625,15 @@ namespace UpFlux_WebService
 					var application = await applicationRepository.GetByMachineId(dv.DeviceUuid);
 					if (application is null)
 					{
+						// this situation where the application table does not have an existing application should not happen
+						// this means that the application is not uploaded through the front end
 						if (dv.Current is not null)
 						{
 							var newApp = new Application
 							{
 								MachineId = dv.DeviceUuid,
 								AppName = "Monitoring Service",
-								AddedBy = "Found on Machine", // because if this happens that mean the package didnt come from the front end where the user will be detected
+								AddedBy = "Unknown", // because if this happens that mean the package didnt come from the front end where the user will be detected
 								CurrentVersion = dv.Current.Version,
 								UpdatedAt = DateTime.UtcNow
 							};
@@ -787,6 +802,23 @@ namespace UpFlux_WebService
 			params string[] targetDevices
 			)
 		{
+			using var scope = _serviceScopeFactory.CreateScope();
+			var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+			var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+
+			var user = await userRepository.GetUserByEmail(userEmail);
+			if (user is null)
+			{
+				_logger.LogWarning("Update package upload failed. Invalid user email");
+				return;
+			}
+
+			foreach (var device in targetDevices)
+			{
+				var machine = machineRepository.GetByIdAsync(device);
+				if (machine is null) return;
+			}
+
 			if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
 			{
 				_logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
@@ -815,7 +847,8 @@ namespace UpFlux_WebService
 				{
 					MachineIds = targetDevices.ToList(),
 					Parameters = parameters,
-					CommandType = cmdType
+					CommandType = cmdType,
+					UserId = user.UserId
 				};
 
 				_logger.LogInformation("CommandRequest sent to [{0}]: id={1}, type={2}, deviceCount={3}",
