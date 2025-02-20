@@ -22,7 +22,7 @@ export const HomeRoute: React.FC = () => {
     <>
       <Navbar onHomePage={true} notifications={notifications}/>
       <Header />
-      <section>
+      <section id="learnMore">
         <LearnMore />
       </section>
       <section id="about">
