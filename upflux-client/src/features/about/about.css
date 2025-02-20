@@ -1,4 +1,4 @@
-.section {
+.about-section {
     padding: 60px 0;
     background-color: #f8f9fa;
   }
@@ -35,7 +35,6 @@
   
   .about-text p {
     font-size: 1em;
-    color: #666;
     line-height: 1.6;
     margin-bottom: 20px;
   }

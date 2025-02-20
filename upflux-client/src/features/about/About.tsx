@@ -7,7 +7,7 @@ import schedulingimg from "../../assets/images/scheduling.jpg";
 
 export const About = () => {
   return (
-    <section id="about" className="about section light-background">
+    <section className="about-section" id="about">
       <Container size="lg" className="container">
         <div className="about-content">
           <div className="about-text">
