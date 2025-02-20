@@ -11,7 +11,7 @@ export const About = () => {
       <Container size="lg" className="container">
         <div className="about-content">
           <div className="about-text">
-            <Title order={3}>About Us</Title>
+            <Title order={3}>UpFlux Features</Title>
             <Title order={2} style={{ marginBottom: '1rem' }}>
               Streamlining Software Updates in Paper Mills with UpFlux
             </Title>

@@ -10,10 +10,10 @@ export const OurSolution = () => {
       <SimpleGrid cols={2} spacing="xl">
         
         {/* Left side - Placeholder images */}
-        <Stack align="center">
+        <Stack className="solution-images" align="center">
           <Image src={machineImage} alt="Placeholder 1" className="solution-image-left" />
           <Image src={metricImage} alt="Placeholder 2" className="solution-image-right" />
-          <Image src={clusterImage} alt="Placeholder 3" className="solution-image-left" id="image-bottom" />
+          <Image src={clusterImage} alt="Placeholder 3" className="solution-image-left" />
         </Stack>
 
         {/* Right side - Text Content */}
