@@ -1,0 +1,35 @@
+.our-solution {
+    padding: 40px 0;
+}
+
+.solution-image-left {
+    width: 250px;
+    height: auto;
+    margin-right: 350px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.solution-image-right {
+    width: 300px;
+    height: auto;
+    margin-left: 100px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+
+.solution-title {
+    font-size: 2rem;
+    font-weight: 500;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    margin-left:30px;
+}
+
+.solution-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 12px;
+    margin-left: 30px;
+}
