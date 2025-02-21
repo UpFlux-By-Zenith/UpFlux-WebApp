@@ -1,0 +1,63 @@
+.our-solution {
+    padding: 40px 0;
+}
+
+.solution-images{
+    margin-top: -20px;
+}
+
+.solution-image-left {
+    width: 250px !important;
+    height: auto !important;
+    margin-right: 350px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.solution-image-right {
+    width: 300px !important;
+    height: auto !important;
+    margin-left: 100px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+
+.solution-title {
+    font-size: 2rem;
+    font-weight: 500;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    margin-left: 30px !important;
+}
+
+.solution-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 12px;
+    margin-left: 30px !important;
+}
+
+@media (max-width: 768px) {
+    /* Make the grid stack */
+    .our-solution .mantine-SimpleGrid-root {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center; /* Center align content */
+    }
+
+    /* Center text and remove left margin */
+    .solution-title,
+    .solution-text {
+        text-align: center;
+        margin-left: 0 !important;
+    }
+
+    /* Ensure images stack and are centered */
+    .solution-image-left,
+    .solution-image-right {
+        width: 80% !important; /* Adjust width for mobile */
+        margin: 10px auto !important;
+        display: block;
+    }
+}

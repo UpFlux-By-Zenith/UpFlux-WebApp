@@ -33,7 +33,7 @@
   
   /* Text container styles */
   .text-container {
-    color: #333;
+    
     margin-right: 250px;
   }
   
@@ -80,5 +80,43 @@ backdrop-filter: blur(5px);
 -webkit-backdrop-filter: blur(5px);
 border: 1px solid rgba(255, 255, 255, 0.3);
 padding: 20px;
-padding-bottom:55px;
+padding-bottom:35px;
   }
+
+  @media (max-width: 768px) {
+
+    .hero-image {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: visible;
+    }
+
+    .text-container{
+      margin-right: 150px;
+    }
+
+    .overlay {
+        justify-content: center;
+        text-align: center;
+        padding: 10px;
+    }
+    
+    .text-container {
+        margin-right: 0;
+        width: 70%;
+    }
+    
+    .text-container h1 {
+        font-size: 2em;
+    }
+    
+    .text-container p {
+        font-size: 1em;
+    }
+    
+    .learn-more-btn {
+        font-size: 0.9em;
+        padding: 8px 16px;
+    }
+}

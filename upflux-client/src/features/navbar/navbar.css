@@ -77,3 +77,12 @@
   height: 6ss0px !important;
   margin-bottom: 25px;
 }
+
+@media (max-width: 768px) {
+
+  .navbar-links{
+    margin-left: auto;
+    padding: 20px;
+  }
+
+}
