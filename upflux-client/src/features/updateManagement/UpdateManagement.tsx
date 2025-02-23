@@ -288,10 +288,10 @@ export const UpdateManagement = () => {
                   <Table.Th>Machine Name</Table.Th>
                   <Table.Th>Machine ID</Table.Th>
                   <Table.Th>IP Address</Table.Th>
+                  <Table.Th>Current Version</Table.Th>
                   <Table.Th>Last Update</Table.Th>
                   <Table.Th>Updated By</Table.Th>
                   <Table.Th>Current Status</Table.Th>
-                  <Table.Th>View</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -300,18 +300,11 @@ export const UpdateManagement = () => {
                     <Table.Td>{machine.machineName}</Table.Td>
                     <Table.Td>{machine.machineId}</Table.Td>
                     <Table.Td>{machine.ipAddress || "N/A"}</Table.Td>
+                    <Table.Td>{machine.applications[0].versions[0]}</Table.Td>
                     <Table.Td>{"02/08/2024"}</Table.Td>
                     <Table.Td>{"John Doe"}</Table.Td>
                     <Table.Td>
                       <Badge color="green">{machine.status || "Alive"}</Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Link
-                        to="/version-control"
-                        state={{ machineId: machine.machineId }}
-                      >
-                        <img src={view} alt="view" className="view" />
-                      </Link>
                     </Table.Td>
                   </Table.Tr>
                 ))}
