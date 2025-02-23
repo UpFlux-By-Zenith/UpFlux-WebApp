@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select, Title } from "@mantine/core";
+import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select, Title, Tabs } from "@mantine/core";
 import { DonutChart } from "@mantine/charts";
 import { Link, useNavigate } from "react-router-dom";
 import { getAccessibleMachines } from "../../api/accessMachinesRequest";
@@ -29,28 +29,59 @@ export const UpdateManagement = () => {
 
   useSubscription(authToken);
 
-  // Fetch accessible machines on component load
-  useEffect(() => {
-    const fetchMachines = async () => {
-      const result = await getAccessibleMachines();
-      if (typeof result === "object" && result?.accessibleMachines?.result) {
-        setMachines(result.accessibleMachines.result);
-      } else {
-        console.error("Failed to fetch machines:", result);
-        setMachines([]); // Clear machines in case of failure
+    // Hardcoded machine data
+    const hardcodedMachines = [
+      {
+        machineId: "1",
+        machineName: "Machine 1",
+        ipAddress: "192.168.1.1",
+        status: "Alive",
+        applications: [
+          { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
+        ]
+      },
+      {
+        machineId: "2",
+        machineName: "Machine 2",
+        ipAddress: "192.168.1.2",
+        status: "Alive",
+        applications: [
+          { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
+        ]
+      },
+      {
+        machineId: "3",
+        machineName: "Machine 3",
+        ipAddress: "192.168.1.3",
+        status: "Alive",
+        applications: [
+          { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
+        ]
       }
-      setLoading(false);
-    };
+    ];
 
-    const getRunningMachines = async () => {
-      await getRunningMachinesApplications().then(res => {
-        console.log(res)
-      })
-    }
+  // Fetch accessible machines on component load
+  // useEffect(() => {
+  //   const fetchMachines = async () => {
+  //     const result = await getAccessibleMachines();
+  //     if (typeof result === "object" && result?.accessibleMachines?.result) {
+  //       setMachines(result.accessibleMachines.result);
+  //     } else {
+  //       console.error("Failed to fetch machines:", result);
+  //       setMachines([]); // Clear machines in case of failure
+  //     }
+  //     setLoading(false);
+  //   };
 
-    getRunningMachines()
-    fetchMachines();
-  }, []);
+  //   const getRunningMachines = async () => {
+  //     await getRunningMachinesApplications().then(res => {
+  //       console.log(res)
+  //     })
+  //   }
+
+  //   getRunningMachines()
+  //   fetchMachines();
+  // }, []);
 
   // Handle Deploy Button Click
   const handleRollback = () => {
@@ -86,51 +117,58 @@ export const UpdateManagement = () => {
     }
   };
 
-  // Fetch data from the API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:5000/api/DataRequest/engineer/engineer-applications", {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`, // Get the token from localStorage (or sessionStorage)
-          },
-        }
-        );
-        const data = await response.json();
-        setMachines(data); // Set the machines data
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    // fetchData();
-  }, []);
-
-  useEffect(() => {
-    // Fetch available applications and their versions on modal open
-    if (modalOpened) {
-      fetchPackages();
-    }
-  }, [modalOpened]);
+    // Fetch accessible machines on component load
+    useEffect(() => {
+      setMachines(hardcodedMachines);
+      setLoading(false);
+    }, []);
+  
 
   // Fetch data from the API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:5000/api/DataRequest/engineer/engineer-applications"
-        );
-        const data = await response.json();
-        setMachines(data); // Set the machines data
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const response = await fetch(
+  //         "http://localhost:5000/api/DataRequest/engineer/engineer-applications", {
+  //         method: 'GET',
+  //         headers: {
+  //           'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`, // Get the token from localStorage (or sessionStorage)
+  //         },
+  //       }
+  //       );
+  //       const data = await response.json();
+  //       setMachines(data); // Set the machines data
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
 
-    fetchData();
-  }, []);
+  //   // fetchData();
+  // }, []);
+
+  // useEffect(() => {
+  //   // Fetch available applications and their versions on modal open
+  //   if (modalOpened) {
+  //     fetchPackages();
+  //   }
+  // }, [modalOpened]);
+
+  // // Fetch data from the API
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const response = await fetch(
+  //         "http://localhost:5000/api/DataRequest/engineer/engineer-applications"
+  //       );
+  //       const data = await response.json();
+  //       setMachines(data); // Set the machines data
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, []);
 
   // Handle machine selection
   const handleMachineChange = (value: string | null) => {
@@ -179,12 +217,24 @@ export const UpdateManagement = () => {
         </Title>
       </Box>
 
+        {/* Tabs Section */}
+        <Tabs defaultValue="dashboard" className="custom-tabs">
+        <Tabs.List>
+          <Tabs.Tab value="dashboard" className="custom-tab">
+            Dashboard
+          </Tabs.Tab>
+          <Tabs.Tab value="applications" className="custom-tab" onClick={() => navigate("/version-control")}>
+            Applications
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+
       <Box className="content-wrapper">
         <Group className="overview-section">
           <Box className="chart">
-            <DonutChart className="chart" withTooltip={false} data={chartData} />
+            <DonutChart className="chart" size={180} thickness={14} withTooltip={false} data={chartData} />
             <Text className="chart-text">
-              <br />  Machines <br /> {machines.length}
+              <br /> QC Machines <br /> {machines.length}
             </Text>
           </Box>
 
