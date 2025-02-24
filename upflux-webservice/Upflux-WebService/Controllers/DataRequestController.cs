@@ -76,7 +76,7 @@ public class DataRequestController : ControllerBase
     /// <summary>
     /// Get applications running on machines
     /// </summary>
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("engineer/machines-application")]
     public async Task<IActionResult> GetRunningApplications()
     {
