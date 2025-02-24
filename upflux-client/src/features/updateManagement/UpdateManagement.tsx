@@ -30,58 +30,58 @@ export const UpdateManagement = () => {
   useSubscription(authToken);
 
     // Hardcoded machine data
-    const hardcodedMachines = [
-      {
-        machineId: "1",
-        machineName: "Machine 1",
-        ipAddress: "192.168.1.1",
-        status: "Alive",
-        applications: [
-          { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
-        ]
-      },
-      {
-        machineId: "2",
-        machineName: "Machine 2",
-        ipAddress: "192.168.1.2",
-        status: "Alive",
-        applications: [
-          { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
-        ]
-      },
-      {
-        machineId: "3",
-        machineName: "Machine 3",
-        ipAddress: "192.168.1.3",
-        status: "Alive",
-        applications: [
-          { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
-        ]
+    // const hardcodedMachines = [
+    //   {
+    //     machineId: "c3589340-db6b-11ef-8615-2ccf677985c6",
+    //     machineName: "M01",
+    //     ipAddress: "192.168.1.1",
+    //     status: "Alive",
+    //     applications: [
+    //       { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
+    //     ]
+    //   },
+    //   {
+    //     machineId: "cfb393ec-db6b-11ef-9067-2ccf677985c6",
+    //     machineName: "M02",
+    //     ipAddress: "192.168.1.2",
+    //     status: "Alive",
+    //     applications: [
+    //       { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
+    //     ]
+    //   },
+    //   {
+    //     machineId: "d3b0580e-db6b-11ef-bd3e-2ccf677985c6",
+    //     machineName: "M03",
+    //     ipAddress: "192.168.1.3",
+    //     status: "Alive",
+    //     applications: [
+    //       { name: "UpFlux-Monitoring-Service", versions: ["1.0.0", "1.1.0"] }
+    //     ]
+    //   }
+    // ];
+
+  //Fetch accessible machines on component load
+  useEffect(() => {
+    const fetchMachines = async () => {
+      const result = await getAccessibleMachines();
+      if (typeof result === "object" && result?.accessibleMachines?.result) {
+        setMachines(result.accessibleMachines.result);
+      } else {
+        console.error("Failed to fetch machines:", result);
+        setMachines([]); // Clear machines in case of failure
       }
-    ];
+      setLoading(false);
+    };
 
-  // Fetch accessible machines on component load
-  // useEffect(() => {
-  //   const fetchMachines = async () => {
-  //     const result = await getAccessibleMachines();
-  //     if (typeof result === "object" && result?.accessibleMachines?.result) {
-  //       setMachines(result.accessibleMachines.result);
-  //     } else {
-  //       console.error("Failed to fetch machines:", result);
-  //       setMachines([]); // Clear machines in case of failure
-  //     }
-  //     setLoading(false);
-  //   };
+    const getRunningMachines = async () => {
+      await getRunningMachinesApplications().then(res => {
+        console.log(res)
+      })
+    }
 
-  //   const getRunningMachines = async () => {
-  //     await getRunningMachinesApplications().then(res => {
-  //       console.log(res)
-  //     })
-  //   }
-
-  //   getRunningMachines()
-  //   fetchMachines();
-  // }, []);
+    getRunningMachines()
+    fetchMachines();
+  }, []);
 
   // Handle Deploy Button Click
   const handleRollback = () => {
@@ -117,58 +117,51 @@ export const UpdateManagement = () => {
     }
   };
 
-    // Fetch accessible machines on component load
-    useEffect(() => {
-      setMachines(hardcodedMachines);
-      setLoading(false);
-    }, []);
-  
+  //Fetch data from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/DataRequest/engineer/engineer-applications", {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`, // Get the token from localStorage (or sessionStorage)
+          },
+        }
+        );
+        const data = await response.json();
+        setMachines(data); // Set the machines data
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    // fetchData();
+  }, []);
+
+  useEffect(() => {
+    // Fetch available applications and their versions on modal open
+    if (modalOpened) {
+      fetchPackages();
+    }
+  }, [modalOpened]);
 
   // Fetch data from the API
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const response = await fetch(
-  //         "http://localhost:5000/api/DataRequest/engineer/engineer-applications", {
-  //         method: 'GET',
-  //         headers: {
-  //           'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`, // Get the token from localStorage (or sessionStorage)
-  //         },
-  //       }
-  //       );
-  //       const data = await response.json();
-  //       setMachines(data); // Set the machines data
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/DataRequest/engineer/engineer-applications"
+        );
+        const data = await response.json();
+        setMachines(data); // Set the machines data
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
 
-  //   // fetchData();
-  // }, []);
-
-  // useEffect(() => {
-  //   // Fetch available applications and their versions on modal open
-  //   if (modalOpened) {
-  //     fetchPackages();
-  //   }
-  // }, [modalOpened]);
-
-  // // Fetch data from the API
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const response = await fetch(
-  //         "http://localhost:5000/api/DataRequest/engineer/engineer-applications"
-  //       );
-  //       const data = await response.json();
-  //       setMachines(data); // Set the machines data
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, []);
+    fetchData();
+  }, []);
 
   // Handle machine selection
   const handleMachineChange = (value: string | null) => {
@@ -211,12 +204,6 @@ export const UpdateManagement = () => {
   return (
 
     <Stack className="update-management-content">
-      <Box className="header">
-        <Title>
-          Engineer Dashboard
-        </Title>
-      </Box>
-
         {/* Tabs Section */}
         <Tabs defaultValue="dashboard" className="custom-tabs">
         <Tabs.List>
@@ -296,7 +283,11 @@ export const UpdateManagement = () => {
               </Table.Thead>
               <Table.Tbody>
                 {machines?.map((machine) => (
-                  <Table.Tr key={machine.machineId}>
+                  <Table.Tr
+                    key={machine.machineId}
+                    onClick={() => navigate("/version-control", { state: { machineId: machine.machineId } })}
+                    style={{ cursor: "pointer" }}
+                  >
                     <Table.Td>{machine.machineName}</Table.Td>
                     <Table.Td>{machine.machineId}</Table.Td>
                     <Table.Td>{machine.ipAddress || "N/A"}</Table.Td>

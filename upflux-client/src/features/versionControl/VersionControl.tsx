@@ -24,50 +24,59 @@ export const VersionControl: React.FC = () => {
   const navigate = useNavigate();
 
     // Hardcoded machine metrics data
-    const machineMetrics = {
-      "1": {
-        metrics: {
-          cpuUsage: 45,
-          cpuTemperature: 60,
-          memoryUsage: 70,
-          diskUsage: 30,
-          systemUptime: 123456, // Uptime in seconds
-        },
-      },
-    };
+    // const machineMetrics = {
+    //   "M01": {
+    //     metrics: {
+    //       cpuUsage: 45,
+    //       cpuTemperature: 60,
+    //       memoryUsage: 70,
+    //       diskUsage: 30,
+    //       systemUptime: 123456, // Uptime in seconds
+    //     },
+    //   },
+    // };
   
-    // Hardcoded applications data
-    const applications = {
-      "1": {
-        VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
-      },
-    };
+    // // Hardcoded applications data
+    // const applications = {
+    //   "M01": {
+    //     VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
+    //   },
+    // };
   
-    // Hardcoded app versions data
-    const appVersions = [
-      {
-        appName: "UpFlux-Monitoring-Service",
-        appVersion: "1.0.0",
-        lastUpdate: "Jan 10 2024",
-      },
-      {
-        appName: "UpFlux-Monitoring-Service",
-        appVersion: "1.1.0",
-        lastUpdate: "Feb 15 2024",
-      },
-      {
-        appName: "UpFlux-Monitoring-Service",
-        appVersion: "1.2.0",
-        lastUpdate: "Mar 20 2024",
-      },
-    ];
+    // // Hardcoded app versions data
+    // const appVersions = [
+    //   {
+    //     appName: "UpFlux-Monitoring-Service",
+    //     appVersion: "1.0.0",
+    //     lastUpdate: "Jan 10 2024",
+    //   },
+    //   {
+    //     appName: "UpFlux-Monitoring-Service",
+    //     appVersion: "1.1.0",
+    //     lastUpdate: "Feb 15 2024",
+    //   },
+    //   {
+    //     appName: "UpFlux-Monitoring-Service",
+    //     appVersion: "1.2.0",
+    //     lastUpdate: "Mar 20 2024",
+    //   },
+    // ];
 
-      // Retrieve machine ID from the route state
+  // State for Modal visibility
+  const [modalOpened, setModalOpened] = useState(false);
+  const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
+  const machineMetrics = useSelector(
+    (state: RootState) => state.metrics.metrics
+  );
+  // Retrieve machine ID from the route state
   const location = useLocation();
-  const machineId = location.state?.machineId || "1"; // Default to "1" for hardcoded data
+  const machineId = location.state?.machineId || "Unknown Machine";
 
   // State for app versions and loading status
-  const [isLoading, setIsLoading] = useState(false);
+  const [appVersions, setAppVersions] = useState<
+    { appName: string; appVersion: string; lastUpdate: string }[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const formatUptime = (seconds: number): string => {
     const days = Math.floor(seconds / (24 * 3600));
@@ -76,31 +85,6 @@ export const VersionControl: React.FC = () => {
 
     return `${days}d ${hours}h ${minutes}m`;
   };
-
-  // State for Modal visibility
-  const [modalOpened, setModalOpened] = useState(false);
-  // const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
-  // const machineMetrics = useSelector(
-  //   (state: RootState) => state.metrics.metrics
-  // );
-  // // Retrieve machine ID from the route state
-  // const location = useLocation();
-  // const machineId = location.state?.machineId || "Unknown Machine";
-
-  // // State for app versions and loading status
-  // const [appVersions, setAppVersions] = useState<
-  //   { appName: string; appVersion: string; lastUpdate: string }[]
-  // >([]);
-  // const [isLoading, setIsLoading] = useState(true);
-
-  // const formatUptime = (seconds: number): string => {
-  //   const days = Math.floor(seconds / (24 * 3600));
-  //   const hours = Math.floor((seconds % (24 * 3600)) / 3600);
-  //   const minutes = Math.floor((seconds % 3600) / 60);
-
-  //   return `${days}d ${hours}h ${minutes}m`;
-  // };
-
 
   // Mocked machine metrics data
   const metrics = [
@@ -131,43 +115,38 @@ export const VersionControl: React.FC = () => {
     return "red";
   };
 
-  // // Fetch data from API
-  // useEffect(() => {
-  //   const fetchMachineDetails = async () => {
-  //     try {
-  //       const data = await getMachineDetails();
-  //       if (data && typeof data !== "string" && data.applications) {
-  //         // Filter applications for the current machineId
-  //         const filteredApps = data.applications
-  //           .filter((app) => app.machineId === machineId)
-  //           .map((app) => ({
-  //             appName: app.appName,
-  //             appVersion: app.currentVersion,
-  //             lastUpdate: app.versions?.[0]?.date || "N/A",
-  //           }));
+  // Fetch data from API
+  useEffect(() => {
+    const fetchMachineDetails = async () => {
+      try {
+        const data = await getMachineDetails();
+        if (data && typeof data !== "string" && data.applications) {
+          // Filter applications for the current machineId
+          const filteredApps = data.applications
+            .filter((app) => app.machineId === machineId)
+            .map((app) => ({
+              appName: app.appName,
+              appVersion: app.currentVersion,
+              lastUpdate: app.versions?.[0]?.date || "N/A",
+            }));
 
-  //         setAppVersions(filteredApps);
-  //       } else {
-  //         console.error("Failed to fetch or parse machine details.");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching machine details:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
+          setAppVersions(filteredApps);
+        } else {
+          console.error("Failed to fetch or parse machine details.");
+        }
+      } catch (error) {
+        console.error("Error fetching machine details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  //   fetchMachineDetails();
-  // }, [machineId]);
+    fetchMachineDetails();
+  }, [machineId]);
 
   return (
     <Stack className="version-control-content">
       {/* Header */}
-      <Box className="header">
-        <Text size="xl" fw={700}>
-          Version Control
-        </Text>
-      </Box>
 
               {/* Tabs Section */}
               <Tabs defaultValue="applications" className="custom-tabs">
@@ -182,10 +161,15 @@ export const VersionControl: React.FC = () => {
             </Tabs>
 
       <Box className="content-wrapper">
-        <Box className="machine-id-box">
-          {/* Display the machine ID */}
-          <Text>{`Machine ${machineId}`}</Text>
-        </Box>
+      <Box className="machine-id-box">
+        <Select
+          data={Object.keys(machineMetrics)} 
+          value={machineId}
+          onChange={(value) => navigate(".", { state: { machineId: value } })}
+          placeholder="Select Machine"
+        />
+      </Box>
+
 
         {/* Overview Section */}
         <Group className="overview-section">
