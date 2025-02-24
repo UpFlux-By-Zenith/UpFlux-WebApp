@@ -1,6 +1,7 @@
 import { Modal, Box, Select, Button, Text, MultiSelect } from "@mantine/core"
 import { useEffect, useState } from "react"
 import { deployPackage, getAvailablePackages, IPackagesOnCloud } from "../../api/applicationsRequest"
+import { notifications } from "@mantine/notifications"
 
 export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => {
 
@@ -27,6 +28,15 @@ export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => 
 
 
     const handleDeploy = () => {
+        setModalOpened(false);
+        notifications.show({
+            loading: true,
+            title: 'Updating QC Machines',
+            position: "top-right",
+            message: `${selectedMachineIds} is being updated to ${selectedVersion}`,
+            autoClose: 5000,
+            withCloseButton: false,
+        });
         deployPackage(selectedApp, selectedVersion, selectedMachineIds)
     }
 

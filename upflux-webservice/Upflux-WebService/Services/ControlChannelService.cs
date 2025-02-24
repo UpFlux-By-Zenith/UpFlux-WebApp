@@ -277,7 +277,9 @@ namespace UpFlux_WebService
             // notification
             using var scope = _serviceScopeFactory.CreateScope();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-            await notificationService.SendMessageToUriAsync($"alert", alert.ToString());
+
+            if (alert.Source != "gateway-patrick-1234")
+                await notificationService.SendMessageToUriAsync($"alert", alert.ToString());
 
             // Send an alertResponse back
             if (_connectedGateways.TryGetValue(gatewayId, out var writer))
@@ -332,7 +334,6 @@ namespace UpFlux_WebService
             var alert = new AlertMessage();
             using var scope = _serviceScopeFactory.CreateScope();
             var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
-            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
             try
             {
@@ -341,7 +342,7 @@ namespace UpFlux_WebService
                 {
                     alert.Message = $"Failed to process rollback for MachineId: {machineId}. No application found.";
                     _logger.LogWarning("No application found for MachineId: {0}. Skipping processing.", machineId);
-                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+                    // await notificationService.SendMessageToUriAsync("alert", alert.ToString());
 
 
                     return;
@@ -361,8 +362,8 @@ namespace UpFlux_WebService
 
                     // send succes notification
                     var successMessage = $"MachineId: {machineId} successfully rolled back to version: {parameters}.";
-                    alert.Message = successMessage;
-                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+                    // alert.Message = successMessage;
+                    // await notificationService.SendMessageToUriAsync("alert", alert.ToString());
 
                     _logger.LogInformation(
                         "Successfully processed rollback for MachineId: {0}, CommandId: {1}. Updated to version: {2}",
@@ -373,9 +374,9 @@ namespace UpFlux_WebService
                     // failure
                     _logger.LogWarning("Rollback command failed for MachineId: {0}, CommandId: {1}.", machineId,
                         req.CommandId);
-                    var failureMessage = $"Rollback failed for MachineId: {machineId}. CommandId: {req.CommandId}.";
-                    alert.Message = failureMessage;
-                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+                    // var failureMessage = $"Rollback failed for MachineId: {machineId}. CommandId: {req.CommandId}.";
+                    // alert.Message = failureMessage;
+                    // await notificationService.SendMessageToUriAsync("alert", alert.ToString());
                 }
             }
             catch (Exception ex)
@@ -383,9 +384,9 @@ namespace UpFlux_WebService
                 // notifcation for error?
                 _logger.LogError(ex, "Error while processing rollback for MachineId: {0}, CommandId: {1}.", machineId,
                     req.CommandId);
-                alert.Message =
-                    $"An error occurred while processing rollback for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}";
-                await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+                // alert.Message =
+                //     $"An error occurred while processing rollback for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}";
+                // await notificationService.SendMessageToUriAsync("alert", alert.ToString());
             }
         }
 
@@ -423,8 +424,8 @@ namespace UpFlux_WebService
                     {
                         _logger.LogWarning("No application found for DeviceUuid: {0}. Skipping update.", deviceUuid);
 
-                        await notificationService.SendMessageToUriAsync("Alert/Update",
-                            $"Update failed for DeviceUuid: {deviceUuid}. Application not found.");
+                        // await notificationService.SendMessageToUriAsync("Alert/Update",
+                        //     $"Update failed for DeviceUuid: {deviceUuid}. Application not found.");
                         continue;
                     }
 
@@ -442,8 +443,8 @@ namespace UpFlux_WebService
                             deviceUuid, metadata.Version, metadata.AppName);
 
                         // notification
-                        await notificationService.SendMessageToUriAsync("Alert/Update",
-                            $"DeviceUuid: {deviceUuid} successfully updated to version: {metadata.Version}, AppName: {metadata.AppName}.");
+                        // await notificationService.SendMessageToUriAsync("Alert/Update",
+                        //     $"DeviceUuid: {deviceUuid} successfully updated to version: {metadata.Version}, AppName: {metadata.AppName}.");
                     }
                     else
                     {
@@ -451,8 +452,8 @@ namespace UpFlux_WebService
                             req.FileName);
 
                         //notification
-                        await notificationService.SendMessageToUriAsync("Alert/Update",
-                            $"Update failed for DeviceUuid: {deviceUuid}. FileName: {req.FileName}, AppName: {metadata.AppName}.");
+                        // await notificationService.SendMessageToUriAsync("Alert/Update",
+                        //     $"Update failed for DeviceUuid: {deviceUuid}. FileName: {req.FileName}, AppName: {metadata.AppName}.");
                     }
                 }
 
@@ -463,8 +464,8 @@ namespace UpFlux_WebService
                 _logger.LogError(ex, "An error occurred while processing UpdateAck for GatewayId: {0}, FileName: {1}.",
                     gatewayId, req.FileName);
 
-                await notificationService.SendMessageToUriAsync("Alert/Update",
-                    $"An error occurred while processing update for GatewayId: {gatewayId}, FileName: {req.FileName}. Error: {ex.Message}");
+                // await notificationService.SendMessageToUriAsync("Alert/Update",
+                //     $"An error occurred while processing update for GatewayId: {gatewayId}, FileName: {req.FileName}. Error: {ex.Message}");
             }
         }
 
@@ -554,7 +555,9 @@ namespace UpFlux_WebService
                         // }
                         // else
                         // {
-                        //     _logger.LogInformation("Version {0} already exists for machine {1}", av.Version,
+                        //     _logger.LogInformation("Version {0} al
+                        //
+                        // ready exists for machine {1}", av.Version,
                         //         dv.DeviceUuid);
                         // }
                         var newVersion = new ApplicationVersions
@@ -562,7 +565,8 @@ namespace UpFlux_WebService
                             AppId = application.AppId,
                             VersionNames = versions,
                             UpdatedBy = "E11111", // Adjust this based on actual updater
-                            DeviceUuid = dv.DeviceUuid
+                            DeviceUuid = dv.DeviceUuid,
+                            CurrentVersion = dv.Current.Version,
                         };
 
                         await notificationService.SendMessageToUriAsync("versions",

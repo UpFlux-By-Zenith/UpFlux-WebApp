@@ -175,16 +175,27 @@ public class PackageManagementController : ControllerBase
             return BadRequest("Package name and version are required.");
 
         var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
-        if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
+        if (!Directory.Exists(packageDirectory))
+            return NotFound("Package not found.");
 
-        var packageFile = Directory.GetFiles(packageDirectory).FirstOrDefault(f => f.Contains(request.Version));
-        if (packageFile == null) return NotFound("Package version not found.");
+        // Look for a .deb file matching the package version
+        var packageFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
+
+        if (packageFile == null)
+            return NotFound("Matching .deb package version not found.");
 
         try
         {
             var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
-            await _controlChannelService.SendUpdatePackageAsync(_gatewayId, Path.GetFileName(packageFile), packageData,
-                request.TargetDevices, request.Name, request.Version);
+            await _controlChannelService.SendUpdatePackageAsync(
+                _gatewayId,
+                Path.GetFileName(packageFile),
+                packageData,
+                request.TargetDevices,
+                request.Name,
+                request.Version
+            );
 
             return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
         }
@@ -194,6 +205,7 @@ public class PackageManagementController : ControllerBase
             return StatusCode(500, $"Error sending package: {ex.Message}");
         }
     }
+
 
     public class PackageCheckRequest
     {

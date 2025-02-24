@@ -35,14 +35,18 @@ export const useSubscription = (groupId: string) => {
             if (uri.endsWith("alert")) {
               const parsedData: IAlertMessage = JSON.parse(message);
               const color = parsedData.level === "Information" ? "blue" : "red";
-              notifications.show({
-                title: parsedData.source,
-                message: parsedData.message,
-                position: "top-right",
-                autoClose: false,
-                color,
-                classNames: classes,
-              });
+
+              if (parsedData.source !== "gateway-patrick-1234") {
+
+                notifications.show({
+                  title: parsedData.source,
+                  message: parsedData.message,
+                  position: "top-right",
+                  autoClose: 10000,
+                  color,
+                  classNames: classes,
+                });
+              }
               dispatch(addAlert(parsedData));
             } else if (uri.endsWith("versions")) {
               const parsedData: IApplications = JSON.parse(message);

@@ -41,6 +41,7 @@ public class ApplicationVersions
     [JsonIgnore] // Prevent serialization of the Application property
     public Application Application { get; set; } // Navigation property to Application
 
+    public string CurrentVersion { get; set; }
     public string DeviceUuid { get; set; }
 }
 
