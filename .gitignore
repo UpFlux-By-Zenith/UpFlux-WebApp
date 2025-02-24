@@ -67,3 +67,6 @@ node_modules/
 packages/
 /upflux-webservice/Upflux-WebService/logs
 /Upflux-GatewaySimulator/Upflux-GatewaySimulator/ReceivedPackages
+/upflux-webservice/Upflux-WebService/appsettings.json
+/Upflux-GatewaySimulator/Upflux-GatewaySimulator/Available
+/Upflux-GatewaySimulator/Upflux-GatewaySimulator/Current

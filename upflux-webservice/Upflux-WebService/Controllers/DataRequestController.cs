@@ -30,20 +30,21 @@ public class DataRequestController : ControllerBase
         _controlChannelService = controlChannelService;
     }
 
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
-    [HttpGet("applications")]
-    public async Task<IActionResult> GetApplications()
-    {
-        try
-        {
-            var machinesWithLicense = await _entityQueryService.GetListOfMachinesWithApplications();
-            return Ok(machinesWithLicense);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
+    //TODO: API Cleanup (application table changes)
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    //[HttpGet("applications")]
+    //public async Task<IActionResult> GetApplications()
+    //{
+    //    try
+    //    {
+    //        var machinesWithLicense = await _entityQueryService.GetListOfMachinesWithApplications();
+    //        return Ok(machinesWithLicense);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return BadRequest(ex.Message);
+    //    }
+    //}
 
     /// <summary>
     /// Engineer retrieves accessible machines
@@ -75,19 +76,19 @@ public class DataRequestController : ControllerBase
     /// <summary>
     /// Get applications running on machines
     /// </summary>
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
     [HttpGet("engineer/machines-application")]
     public async Task<IActionResult> GetRunningApplications()
     {
         try
         {
-            var engineerEmail = GetClaimValue(ClaimTypes.Email);
-            var machineIds = GetClaimValue("MachineIds");
+            //var engineerEmail = GetClaimValue(ClaimTypes.Email);
+            //var machineIds = GetClaimValue("MachineIds");
 
-            //Ensure claims exist
+            ////Ensure claims exist
 
-            if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-                return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+            //if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+            //    return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
 
             // Send version data request via control channel service
             await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
@@ -96,7 +97,7 @@ public class DataRequestController : ControllerBase
             return Ok(new
             {
                 Message = "Version data request sent successfully.",
-                EngineerEmail = engineerEmail,
+                //EngineerEmail = engineerEmail,
                 Timestamp = DateTime.UtcNow
             });
         }
@@ -110,37 +111,38 @@ public class DataRequestController : ControllerBase
         }
     }
 
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [HttpGet("engineer/engineer-applications")]
-    public async Task<IActionResult> GetMachinesWithApplications()
-    {
-        try
-        {
-            var engineerEmail = GetClaimValue(ClaimTypes.Email);
-            var machineIds = GetClaimValue("MachineIds");
+    //TODO: API Cleanup (Regarding application table changes)
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[HttpGet("engineer/engineer-applications")]
+    //public async Task<IActionResult> GetMachinesWithApplications()
+    //{
+    //    try
+    //    {
+    //        var engineerEmail = GetClaimValue(ClaimTypes.Email);
+    //        var machineIds = GetClaimValue("MachineIds");
 
-            //Ensure claims exist
+    //        //Ensure claims exist
 
-            if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-                return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+    //        if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+    //            return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
 
-            var machineIdsList = new List<string>();
-            machineIdsList.AddRange(machineIds.Split(',').ToList());
-            // Send version data request via control channel service
-            var res = await _entityQueryService.GetListOfMachinesWithApplications(machineIdsList);
+    //        var machineIdsList = new List<string>();
+    //        machineIdsList.AddRange(machineIds.Split(',').ToList());
+    //        // Send version data request via control channel service
+    //        var res = await _entityQueryService.GetListOfMachinesWithApplications(machineIdsList);
 
-            // Return a meaningful response to the client
-            return Ok(res);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new
-            {
-                Error = "An unexpected error occurred while processing the request.",
-                Details = ex.Message
-            });
-        }
-    }
+    //        // Return a meaningful response to the client
+    //        return Ok(res);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, new
+    //        {
+    //            Error = "An unexpected error occurred while processing the request.",
+    //            Details = ex.Message
+    //        });
+    //    }
+    //}
 
     #region private methods
 

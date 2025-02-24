@@ -6,6 +6,8 @@ import { ContactUs } from "./features/contactUs/ContactUs";
 import { Footer } from "./features/footer/Footer";
 import { Header } from "./features/header/Header";
 import { Navbar } from "./features/navbar/Navbar";
+import { LearnMore } from "./features/learnMore/LearnMore";
+import { OurSolution } from "./features/ourSolution/OurSolution";
 
 export const HomeRoute: React.FC = () => {
   const { userRole } = useAuth();
@@ -21,6 +23,12 @@ export const HomeRoute: React.FC = () => {
     <>
       <Navbar onHomePage={true} notifications={notifications}/>
       <Header />
+      <section id="learnMore">
+        <LearnMore />
+      </section>
+      <section id="ourSolution">
+        <OurSolution />
+      </section>
       <section id="about">
         <About />
       </section>
