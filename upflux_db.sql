@@ -9,7 +9,7 @@ CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL,
+    machine_name varchar(255) NOT NULL
 );
 
 -- Create Users Table
@@ -112,11 +112,13 @@ CREATE TABLE Generated_Machine_Ids (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- User context table for keeping track of currently logged in user ids
-CREATE TABLE User_Context (
-    session_id VARCHAR(128) PRIMARY KEY DEFAULT (CONNECTION_ID()),
-    user_id VARCHAR(50) NOT NULL
+-- Temporary table for tracking user id in a session
+CREATE TEMPORARY TABLE User_Context (
+    session_id CHAR(36) NOT NULL DEFAULT (UUID()), 
+    user_id VARCHAR(50) NOT NULL,               
+    PRIMARY KEY (session_id)
 );
+
 
 /*Show all tables present in the database*/
 SHOW TABLES;
@@ -187,11 +189,8 @@ INSERT INTO Generated_Machine_Ids (machine_id) VALUES
 ('987f6543-e21b-34c2-b789-526613274111'),
 ('456a1234-b56c-45f1-c321-626612374222');
 
-
-
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
-
 
 /*Basic Queries*/
 
@@ -511,13 +510,34 @@ SHOW GRANTS FOR 'john'@'%';
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
 
--- Stored Procedures with SIGNAL Error Handling
+-- Stored Procedure for handling user login
+DELIMITER //
+
+CREATE PROCEDURE UserLogin(
+    IN p_user_id VARCHAR(50) 
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- Handle errors
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in UserLogin procedure';
+    END;
+
+    -- Clear any existing session data for this connection
+    DELETE FROM User_Context;
+
+    -- Insert the current user's ID into the temporary table
+    INSERT INTO User_Context (user_id) VALUES (p_user_id);
+END//
+
+DELIMITER ;
+
+-- Stored Procedures for logging actions performed by users
 DELIMITER //
 
 CREATE PROCEDURE LogAction(
     IN p_action_type VARCHAR(10),
-    IN p_entity_name VARCHAR(255)
-)
+    IN p_entity_name VARCHAR(255))
 BEGIN
     DECLARE v_user_id VARCHAR(50);
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -525,10 +545,25 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogAction procedure';
     END;
     
-    SELECT user_id INTO v_user_id FROM User_Context WHERE session_id = CONNECTION_ID();
+    -- Get the current user's ID from the temporary table
+    SELECT user_id INTO v_user_id
+    FROM User_Context
+    LIMIT 1;
     
+    -- Log the action
     INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
     VALUES (v_user_id, p_action_type, p_entity_name, NOW());
+END//
+
+DELIMITER ;
+
+-- Stored procedure for clearing session data once the user logs out
+DELIMITER //
+
+CREATE PROCEDURE UserLogout()
+BEGIN
+    -- Clear the current user's session
+    DELETE FROM User_Context;
 END//
 
 DELIMITER ;
