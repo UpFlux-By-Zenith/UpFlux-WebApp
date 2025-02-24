@@ -10,7 +10,9 @@ import {
   Modal,
   RingProgress,
   SimpleGrid,
+  Tabs
 } from "@mantine/core";
+import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
 import { getMachineDetails } from "../../api/applicationsRequest";
@@ -19,6 +21,47 @@ import { RootState } from "../reduxSubscription/store";
 import { IApplications } from "../reduxSubscription/applicationVersions";
 
 export const VersionControl: React.FC = () => {
+  const navigate = useNavigate();
+
+    // Hardcoded machine metrics data
+    // const machineMetrics = {
+    //   "M01": {
+    //     metrics: {
+    //       cpuUsage: 45,
+    //       cpuTemperature: 60,
+    //       memoryUsage: 70,
+    //       diskUsage: 30,
+    //       systemUptime: 123456, // Uptime in seconds
+    //     },
+    //   },
+    // };
+  
+    // // Hardcoded applications data
+    // const applications = {
+    //   "M01": {
+    //     VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
+    //   },
+    // };
+  
+    // // Hardcoded app versions data
+    // const appVersions = [
+    //   {
+    //     appName: "UpFlux-Monitoring-Service",
+    //     appVersion: "1.0.0",
+    //     lastUpdate: "Jan 10 2024",
+    //   },
+    //   {
+    //     appName: "UpFlux-Monitoring-Service",
+    //     appVersion: "1.1.0",
+    //     lastUpdate: "Feb 15 2024",
+    //   },
+    //   {
+    //     appName: "UpFlux-Monitoring-Service",
+    //     appVersion: "1.2.0",
+    //     lastUpdate: "Mar 20 2024",
+    //   },
+    // ];
+
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
   const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
@@ -42,7 +85,6 @@ export const VersionControl: React.FC = () => {
 
     return `${days}d ${hours}h ${minutes}m`;
   };
-
 
   // Mocked machine metrics data
   const metrics = [
@@ -105,17 +147,29 @@ export const VersionControl: React.FC = () => {
   return (
     <Stack className="version-control-content">
       {/* Header */}
-      <Box className="header">
-        <Text size="xl" fw={700}>
-          Version Control
-        </Text>
-      </Box>
+
+              {/* Tabs Section */}
+              <Tabs defaultValue="applications" className="custom-tabs">
+              <Tabs.List>
+                <Tabs.Tab value="dashboard" className="custom-tab" onClick={() => navigate("/update-management")}>
+                  Dashboard
+                </Tabs.Tab>
+                <Tabs.Tab value="applications" className="custom-tab">
+                  Applications
+                </Tabs.Tab>
+              </Tabs.List>
+            </Tabs>
 
       <Box className="content-wrapper">
-        <Box className="machine-id-box">
-          {/* Display the machine ID */}
-          <Text>{`Machine ${machineId}`}</Text>
-        </Box>
+      <Box className="machine-id-box">
+        <Select
+          data={Object.keys(machineMetrics)} 
+          value={machineId}
+          onChange={(value) => navigate(".", { state: { machineId: value } })}
+          placeholder="Select Machine"
+        />
+      </Box>
+
 
         {/* Overview Section */}
         <Group className="overview-section">
