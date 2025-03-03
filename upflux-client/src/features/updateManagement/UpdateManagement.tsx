@@ -14,6 +14,7 @@ import { IApplications } from "../reduxSubscription/applicationVersions";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
 import { ConfigureUpdate } from "./ConfigureUpdate";
+import { MonitoringData } from "../reduxSubscription/metricsSlice";
 
 export const UpdateManagement = () => {
   const [modalOpened, setModalOpened] = useState(false);
@@ -85,7 +86,15 @@ export const UpdateManagement = () => {
 
   // Handle Deploy Button Click
   const handleRollback = () => {
-
+    setModalOpened(false);
+    notifications.show({
+      loading: true,
+      title: 'Rolling back',
+      position: "top-right",
+      message: `${selectedMachine} is being rolled back to ${selectedVersion}`,
+      autoClose: 5000,
+      withCloseButton: false,
+    });
     doRollback(selectedVersion, selectedMachine)
 
   };
@@ -96,6 +105,7 @@ export const UpdateManagement = () => {
     { name: "Shutdown", value: 0, color: "#FA5252" },
     { name: "Unknown", value: 0, color: "#6c757d" },
   ];
+
   const [selectedApp, setSelectedApp] = useState<string | null>(null);
   const [availableApps, setAvailableApps] = useState<any[]>([]);
   const [availableVersions, setAvailableVersions] = useState<any[]>([]);
@@ -267,13 +277,13 @@ export const UpdateManagement = () => {
 
         <Box>
           {loading ? (
-            <Text>Loading machines...</Text>
+            <Text>Loading QC machines...</Text>
           ) : (
             <Table className="machine-table" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Machine Name</Table.Th>
-                  <Table.Th>Machine ID</Table.Th>
+                  <Table.Th>QC Machine Name</Table.Th>
+                  <Table.Th>QC Machine ID</Table.Th>
                   <Table.Th>IP Address</Table.Th>
                   <Table.Th>Current Version</Table.Th>
                   <Table.Th>Last Update</Table.Th>
@@ -338,7 +348,7 @@ export const UpdateManagement = () => {
 
           {selectedApp && (
             <>
-              <Text mt="md">Select Software Version*</Text>
+              <Text mt="md">Select Software Version* (Current: {applications[selectedMachine].CurrentVersion})</Text>
               <Select
                 data={availableVersions.map((version) => ({
                   value: version,

@@ -56,6 +56,7 @@ public class ApplicationVersions
     [JsonIgnore] 
     public Application Application { get; set; } 
 
+    public string CurrentVersion { get; set; }
     public string DeviceUuid { get; set; }
 }
 

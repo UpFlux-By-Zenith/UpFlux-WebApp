@@ -185,8 +185,12 @@ public class PackageManagementController : ControllerBase
 		var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
         if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
 
-        var packageFile = Directory.GetFiles(packageDirectory).FirstOrDefault(f => f.Contains(request.Version));
-        if (packageFile == null) return NotFound("Package version not found.");
+        // Look for a .deb file matching the package version
+        var packageFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
+
+        if (packageFile == null)
+            return NotFound("Matching .deb package version not found.");
 
         try
         {
@@ -202,6 +206,7 @@ public class PackageManagementController : ControllerBase
             return StatusCode(500, $"Error sending package: {ex.Message}");
         }
     }
+
 
     public class PackageCheckRequest
     {
