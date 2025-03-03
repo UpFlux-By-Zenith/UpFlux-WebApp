@@ -21,6 +21,7 @@ import { ForgotPassword } from './features/forgotPassword/ForgotPassword';
 import SessionTimeout from './features/sessionTimeout/SessionTimeout';
 import { Provider } from 'react-redux';
 import store from './features/reduxSubscription/store';
+import { CommonDashboard } from './features/commonDashboard/CommonDashboard';
 
 export const App = () => {
 
@@ -64,6 +65,10 @@ export const App = () => {
 // Protected routes component
 const ProtectedRoutes = () => (
   <Routes>
+    <Route element={<PrivateRoutes role={ROLES.COMMON} />}>
+      <Route path="/common-dashboard" element={<Layout> <CommonDashboard /></Layout>}></Route>
+    </Route>
+
     {/* Admin Protected Routes */}
     <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
       <Route
