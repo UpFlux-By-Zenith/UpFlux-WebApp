@@ -723,7 +723,6 @@ END //
 
 DELIMITER ;
 
-
 -- Check Existing Triggers
 SELECT 
     TRIGGER_NAME,
@@ -734,3 +733,115 @@ FROM
     information_schema.TRIGGERS
 WHERE 
     TRIGGER_SCHEMA = 'upflux'; 
+	
+-- Views
+
+-- View details about engineer users
+CREATE VIEW Engineer_Users AS
+SELECT 
+    user_id,
+    name,
+    email,
+    last_login
+FROM Users
+WHERE role = 'Engineer';
+
+-- View details about admin users
+CREATE VIEW Admin_Users AS
+SELECT 
+    U.user_id,
+    U.name,
+    U.email,
+    U.last_login
+FROM Users U
+JOIN Admin_Details A ON U.user_id = A.user_id
+WHERE U.role = 'Admin';
+
+-- View the list of machines which users have access to
+CREATE VIEW User_Access AS
+SELECT 
+    c.user_id, 
+    u.name AS user_name, 
+    c.machine_id, 
+    c.access_granted_at, 
+    c.expires_at, 
+    c.access_granted_by
+FROM Credentials c
+JOIN Users u ON c.user_id = u.user_id;
+
+-- View user activity logs
+CREATE VIEW User_Action_Logs AS
+SELECT 
+    al.log_id, 
+    u.name AS user_name, 
+    al.action_type, 
+    al.entity_name, 
+    al.time_performed
+FROM Action_Logs al
+JOIN Users u ON al.user_id = u.user_id;
+
+-- View the latest package installed on each machine
+CREATE VIEW Latest_Package_Versions AS
+SELECT 
+    ul.machine_id, 
+    p.version_number, 
+    MAX(ul.time_applied) AS latest_update_time
+FROM Update_Logs ul
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.update_status = 'Completed'
+GROUP BY ul.machine_id, p.version_number;
+
+-- View the list of apps and versions on each machine
+CREATE VIEW Application_Status AS
+SELECT 
+    a.machine_id, 
+    a.app_name, 
+    a.current_version
+FROM Applications a;
+
+-- View all machines with currently expired licences
+CREATE VIEW Expired_Licences AS
+SELECT 
+    m.machine_id,
+    m.machine_name,
+    m.ip_address,
+    l.licence_key,
+    l.expiration_date
+FROM 
+    Machines m
+JOIN 
+    Licences l ON m.machine_id = l.machine_id
+WHERE 
+    l.expiration_date <= CURRENT_TIMESTAMP;
+
+-- View all machines with licences which are expiring soon
+CREATE VIEW Licences_Expiring_Soon AS
+SELECT 
+    m.machine_id,
+    m.machine_name,
+    m.ip_address,
+    l.licence_key,
+    l.expiration_date
+FROM 
+    Machines m
+JOIN 
+    Licences l ON m.machine_id = l.machine_id
+WHERE 
+    l.expiration_date BETWEEN CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP + INTERVAL '30 days';
+
+-- View relevant application data for an engineer
+CREATE VIEW Application_Details AS
+SELECT 
+    a.app_name,
+    a.current_version,
+    u1.name AS added_by,
+    av.date AS last_updated,
+    u2.name AS updated_by
+FROM Applications a
+LEFT JOIN (
+    SELECT av1.app_id, av1.updated_by, av1.date
+    FROM Application_Versions av1
+    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.app_id = av2.app_id)
+) av ON a.app_id = av.app_id
+LEFT JOIN Users u1 ON a.added_by = u1.user_id
+LEFT JOIN Users u2 ON av.updated_by = u2.user_id;
