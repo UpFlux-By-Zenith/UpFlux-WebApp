@@ -54,5 +54,10 @@
   }
 
   .metrics-container{
-    margin-left: 70px;
+    margin-top: 20px;
   }
+
+  .metrics-labels{
+    margin-top: -10px !important;
+  }
+

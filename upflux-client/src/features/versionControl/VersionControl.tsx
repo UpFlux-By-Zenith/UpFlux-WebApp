@@ -15,6 +15,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
+import ReactSpeedometer, { Transition } from "react-d3-speedometer";
 import { getMachineDetails } from "../../api/applicationsRequest";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
@@ -23,7 +24,21 @@ import { IApplications } from "../reduxSubscription/applicationVersions";
 export const VersionControl: React.FC = () => {
   const navigate = useNavigate();
 
-    // Hardcoded machine metrics data
+  const smoothColors = [
+    "#00FF00", // Green
+    "#33FF00",
+    "#66FF00",
+    "#99FF00",
+    "#CCFF00",
+    "#FFFF00", // Yellow
+    "#FFCC00",
+    "#FF9900",
+    "#FF6600",
+    "#FF3300",
+    "#FF0000", // Red
+  ];
+
+   // Hardcoded machine metrics data
     // const machineMetrics = {
     //   "M01": {
     //     metrics: {
@@ -36,7 +51,7 @@ export const VersionControl: React.FC = () => {
     //   },
     // };
   
-    // // Hardcoded applications data
+    // Hardcoded applications data
     // const applications = {
     //   "M01": {
     //     VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
@@ -89,7 +104,7 @@ export const VersionControl: React.FC = () => {
   // Mocked machine metrics data
   const metrics = [
     {
-      label: "CPU",
+      label: "CPU Usage",
       value: parseInt(machineMetrics[machineId]?.metrics.cpuUsage.toFixed()) || 0,
     },
     {
@@ -115,7 +130,7 @@ export const VersionControl: React.FC = () => {
     return "red";
   };
 
-  // Fetch data from API
+  //Fetch data from API
   useEffect(() => {
     const fetchMachineDetails = async () => {
       try {
@@ -130,7 +145,7 @@ export const VersionControl: React.FC = () => {
               lastUpdate: app.versions?.[0]?.date || "N/A",
             }));
 
-          setAppVersions(filteredApps);
+          //setAppVersions(filteredApps);
         } else {
           console.error("Failed to fetch or parse machine details.");
         }
@@ -184,36 +199,27 @@ export const VersionControl: React.FC = () => {
 
         {/* Machine Metrics Section */}
         <Box className="metrics-container">
-          <SimpleGrid cols={4}>
+        <SimpleGrid cols={4}>
             {metrics.map((metric, index) => (
-              <RingProgress
-                key={index}
-                roundCaps
-                size={150}
-                thickness={10}
-                sections={[
-                  { value: metric.value, color: getColor(metric.value) },
-                ]}
-                transitionDuration={250}
-                label={
-                  <Box
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100%",
-                    }}
-                  >
-                    <Text size="sm" fw="bold">
-                      {metric.value}%
-                    </Text>
-                    <Text size="xs" mt="xs" fw="bold">
-                      {metric.label}
-                    </Text>
-                  </Box>
-                }
-              />
+              <Box key={index} style={{ textAlign: "center" }}>
+                <ReactSpeedometer
+                  minValue={0}
+                  maxValue={100}
+                  segments={smoothColors.length} 
+                  segmentColors={smoothColors}
+                  value={metric.value}
+                  needleColor="black"
+                  width={250}
+                  height={150}
+                  ringWidth={30}
+                  currentValueText={""}
+                  forceRender={true}
+                  maxSegmentLabels={4}
+                />
+                <Text className="metrics-labels" size="sm" fw="bold" mt="sm">
+                  {metric.label}
+                </Text>
+              </Box>
             ))}
           </SimpleGrid>
           <center>
