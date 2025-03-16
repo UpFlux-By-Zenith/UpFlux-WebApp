@@ -111,6 +111,14 @@ CREATE TABLE Generated_Machine_Ids (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Temporary table for tracking user id in a session
+CREATE TEMPORARY TABLE User_Context (
+    session_id CHAR(36) NOT NULL DEFAULT (UUID()), 
+    user_id VARCHAR(50) NOT NULL,               
+    PRIMARY KEY (session_id)
+);
+
+
 /*Show all tables present in the database*/
 SHOW TABLES;
 
@@ -180,11 +188,8 @@ INSERT INTO Generated_Machine_Ids (machine_id) VALUES
 ('987f6543-e21b-34c2-b789-526613274111'),
 ('456a1234-b56c-45f1-c321-626612374222');
 
-
-
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
-
 
 /*Basic Queries*/
 
@@ -504,285 +509,219 @@ SHOW GRANTS FOR 'john'@'%';
 -- Should show that mark has the Engineer role
 SHOW GRANTS FOR 'mark123'@'%';
 
---Stored Procedures
-
+-- Stored Procedure for handling user login
 DELIMITER //
 
-CREATE PROCEDURE LogAction(
-    IN p_user_id VARCHAR(50),
-    IN p_action_type VARCHAR(10),
-    IN p_entity_name VARCHAR(255)
+CREATE PROCEDURE UserLogin(
+    IN p_user_id VARCHAR(50) 
 )
 BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (p_user_id, p_action_type, p_entity_name, NOW());
-END //
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- Handle errors
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in UserLogin procedure';
+    END;
+
+    -- Clear any existing session data for this connection
+    DELETE FROM User_Context;
+
+    -- Insert the current user's ID into the temporary table
+    INSERT INTO User_Context (user_id) VALUES (p_user_id);
+END//
 
 DELIMITER ;
 
--- Triggers
+-- Stored Procedures for logging actions performed by users
+DELIMITER //
 
--- For testing triggers as a specific user:
-SET @current_user_id = a1;
+CREATE PROCEDURE LogAction(
+    IN p_action_type VARCHAR(10),
+    IN p_entity_name VARCHAR(255))
+BEGIN
+    DECLARE v_user_id VARCHAR(50);
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogAction procedure';
+    END;
+    
+    -- Get the current user's ID from the temporary table
+    SELECT user_id INTO v_user_id
+    FROM User_Context
+    LIMIT 1;
+    
+    -- Log the action
+    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
+    VALUES (v_user_id, p_action_type, p_entity_name, NOW());
+END//
 
--- Trigger for deleting a users associated admin details whenever they are removed from the users table
+DELIMITER ;
+
+-- Stored procedure for clearing session data once the user logs out
+DELIMITER //
+
+CREATE PROCEDURE UserLogout()
+BEGIN
+    -- Clear the current user's session
+    DELETE FROM User_Context;
+END//
+
+DELIMITER ;
+
+-- Triggers with SIGNAL Error Handling
 DELIMITER //
 CREATE TRIGGER DeleteAdminDetails
 AFTER DELETE ON Users
 FOR EACH ROW
 BEGIN
-    -- Check if the deleted user was an Admin
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in DeleteAdminDetails trigger';
+    END;
+    
     IF OLD.role = 'Admin' THEN
-        -- Delete corresponding entry from Admin_Details
-        DELETE FROM Admin_Details
-        WHERE user_id = OLD.user_id;
+        DELETE FROM Admin_Details WHERE user_id = OLD.user_id;
     END IF;
 END //
 DELIMITER ;
 
--- Trigger for adding entry to action_logs when a user performs an Insert
+-- Generalized Logging Triggers with Error Handling
 DELIMITER //
-
-CREATE TRIGGER LogUserInsert
-AFTER INSERT ON Users
-FOR EACH ROW
+CREATE TRIGGER LogUserInsert AFTER INSERT ON Users FOR EACH ROW
 BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Users');
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogUserInsert trigger';
+    END;
+    CALL LogAction('CREATE', 'Users');
+END //
+
+CREATE TRIGGER LogUserUpdate AFTER UPDATE ON Users FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogUserUpdate trigger';
+    END;
+    CALL LogAction('UPDATE', 'Users');
+END //
+
+CREATE TRIGGER LogUserDelete AFTER DELETE ON Users FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogUserDelete trigger';
+    END;
+    CALL LogAction('DELETE', 'Users');
+END //
+
+CREATE TRIGGER LogMachineInsert AFTER INSERT ON Machines FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogMachineInsert trigger';
+    END;
+    CALL LogAction('CREATE', 'Machines');
+END //
+
+CREATE TRIGGER LogMachineUpdate AFTER UPDATE ON Machines FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogMachineUpdate trigger';
+    END;
+    CALL LogAction('UPDATE', 'Machines');
+END //
+
+CREATE TRIGGER LogMachineDelete AFTER DELETE ON Machines FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogMachineDelete trigger';
+    END;
+    CALL LogAction('DELETE', 'Machines');
+END //
+
+CREATE TRIGGER LogLicenceInsert AFTER INSERT ON Licences FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogLicenceInsert trigger';
+    END;
+    CALL LogAction('CREATE', 'Licences');
+END //
+
+CREATE TRIGGER LogLicenceUpdate AFTER UPDATE ON Licences FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogLicenceUpdate trigger';
+    END;
+    CALL LogAction('UPDATE', 'Licences');
+END //
+
+CREATE TRIGGER LogLicenceDelete AFTER DELETE ON Licences FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogLicenceDelete trigger';
+    END;
+    CALL LogAction('DELETE', 'Licences');
+END //
+
+CREATE TRIGGER LogCredentialInsert AFTER INSERT ON Credentials FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogCredentialInsert trigger';
+    END;
+    CALL LogAction('CREATE', 'Credentials');
+END //
+
+CREATE TRIGGER LogCredentialUpdate AFTER UPDATE ON Credentials FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogCredentialUpdate trigger';
+    END;
+    CALL LogAction('UPDATE', 'Credentials');
+END //
+
+CREATE TRIGGER LogCredentialDelete AFTER DELETE ON Credentials FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogCredentialDelete trigger';
+    END;
+    CALL LogAction('DELETE', 'Credentials');
+END //
+
+CREATE TRIGGER LogPackageInsert AFTER INSERT ON Packages FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogPackageInsert trigger';
+    END;
+    CALL LogAction('CREATE', 'Packages');
+END //
+
+CREATE TRIGGER LogPackageUpdate AFTER UPDATE ON Packages FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogPackageUpdate trigger';
+    END;
+    CALL LogAction('UPDATE', 'Packages');
+END //
+
+CREATE TRIGGER LogPackageDelete AFTER DELETE ON Packages FOR EACH ROW
+BEGIN
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error in LogPackageDelete trigger';
+    END;
+    CALL LogAction('DELETE', 'Packages');
 END //
 
 DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update
-DELIMITER //
-
-CREATE TRIGGER LogUserUpdate
-AFTER UPDATE ON Users
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Users');
-END //
-
-DELIMITER ;
-
-
--- Trigger for adding entry to action_logs when a user performs a Delete
-DELIMITER //
-
-CREATE TRIGGER LogUserDelete
-AFTER DELETE ON Users
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Users');
-END //
-
-DELIMITER ;
-
--- Machines Triggers
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Machines
-DELIMITER //
-
-CREATE TRIGGER LogMachineInsert
-AFTER INSERT ON Machines
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Machines');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Machines
-DELIMITER //
-
-CREATE TRIGGER LogMachineUpdate
-AFTER UPDATE ON Machines
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Machines');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Machines
-DELIMITER //
-
-CREATE TRIGGER LogMachineDelete
-AFTER DELETE ON Machines
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Machines');
-END //
-
-DELIMITER ;
-
--- Licences
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Licences
-DELIMITER //
-
-CREATE TRIGGER LogLicenseInsert
-AFTER INSERT ON Licences
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Licences');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Licences
-DELIMITER //
-
-CREATE TRIGGER LogLicenceUpdate
-AFTER UPDATE ON Licences
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Licences');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Licences
-DELIMITER //
-
-CREATE TRIGGER LogLicenceDelete
-AFTER DELETE ON Licences
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Licences');
-END //
-
-DELIMITER ;
-
--- Credentials
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialInsert
-AFTER INSERT ON Credentials
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Credentials');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialUpdate
-AFTER UPDATE ON Credentials
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Credentials');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialDelete
-AFTER DELETE ON Credentials
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Credentials');
-END //
-
-DELIMITER ;
-
--- Packages 
-
--- Trigger for adding entry to action_logs when a user performs an Insert on Packages
-DELIMITER //
-
-CREATE TRIGGER LogPackageInsert
-AFTER INSERT ON Packages
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'CREATE', 'Packages');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs an Update on Packages
-DELIMITER //
-
-CREATE TRIGGER LogPackageUpdate
-AFTER UPDATE ON Packages
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'UPDATE', 'Packages');
-END //
-
-DELIMITER ;
-
--- Trigger for adding entry to action_logs when a user performs a Delete on Packages
-DELIMITER //
-
-CREATE TRIGGER LogPackageDelete
-AFTER DELETE ON Packages
-FOR EACH ROW
-BEGIN
-    CALL LogAction(@current_user_id, 'DELETE', 'Packages');
-END //
-
-DELIMITER ;
-
-
--- Trigger for updating the status of a licence to 'Expired'
-DELIMITER //
-
-CREATE TRIGGER UpdateLicenseValidity
-BEFORE UPDATE ON Licences
-FOR EACH ROW
-BEGIN
-    -- Check if the expiration date has passed, and update the validity_status
-    IF NEW.expiration_date < NOW() AND OLD.validity_status != 'Expired' THEN
-        SET NEW.validity_status = 'Expired';
-    END IF;
-END //
-
-DELIMITER ;
-
-
--- Trigger for inserting new credentials 
-DELIMITER //
-
-CREATE TRIGGER LogCredentialsInsert
-AFTER INSERT ON Credentials
-FOR EACH ROW
-BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'CREATE', 'Credentials', NOW());
-END //
-
-DELIMITER ;
-
--- Trigger for updating credentials
-DELIMITER //
-
-CREATE TRIGGER LogCredentialsUpdate
-AFTER UPDATE ON Credentials
-FOR EACH ROW
-BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'UPDATE', 'Credentials', NOW());
-END //
-
-DELIMITER ;
-
--- Trigger for deleting credentials
-DELIMITER //
-CREATE TRIGGER LogCredentialsDelete
-AFTER DELETE ON Credentials
-FOR EACH ROW
-BEGIN
-    INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed)
-    VALUES (@current_user_id, 'DELETE', 'Credentials', NOW());
-END //
-DELIMITER ;
-
 
 -- Check Existing Triggers
 SELECT 
@@ -794,3 +733,115 @@ FROM
     information_schema.TRIGGERS
 WHERE 
     TRIGGER_SCHEMA = 'upflux'; 
+	
+-- Views
+
+-- View details about engineer users
+CREATE VIEW Engineer_Users AS
+SELECT 
+    user_id,
+    name,
+    email,
+    last_login
+FROM Users
+WHERE role = 'Engineer';
+
+-- View details about admin users
+CREATE VIEW Admin_Users AS
+SELECT 
+    U.user_id,
+    U.name,
+    U.email,
+    U.last_login
+FROM Users U
+JOIN Admin_Details A ON U.user_id = A.user_id
+WHERE U.role = 'Admin';
+
+-- View the list of machines which users have access to
+CREATE VIEW User_Access AS
+SELECT 
+    c.user_id, 
+    u.name AS user_name, 
+    c.machine_id, 
+    c.access_granted_at, 
+    c.expires_at, 
+    c.access_granted_by
+FROM Credentials c
+JOIN Users u ON c.user_id = u.user_id;
+
+-- View user activity logs
+CREATE VIEW User_Action_Logs AS
+SELECT 
+    al.log_id, 
+    u.name AS user_name, 
+    al.action_type, 
+    al.entity_name, 
+    al.time_performed
+FROM Action_Logs al
+JOIN Users u ON al.user_id = u.user_id;
+
+-- View the latest package installed on each machine
+CREATE VIEW Latest_Package_Versions AS
+SELECT 
+    ul.machine_id, 
+    p.version_number, 
+    MAX(ul.time_applied) AS latest_update_time
+FROM Update_Logs ul
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.update_status = 'Completed'
+GROUP BY ul.machine_id, p.version_number;
+
+-- View the list of apps and versions on each machine
+CREATE VIEW Application_Status AS
+SELECT 
+    a.machine_id, 
+    a.app_name, 
+    a.current_version
+FROM Applications a;
+
+-- View all machines with currently expired licences
+CREATE VIEW Expired_Licences AS
+SELECT 
+    m.machine_id,
+    m.machine_name,
+    m.ip_address,
+    l.licence_key,
+    l.expiration_date
+FROM 
+    Machines m
+JOIN 
+    Licences l ON m.machine_id = l.machine_id
+WHERE 
+    l.expiration_date <= CURRENT_TIMESTAMP;
+
+-- View all machines with licences which are expiring soon
+CREATE VIEW Licences_Expiring_Soon AS
+SELECT 
+    m.machine_id,
+    m.machine_name,
+    m.ip_address,
+    l.licence_key,
+    l.expiration_date
+FROM 
+    Machines m
+JOIN 
+    Licences l ON m.machine_id = l.machine_id
+WHERE 
+    l.expiration_date BETWEEN CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP + INTERVAL '30 days';
+
+-- View relevant application data for an engineer
+CREATE VIEW Application_Details AS
+SELECT 
+    a.app_name,
+    a.current_version,
+    u1.name AS added_by,
+    av.date AS last_updated,
+    u2.name AS updated_by
+FROM Applications a
+LEFT JOIN (
+    SELECT av1.app_id, av1.updated_by, av1.date
+    FROM Application_Versions av1
+    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.app_id = av2.app_id)
+) av ON a.app_id = av.app_id
+LEFT JOIN Users u1 ON a.added_by = u1.user_id
+LEFT JOIN Users u2 ON av.updated_by = u2.user_id;
