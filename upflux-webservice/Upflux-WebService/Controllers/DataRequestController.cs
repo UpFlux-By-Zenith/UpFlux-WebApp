@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using Upflux_WebService.Core.Models;
+using Upflux_WebService.Data;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
@@ -19,37 +21,46 @@ public class DataRequestController : ControllerBase
     private readonly IEntityQueryService _entityQueryService;
     private readonly string _gatewayId;
     private readonly IControlChannelService _controlChannelService;
+    private readonly ApplicationDbContext _context;
 
     #endregion
 
     public DataRequestController(IEntityQueryService entityQueryService, IConfiguration configuration,
-        IControlChannelService controlChannelService)
+        IControlChannelService controlChannelService, ApplicationDbContext context)
     {
+        _context = context;
         _entityQueryService = entityQueryService;
         _gatewayId = configuration["GatewayId"]!;
         _controlChannelService = controlChannelService;
     }
 
-    //TODO: API Cleanup (application table changes)
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
-    //[HttpGet("applications")]
-    //public async Task<IActionResult> GetApplications()
-    //{
-    //    try
-    //    {
-    //        var machinesWithLicense = await _entityQueryService.GetListOfMachinesWithApplications();
-    //        return Ok(machinesWithLicense);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return BadRequest(ex.Message);
-    //    }
-    //}
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [HttpGet("applications")]
+    public IActionResult GetApplications()
+    {
+        try
+        {
+            // Fetch applications and join with their corresponding versions
+            var applications = _context.Application_Versions.ToList();
+
+            // Check if applications exist
+            if (!applications.Any())
+                return NotFound(new { Message = "No applications found." });
+
+            return Ok(applications);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching applications: {ex.Message}");
+            return StatusCode(500, new { Error = "An internal error occurred." });
+        }
+    }
 
     /// <summary>
     /// Engineer retrieves accessible machines
     /// </summary>
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("engineer/access-machines")]
     public IActionResult GetAccessibleMachines()
     {
@@ -58,13 +69,20 @@ public class DataRequestController : ControllerBase
             var engineerEmail = GetClaimValue(ClaimTypes.Email);
             var machineIds = GetClaimValue("MachineIds");
 
+            var role = GetClaimValue(ClaimTypes.Role);
+            if (role == "Admin") return Ok(new { engineerEmail, AccessibleMachines = _context.Machines.ToListAsync() });
+
             if (string.IsNullOrEmpty(engineerEmail) || string.IsNullOrEmpty(machineIds))
                 return Unauthorized(new { Error = "Invalid engineer token." });
 
             var machines = machineIds.Split(',').ToList();
             return Ok(new
             {
-                EngineerEmail = engineerEmail, AccessibleMachines = _entityQueryService.GetListOfMachines(machines)
+                EngineerEmail = engineerEmail,
+                AccessibleMachines = _context.Machines
+                    .Where(m => machines.Contains(m
+                        .MachineId)) // Assuming MachineId is the property you're filtering by
+                    .ToListAsync()
             });
         }
         catch (Exception ex)
@@ -76,30 +94,29 @@ public class DataRequestController : ControllerBase
     /// <summary>
     /// Get applications running on machines
     /// </summary>
+    /// TODO: Delete.. Marked as Depricated
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("engineer/machines-application")]
     public async Task<IActionResult> GetRunningApplications()
     {
         try
         {
-            //var engineerEmail = GetClaimValue(ClaimTypes.Email);
-            //var machineIds = GetClaimValue("MachineIds");
+            var machineIds = GetClaimValue("MachineIds").Split(",");
+            var role = GetClaimValue(ClaimTypes.Role);
 
-            ////Ensure claims exist
-
-            //if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-            //    return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
 
             // Send version data request via control channel service
             await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
 
-            // Return a meaningful response to the client
-            return Ok(new
-            {
-                Message = "Version data request sent successfully.",
-                //EngineerEmail = engineerEmail,
-                Timestamp = DateTime.UtcNow
-            });
+            var storedVersionsList = new List<MachineStoredVersions>();
+
+            if (role == "Engineer")
+                storedVersionsList = await _context.MachineStoredVersions
+                    .Where(msv => machineIds.Contains(msv.MachineId.ToString()))
+                    .ToListAsync();
+            else if (role == "Admin") storedVersionsList = await _context.MachineStoredVersions.ToListAsync();
+
+            return Ok(storedVersionsList);
         }
         catch (Exception ex)
         {
@@ -111,38 +128,6 @@ public class DataRequestController : ControllerBase
         }
     }
 
-    //TODO: API Cleanup (Regarding application table changes)
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    //[HttpGet("engineer/engineer-applications")]
-    //public async Task<IActionResult> GetMachinesWithApplications()
-    //{
-    //    try
-    //    {
-    //        var engineerEmail = GetClaimValue(ClaimTypes.Email);
-    //        var machineIds = GetClaimValue("MachineIds");
-
-    //        //Ensure claims exist
-
-    //        if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-    //            return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
-
-    //        var machineIdsList = new List<string>();
-    //        machineIdsList.AddRange(machineIds.Split(',').ToList());
-    //        // Send version data request via control channel service
-    //        var res = await _entityQueryService.GetListOfMachinesWithApplications(machineIdsList);
-
-    //        // Return a meaningful response to the client
-    //        return Ok(res);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return StatusCode(500, new
-    //        {
-    //            Error = "An unexpected error occurred while processing the request.",
-    //            Details = ex.Message
-    //        });
-    //    }
-    //}
 
     #region private methods
 

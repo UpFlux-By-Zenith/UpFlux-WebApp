@@ -93,6 +93,7 @@ public class Program
             .AddScoped<INotificationService, NotificationService>()
             .AddScoped<ILogFileService, LogFileService>()
             .AddScoped<IUserRepository, UserRepository>()
+            .AddScoped<IMachineStoredVersionsRepository, MachineStoredVersionsRepository>()
             .AddSingleton<ControlChannelService>()
             .AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 

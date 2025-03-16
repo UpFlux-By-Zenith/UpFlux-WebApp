@@ -77,7 +77,7 @@ export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => 
                 <>
                     <Text mt="md">Select Software Version*</Text>
                     <Select
-                        data={availableApps[0].versions.map((version) => ({
+                        data={availableApps[0]?.versions.map((version) => ({
                             value: version,
                             label: version,
                         }))}

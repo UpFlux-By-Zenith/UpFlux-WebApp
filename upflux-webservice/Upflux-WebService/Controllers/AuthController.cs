@@ -6,6 +6,7 @@ using System.Security.Claims;
 using DotNet.RateLimiter.ActionFilters;
 using Microsoft.AspNetCore.RateLimiting;
 using Upflux_WebService.Core.DTOs;
+using Upflux_WebService.Data;
 using Upflux_WebService.Services.Enums;
 using Upflux_WebService.Services.Interfaces;
 
@@ -23,6 +24,7 @@ public class AuthController : ControllerBase
 
     private readonly IAuthService _authService;
     private readonly IEntityQueryService _entityQueryService;
+    private readonly ApplicationDbContext _context;
 
     #endregion
 
@@ -32,10 +34,11 @@ public class AuthController : ControllerBase
     /// Constructor
     /// </summary>
     /// <param name="authService"></param>
-    public AuthController(IAuthService authService, IEntityQueryService entityQuery)
+    public AuthController(IAuthService authService, IEntityQueryService entityQuery, ApplicationDbContext context)
     {
         _authService = authService;
         _entityQueryService = entityQuery;
+        _context = context;
     }
 
     #endregion
@@ -190,7 +193,7 @@ public class AuthController : ControllerBase
     /// <returns>Returns a new authorization token if login and validation are successful, or error messages if validation fails.</returns>
     /// <response code="200">Successful login and token generation for the engineer</response>
     /// <response code="400">Bad Request if email or token are missing or invalid</response>
-    /// <response code="401">Unauthorized if the token is invalid, email mismatch, or missing machine IDs in the token</response>
+    /// <response code="401">Unauthorized if the token is invalid, revoked, or missing required claims</response>
     /// <response code="500">Internal Server Error in case of unexpected errors</response>
     [HttpPost("engineer/login")]
     public IActionResult EngineerLogin([FromBody] EngineerLoginRequest request)
@@ -203,18 +206,28 @@ public class AuthController : ControllerBase
             // Parse and validate the engineer token
             var tokenData = _authService.ParseToken(request.EngineerToken);
 
-            // Ensure the token's email matches the provided email
+            // Ensure the token contains an email claim
             if (!tokenData.TryGetValue(ClaimTypes.Email, out var tokenEmail))
-                return Unauthorized(new { Error = "Invalid token for the provided email." });
+                return Unauthorized(new { Error = "Invalid token: email missing." });
 
             // Retrieve machine IDs from the token
             if (!tokenData.TryGetValue("MachineIds", out var machineIds))
                 return Unauthorized(new { Error = "Invalid token: no machine IDs found." });
 
+            // Fetch the user ID from the Users table using the email
+            var user = _context.Users.FirstOrDefault(u => u.Email == tokenEmail);
+            if (user == null)
+                return Unauthorized(new { Error = "No user found with the provided email." });
+
+            // Check if the engineer's token has been revoked by looking up their user ID
+            var isRevoked = _context.Revokes.Any(r => r.UserId == user.UserId);
+            if (isRevoked)
+                return Unauthorized(new { Error = "This token has been revoked. Please contact an administrator." });
+
             // Generate a new authorization token for the engineer
             var authToken = _authService.ParseLoginToken(tokenEmail, machineIds.Split(',').ToList());
 
-            return Ok(new { Token = request.EngineerToken });
+            return Ok(new { Token = authToken });
         }
         catch (SecurityTokenException ex)
         {
@@ -222,27 +235,13 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Error = ex.Message });
+            return StatusCode(500, new { Error = "An internal error occurred: " + ex.Message });
         }
     }
 
     #endregion
 
-    #region Example APIs
-
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
-    [HttpGet("admin/get-all-machines")]
-    public IActionResult GetAllMachines()
-    {
-        try
-        {
-            return Ok(new { AccessibleMachines = _entityQueryService.GetListOfMachines() });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
-    }
+    #region APIs
 
     /// <summary>
     /// Parse and verify a token

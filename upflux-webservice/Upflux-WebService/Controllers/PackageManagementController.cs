@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using Upflux_WebService.Core.Models;
+using Upflux_WebService.Data;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
@@ -24,6 +27,7 @@ public class PackageManagementController : ControllerBase
     private readonly string _gatewayId;
     private readonly IControlChannelService _controlChannelService;
     private readonly ILogger<PackageManagementController> _logger;
+    private readonly ApplicationDbContext _context;
 
     /// <summary>
     /// Constructor`
@@ -32,8 +36,9 @@ public class PackageManagementController : ControllerBase
     /// <param name="configuration"></param>
     /// <param name="controlChannelService"></param>
     public PackageManagementController(ILogger<PackageManagementController> logger, IConfiguration configuration,
-        IControlChannelService controlChannelService)
+        IControlChannelService controlChannelService, ApplicationDbContext context)
     {
+        _context = context;
         _logger = logger;
         _gatewayId = configuration["GatewayId"]!;
         _controlChannelService = controlChannelService;
@@ -54,6 +59,21 @@ public class PackageManagementController : ControllerBase
     public async Task<IActionResult> SignFile(IFormFile file)
     {
         if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+        var adminEmail = GetClaimValue(ClaimTypes.Email);
+
+        if (string.IsNullOrEmpty(adminEmail)) return Unauthorized("Admin email not found in token.");
+
+        // Find UserID from Users table using admin email
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+        if (user == null) return NotFound("Admin user not found.");
+
+        // Find AdminID from Admin_Details table using UserID
+        var adminDetails = await _context.Admin_Details.FirstOrDefaultAsync(a => a.UserId == user.UserId);
+        if (adminDetails == null) return Unauthorized("Admin ID not found.");
+
+        var adminId = adminDetails.AdminId;
+
 
         var packageName = Path.GetFileNameWithoutExtension(file.FileName).Split('_')[0];
         var packageDirectory = Path.Combine(_uploadedPackagesPath, packageName);
@@ -94,6 +114,17 @@ public class PackageManagementController : ControllerBase
                 _logger.LogError($"File signing failed with exit code {process.ExitCode}");
                 return StatusCode(500, $"Error signing file: {error}");
             }
+
+            // Add version record to database
+            var newVersion = new ApplicationVersion
+            {
+                UploadedBy = adminId, // Store Admin ID
+                VersionName = file.FileName,
+                Date = DateTime.UtcNow
+            };
+
+            await _context.ApplicationVersions.AddAsync(newVersion);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation($"File signed successfully: {signedFilePath}");
             return Ok("File signed successfully.");
@@ -169,20 +200,20 @@ public class PackageManagementController : ControllerBase
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpPost("packages/upload")]
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
-	public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
     {
         if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
             return BadRequest("Package name and version are required.");
 
-		var engineerEmail = GetClaimValue(ClaimTypes.Email);
-		var machineIds = GetClaimValue("MachineIds");
+        var engineerEmail = GetClaimValue(ClaimTypes.Email);
+        var machineIds = GetClaimValue("MachineIds");
 
-		//Ensure claims exist
-		if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-		    return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+        //Ensure claims exist
+        if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+            return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
 
-		var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
+        var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
         if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
 
         // Look for a .deb file matching the package version
@@ -222,9 +253,11 @@ public class PackageManagementController : ControllerBase
     }
 
     #region helper methods
+
     private string? GetClaimValue(string claimType)
-	{
-		return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
-	}
-	#endregion
+    {
+        return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+    }
+
+    #endregion
 }
