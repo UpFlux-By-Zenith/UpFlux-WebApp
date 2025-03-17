@@ -506,6 +506,58 @@ BEGIN
 END //
 DELIMITER ;
 
+/* Attribute-Based Access Control */
+DELIMITER //
+
+CREATE PROCEDURE CheckMachineAccess(
+    IN p_user_id VARCHAR(50),
+    IN p_machine_id VARCHAR(255),
+    OUT p_access_granted BOOLEAN
+)
+BEGIN
+    DECLARE v_user_role ENUM('Admin', 'Engineer');
+    DECLARE v_credential_valid BOOLEAN;
+    DECLARE v_within_working_hours BOOLEAN;
+
+    -- Get user's role (RBAC check)
+    SELECT role INTO v_user_role FROM Users WHERE user_id = p_user_id;
+
+    -- Check if credential is valid (ABAC: not expired AND no newer revocation)
+    SELECT EXISTS (
+        SELECT 1 
+        FROM Credentials c
+        WHERE 
+            c.user_id = p_user_id 
+            AND c.machine_id = p_machine_id 
+            AND c.expires_at > NOW() -- Credential not expired
+            -- Ensure no revocation after this credential was granted
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM Revoked_Tokens rt
+                WHERE 
+                    rt.user_id = p_user_id 
+                    AND rt.revoked_at > c.access_granted_at
+            )
+    ) INTO v_credential_valid;
+
+    -- Check time constraint (ABAC: 8 AM to 6 PM)
+    SET v_within_working_hours = (CURTIME() BETWEEN '08:00:00' AND '18:00:00');
+
+    -- Apply ABAC policy based on role
+    CASE 
+        WHEN v_user_role = 'Admin' THEN
+            -- Admins need valid credentials but no time restriction
+            SET p_access_granted = v_credential_valid;
+        WHEN v_user_role = 'Engineer' THEN
+            -- Engineers need valid credentials AND working hours
+            SET p_access_granted = v_credential_valid AND v_within_working_hours;
+        ELSE
+            SET p_access_granted = FALSE;
+    END CASE;
+END //
+
+DELIMITER ;
+
 -- Testing Stored Procedure
 
 -- Example Admin User

@@ -21,6 +21,18 @@ CREATE TABLE Users (
 	last_login TIMESTAMP
 );
 
+CREATE TABLE Revoked_Tokens (
+    revoke_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id VARCHAR(50),
+    revoked_by VARCHAR(50) NOT NULL,
+    revoked_at DATETIME NOT NULL,
+    reason MEDIUMTEXT,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    KEY (user_id),
+    KEY (revoked_by)
+);
+
+
 -- Create Admin_Details Table 
 CREATE TABLE Admin_Details (
     admin_id VARCHAR(50) PRIMARY KEY,
