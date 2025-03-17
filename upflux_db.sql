@@ -106,9 +106,17 @@ CREATE TABLE Application_Versions (
 );
 
 CREATE TABLE Generated_Machine_Ids (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    machine_id VARCHAR(36) NOT NULL UNIQUE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    generated_uuid VARCHAR(36) PRIMARY KEY, 
+    machine_id VARCHAR(255) NOT NULL,  
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Machine_Status (
+    machine_id PRIMARY KEY,  
+    isOnline BOOLEAN,
+    lastSeen TIMESTAMP,
+    FOREIGN KEY (machine) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
 -- Temporary table for tracking user id in a session

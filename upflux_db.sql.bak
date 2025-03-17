@@ -21,6 +21,18 @@ CREATE TABLE Users (
 	last_login TIMESTAMP
 );
 
+CREATE TABLE Revoked_Tokens (
+    revoke_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id VARCHAR(50),
+    revoked_by VARCHAR(50) NOT NULL,
+    revoked_at DATETIME NOT NULL,
+    reason MEDIUMTEXT,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    KEY (user_id),
+    KEY (revoked_by)
+);
+
+
 -- Create Admin_Details Table 
 CREATE TABLE Admin_Details (
     admin_id VARCHAR(50) PRIMARY KEY,
@@ -106,9 +118,17 @@ CREATE TABLE Application_Versions (
 );
 
 CREATE TABLE Generated_Machine_Ids (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    machine_id VARCHAR(36) NOT NULL UNIQUE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    generated_uuid VARCHAR(36) PRIMARY KEY, 
+    machine_id VARCHAR(255) NOT NULL,  
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Machine_Status (
+    machine_id PRIMARY KEY,  
+    isOnline BOOLEAN,
+    lastSeen TIMESTAMP,
+    FOREIGN KEY (machine) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
 -- Temporary table for tracking user id in a session
@@ -723,7 +743,6 @@ END //
 
 DELIMITER ;
 
-
 -- Check Existing Triggers
 SELECT 
     TRIGGER_NAME,
@@ -747,7 +766,6 @@ SELECT
 FROM Users
 WHERE role = 'Engineer';
 
-
 -- View details about admin users
 CREATE VIEW Admin_Users AS
 SELECT 
@@ -758,7 +776,6 @@ SELECT
 FROM Users U
 JOIN Admin_Details A ON U.user_id = A.user_id
 WHERE U.role = 'Admin';
-
 
 -- View the list of machines which users have access to
 CREATE VIEW User_Access AS
@@ -782,7 +799,6 @@ SELECT
     al.time_performed
 FROM Action_Logs al
 JOIN Users u ON al.user_id = u.user_id;
-
 
 -- View the latest package installed on each machine
 CREATE VIEW Latest_Package_Versions AS
