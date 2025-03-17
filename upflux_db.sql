@@ -129,7 +129,6 @@ CREATE TABLE Generated_Machine_Ids (
     generated_uuid VARCHAR(36) PRIMARY KEY, 
     machine_id VARCHAR(255) NOT NULL,  
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
 CREATE TABLE Machine_Status (

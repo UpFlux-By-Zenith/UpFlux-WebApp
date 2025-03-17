@@ -36,7 +36,7 @@ CREATE TABLE Revoked_Tokens (
     revoked_by VARCHAR(50) NOT NULL,
     revoked_at DATETIME NOT NULL,
     reason MEDIUMTEXT,
-	FOREIGN KEY (revoked_by) REFERENCES Admin_Details(user_id),
+	FOREIGN KEY (revoked_by) REFERENCES Admin_Details(admin_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
     KEY (user_id),
     KEY (revoked_by)
