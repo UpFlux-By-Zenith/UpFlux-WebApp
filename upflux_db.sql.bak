@@ -110,14 +110,23 @@ CREATE TABLE Applications (
 */
 
 -- Create Application_Versions Table
--- Create Application_Versions Table
 CREATE TABLE Application_Versions (
     version_name VARCHAR(50) PRIMARY KEY,  
     machine_id VARCHAR(255) NOT NULL,
     uploaded_by VARCHAR(50) NOT NULL,
-    date TIMESTAMP NOT NULL,
+    installed_date TIMESTAMP NOT NULL,
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE Machine_Stored_Versions (
+    version_name VARCHAR(50) PRIMARY KEY,  
+    machine_id VARCHAR(255) NOT NULL,
+    uploaded_by VARCHAR(50) NOT NULL,
+    installed_date TIMESTAMP NOT NULL,
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+
 );
 
 

@@ -111,14 +111,16 @@ CREATE TABLE Applications (
 
 -- Create Application_Versions Table
 CREATE TABLE Application_Versions (
-    version_name VARCHAR(50) PRIMARY KEY,  
+    version_id SERIAL PRIMARY KEY, 
+    version_name VARCHAR(50) NOT NULL,  
     machine_id VARCHAR(255) NOT NULL,
-    uploaded_by VARCHAR(50) NOT NULL,
-    upload_date TIMESTAMP NOT NULL,
+    uploaded_by VARCHAR(50), 
+    installed_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    storage_type ENUM('cloud', 'machine') NOT NULL, 
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    UNIQUE (version_name, machine_id, storage_type) 
 );
-
 
 CREATE TABLE Generated_Machine_Ids (
     generated_uuid VARCHAR(36) PRIMARY KEY, 
