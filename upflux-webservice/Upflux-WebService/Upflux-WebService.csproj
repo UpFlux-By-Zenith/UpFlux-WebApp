@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <PackageReference Include="AWSSDK.KeyManagementService" Version="3.7.400.58"/>
+        <PackageReference Include="DotNetRateLimiter" Version="3.0.1"/>
         <PackageReference Include="Google.Protobuf" Version="3.29.1"/>
         <PackageReference Include="Grpc.AspNetCore.Server" Version="2.67.0"/>
         <PackageReference Include="Grpc.Tools" Version="2.68.1">
@@ -38,6 +39,7 @@
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1"/>
+        <PackageReference Include="System.Threading.RateLimiting" Version="10.0.0-preview.1.25080.5"/>
     </ItemGroup>
 
     <ItemGroup>

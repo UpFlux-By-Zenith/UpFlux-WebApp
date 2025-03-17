@@ -26,48 +26,127 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a list of all admins.
+    /// Retrieves a list of all users from the database.
     /// </summary>
-    /// <returns>A list of admins.</returns>
-    /// <response code="200">Returns the list of admins.</response>
-    /// <response code="401">Unauthorized - Access restricted to Admin role.</response>
-    [HttpGet("list")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAllAdmins()
+    /// <returns>A list of users if found, otherwise a 404 Not Found response.</returns>
+    [HttpGet("/users")] // Defines the HTTP GET endpoint at "/users".
+    public ActionResult<IEnumerable<User>> GetUsers()
     {
-        var admins = _context.Admin_Details.ToList();
-        return Ok(admins);
+        // Fetch all users from the database
+        var users = _context.Users.ToList();
+
+        // If no users are found, return a 404 Not Found response
+        if (users == null || !users.Any()) return NotFound("No users found.");
+
+        // Return the list of users with a 200 OK response
+        return Ok(users);
     }
 
     /// <summary>
-    /// Gets details of a specific admin by ID.
+    /// Revokes an engineer's token, preventing further access.
     /// </summary>
-    /// <param name="id">The ID of the admin.</param>
-    /// <returns>The admin details.</returns>
-    /// <response code="200">Returns the admin details.</response>
-    /// <response code="404">Admin not found.</response>
-    /// <response code="401">Unauthorized - Access restricted to Admin role.</response>
-    [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAdminById(Guid id)
+    /// <param name="engineerId">The ID of the engineer whose token is being revoked.</param>
+    /// <param name="adminId">The ID of the admin performing the revocation.</param>
+    /// <param name="reason">Optional reason for revocation.</param>
+    /// <returns>Returns an HTTP response indicating success or failure.</returns>
+    [HttpPost("/revoke-engineer")]
+    public IActionResult RevokeEngineerToken(string engineerId, string adminId, string? reason = null)
     {
-        var admin = await _context.Admin_Details.FindAsync(id);
-        if (admin == null)
-            return NotFound(new { Message = "Admin not found." });
-        return Ok(admin);
+        try
+        {
+            // Validate required parameters
+            if (string.IsNullOrEmpty(engineerId) || string.IsNullOrEmpty(adminId))
+                return BadRequest("Engineer ID and Admin ID are required.");
+
+            // Check if the engineer exists in the Users table
+            var engineerExists = _context.Users.Any(u => u.UserId == engineerId);
+            if (!engineerExists)
+                return NotFound("Engineer not found.");
+
+            // Check if the admin exists in the Admin_Details table
+            var adminExists = _context.Admin_Details.Any(a => a.AdminId == adminId);
+            if (!adminExists)
+                return NotFound("Admin not found.");
+
+            // Create a new revocation entry
+            var revocation = new Revokes
+            {
+                UserId = engineerId,
+                RevokedBy = adminId,
+                RevokedAt = DateTime.UtcNow,
+                Reason = reason
+            };
+
+            // Add the revocation entry to the database
+            _context.Revokes.Add(revocation);
+            _context.SaveChanges();
+
+            // Logging (for debugging purposes)
+            Console.WriteLine($"Token revoked: Engineer {engineerId} by Admin {adminId}");
+
+            // Return success response
+            return Ok(new { message = "Engineer token revoked successfully." });
+        }
+        catch (Exception ex)
+        {
+            // Log the error message
+            Console.WriteLine($"Error revoking token: {ex.Message}");
+
+            // Return a 500 Internal Server Error response
+            return StatusCode(500, "An error occurred while revoking the token.");
+        }
     }
 
-    [HttpGet("engineers")]
-    public async Task<IActionResult> GetEngineers()
+    /// <summary>
+    /// Removes an engineer's token revocation, restoring access.
+    /// </summary>
+    /// <param name="engineerId">The ID of the engineer whose revocation is being removed.</param>
+    /// <param name="adminId">The ID of the admin performing the removal.</param>
+    /// <returns>Returns an HTTP response indicating success or failure.</returns>
+    [HttpDelete("/reinstate-engineer")]
+    public IActionResult ReinstateEngineerToken(string engineerId, string adminId)
     {
-        var engineers = await _entityQuery.GetAllEngineers();
-        if (engineers == null)
-            return NoContent();
-        return Ok(engineers);
+        try
+        {
+            // Validate required parameters
+            if (string.IsNullOrEmpty(engineerId) || string.IsNullOrEmpty(adminId))
+                return BadRequest("Engineer ID and Admin ID are required.");
+
+            // Check if the engineer exists in the Users table
+            var engineerExists = _context.Users.Any(u => u.UserId == engineerId);
+            if (!engineerExists)
+                return NotFound("Engineer not found.");
+
+            // Check if the admin exists in the Admin_Details table
+            var adminExists = _context.Admin_Details.Any(a => a.AdminId == adminId);
+            if (!adminExists)
+                return NotFound("Admin not found.");
+
+            // Check if the engineer's token is revoked
+            var revokedToken = _context.Revokes.FirstOrDefault(r => r.UserId == engineerId);
+            if (revokedToken == null)
+                return NotFound("This engineer's token is not revoked.");
+
+            // Remove the revocation entry
+            _context.Revokes.Remove(revokedToken);
+            _context.SaveChanges();
+
+            // Logging (for debugging purposes)
+            Console.WriteLine($"Revocation removed: Engineer {engineerId} by Admin {adminId}");
+
+            // Return success response
+            return Ok(new { message = "Engineer token revocation removed successfully." });
+        }
+        catch (Exception ex)
+        {
+            // Log the error message
+            Console.WriteLine($"Error reinstating token: {ex.Message}");
+
+            // Return a 500 Internal Server Error response
+            return StatusCode(500, "An error occurred while reinstating the token.");
+        }
     }
+
 
     [HttpGet("machinesWithLicenses")]
     public async Task<IActionResult> GetAllMachinesWithLicenses()
@@ -75,12 +154,4 @@ public class AdminController : ControllerBase
         var machinesWithLicense = await _entityQuery.GetAllMachinesWithLicences();
         return Ok(machinesWithLicense);
     }
-
-    // TODO: API Cleanup (Regarding application table changes)
-    //[HttpGet("machines/applications")]
-    //public async Task<IActionResult> GetAllMachinesWithApplications()
-    //{
-    //    var machinesWithApplications = await _entityQuery.GetListOfMachinesWithApplications();
-    //    return Ok(machinesWithApplications);
-    //}
 }

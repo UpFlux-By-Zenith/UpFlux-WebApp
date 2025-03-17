@@ -1,26 +1,25 @@
+import { MantineProvider } from '@mantine/core';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { createTheme, MantineProvider } from '@mantine/core';
 import { HomeRoute } from './HomeRoute';
-import { LoginComponent } from './features/login/Login';
-import { AdminLogin } from './features/adminLogin/AdminLogin';
-import { PrivateRoutes } from './common/authProvider/PrivateRoutes';
-import { AuthProvider, ROLES } from './common/authProvider/AuthProvider';
-import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
-import { Clustering } from './features/clustering/Clustering';
-import { PasswordSettingsContent } from './features/passwordSettings/PasswordSettings';
 import Layout from './Layout';
-import { UpdateManagement } from './features/updateManagement/UpdateManagement';
-import { VersionControl } from './features/versionControl/VersionControl';
-import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
-import { useState } from 'react';
+import { AuthProvider, ROLES } from './common/authProvider/AuthProvider';
+import { PrivateRoutes } from './common/authProvider/PrivateRoutes';
 import { AccountSettings } from './features/accountSettings/AccountSettings';
+import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
+import { AdminLogin } from './features/adminLogin/AdminLogin';
+import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
+import { Clustering } from './features/clustering/Clustering';
 import { ForgotPassword } from './features/forgotPassword/ForgotPassword';
+import { LoginComponent } from './features/login/Login';
+import { PasswordSettingsContent } from './features/passwordSettings/PasswordSettings';
+import { VersionControl } from './features/versionControl/VersionControl';
 
 // Import your SessionTimeout component
-import SessionTimeout from './features/sessionTimeout/SessionTimeout';
 import { Provider } from 'react-redux';
+import { CommonDashboard } from './features/commonDashboard/CommonDashboard';
 import store from './features/reduxSubscription/store';
+import SessionTimeout from './features/sessionTimeout/SessionTimeout';
 
 export const App = () => {
 
@@ -64,8 +63,12 @@ export const App = () => {
 // Protected routes component
 const ProtectedRoutes = () => (
   <Routes>
+    <Route element={<PrivateRoutes role={ROLES.COMMON} />}>
+      <Route path="/dashboard" element={<Layout> <CommonDashboard /></Layout>}></Route>
+    </Route>
+
     {/* Admin Protected Routes */}
-    <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
+    {/* <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
       <Route
         path="/password-settings"
         element={
@@ -82,21 +85,21 @@ const ProtectedRoutes = () => (
           </Layout>
         }
       />
-    </Route>
+    </Route> */}
 
-    <Route
+    {/* <Route
       path="/update-management"
       element={
         <Layout>
           <UpdateManagement />
         </Layout>
       }
-    />
+    /> */}
 
     {/* Engineer Protected Routes */}
     <Route element={<PrivateRoutes role={ROLES.ENGINEER} />}>
 
-      <Route
+      {/* <Route
         path="/clustering"
         element={
           <Layout>
@@ -127,7 +130,7 @@ const ProtectedRoutes = () => (
             <AccountSettings />
           </Layout>
         }
-      />
+      /> */}
     </Route>
   </Routes>
 );

@@ -3,280 +3,289 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using DotNet.RateLimiter.ActionFilters;
+using Microsoft.AspNetCore.RateLimiting;
 using Upflux_WebService.Core.DTOs;
-using Upflux_WebService.Core.Models;
+using Upflux_WebService.Data;
 using Upflux_WebService.Services.Enums;
 using Upflux_WebService.Services.Interfaces;
 
-namespace Upflux_WebService.Controllers
+
+namespace Upflux_WebService.Controllers;
+
+/// <summary>
+/// Authentication related Controllers
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
+    #region private members
+
+    private readonly IAuthService _authService;
+    private readonly IEntityQueryService _entityQueryService;
+    private readonly ApplicationDbContext _context;
+
+    #endregion
+
+    #region constructor
+
     /// <summary>
-    /// Authentication related Controllers
+    /// Constructor
     /// </summary>
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    /// <param name="authService"></param>
+    public AuthController(IAuthService authService, IEntityQueryService entityQuery, ApplicationDbContext context)
     {
-
-        #region private members
-
-        private readonly IAuthService _authService;
-        private readonly IEntityQueryService _entityQueryService;
-
-        #endregion
-
-        #region constructor
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="authService"></param>
-        public AuthController(IAuthService authService, IEntityQueryService entityQuery)
-        {
-            _authService = authService;
-            _entityQueryService = entityQuery;
-        }
-        #endregion
-
-        #region Admin APIs
-
-        /// <summary>
-        /// Admin login
-        /// </summary>
-        /// <remarks>
-        /// This endpoint allows an admin to log in by providing email and password. Upon successful authentication,
-        /// a JWT token is generated and returned. The token is required for further API requests that need admin privileges.
-        /// </remarks>
-        /// <param name="request">The login request containing email and password</param>
-        /// <returns>Returns a token if login is successful, or error messages if validation fails.</returns>
-        /// <response code="200">Successful login and token generation</response>
-        /// <response code="400">Bad Request if email or password are empty or missing</response>
-        /// <response code="401">Unauthorized if the provided credentials are incorrect</response>
-        /// <response code="500">Internal Server Error in case of unexpected errors</response>
-        [HttpPost("admin/login")]
-        public IActionResult AdminLogin([FromBody] AdminCreateLoginRequest request)
-        {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
-                return BadRequest(new { Error = "Email and Password are required." });
-
-            try
-            {
-                var token = _authService.AdminLogin(request.Email, request.Password);
-                return Ok(new { Token = token });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { Error = ex.Message });
-            }
-        }
-
-        [HttpPost("admin/create")]
-        public IActionResult AdminCreate([FromBody] AdminCreateRequest request)
-        {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
-                return BadRequest(new { Error = "Email and Password are required." });
-            try
-            {
-
-               DbErrorEnum response = _entityQueryService.CreateAdminAccount(request.Name,request.Email, request.Password).Result;
-                if (response != DbErrorEnum.Success)
-                {
-                    return BadRequest(new { Response = response });
-                }
-                else
-                {
-                    return Ok();
-                }
-
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-        }
-
-
-        /// <summary>
-        /// Admin password change
-        /// </summary>
-        [Authorize(Roles = "Admin")]
-        [HttpPost("admin/change-password")]
-        public IActionResult ChangeAdminPassword([FromBody] ChangePasswordRequest request)
-        {
-            if (string.IsNullOrEmpty(request.OldPassword) || string.IsNullOrEmpty(request.NewPassword) || string.IsNullOrEmpty(request.ConfirmPassword))
-                return BadRequest(new { Error = "All fields are required." });
-
-            if (request.NewPassword != request.ConfirmPassword)
-                return BadRequest(new { Error = "New password and confirmation password do not match." });
-
-            try
-            {
-                // Get admin email from the claims to identify the admin
-                var adminEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-                if (string.IsNullOrEmpty(adminEmail))
-                    return Unauthorized(new { Error = "Admin not authenticated." });
-
-                // Change the password
-                var result = _authService.ChangeAdminPassword(adminEmail, request.OldPassword, request.NewPassword);
-                if (!result)
-                    return Unauthorized(new { Error = "Old password is incorrect." });
-
-                return Ok(new { Message = "Password changed successfully." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-        }
-
-
-        /// <summary>
-        /// Admin creates a token for an engineer
-        /// </summary>
-        /// <remarks>
-        /// This endpoint allows an admin to create a new token for an engineer, granting them access to specified machines and Application.
-        /// The admin must be authenticated with the appropriate role to perform this operation.
-        /// </remarks>
-        /// <param name="request">The request containing the engineer's email and list of machine IDs</param>
-        /// <returns>Returns the engineer's token if creation is successful, or error messages if validation fails.</returns>
-        /// <response code="200">Token successfully created for the engineer</response>
-        /// <response code="400">Bad Request if the engineer's email or machine IDs are missing or invalid</response>
-        /// <response code="401">Unauthorized if the admin token is invalid or the admin does not have the correct role</response>
-        /// <response code="500">Internal Server Error in case of unexpected errors</response>
-        [HttpPost("admin/create-engineer-token")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
-        public IActionResult CreateEngineerToken([FromBody] EngineerTokenRequest request)
-        {
-            if (string.IsNullOrEmpty(request.EngineerEmail) || request.MachineIds == null || !request.MachineIds.Any())
-                return BadRequest(new { Error = "EngineerEmail and MachineIds are required." });
-
-            try
-            {
-                var adminEmail = GetClaimValue(ClaimTypes.Email);
-                if (string.IsNullOrEmpty(adminEmail))
-                    return Unauthorized(new { Error = "Invalid admin token." });
-
-                var engineerToken = _authService.GenerateEngineerToken(adminEmail,request.EngineerEmail, request.MachineIds);
-                return Ok(new { EngineerToken = engineerToken });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-
-        }
-        #endregion
-
-        #region Engineer APIs    
-        /// <summary>
-        /// Engineer login
-        /// </summary>
-        /// <remarks>
-        /// This endpoint allows an engineer to log in by providing their email and an engineer token. 
-        /// The engineer token is parsed and validated, and if valid, a new authorization token is generated 
-        /// for the engineer with access to the specified machines.
-        /// </remarks>
-        /// <param name="request">The login request containing the engineer's email and token</param>
-        /// <returns>Returns a new authorization token if login and validation are successful, or error messages if validation fails.</returns>
-        /// <response code="200">Successful login and token generation for the engineer</response>
-        /// <response code="400">Bad Request if email or token are missing or invalid</response>
-        /// <response code="401">Unauthorized if the token is invalid, email mismatch, or missing machine IDs in the token</response>
-        /// <response code="500">Internal Server Error in case of unexpected errors</response>
-
-        [HttpPost("engineer/login")]
-        public IActionResult EngineerLogin([FromBody] EngineerLoginRequest request)
-        {
-            if ( string.IsNullOrEmpty(request.EngineerToken))
-                return BadRequest(new { Error = "Email and token are required." });
-
-            try
-            {
-                // Parse and validate the engineer token
-                var tokenData = _authService.ParseToken(request.EngineerToken);
-
-                // Ensure the token's email matches the provided email
-                if (!tokenData.TryGetValue(ClaimTypes.Email, out var tokenEmail))
-                    return Unauthorized(new { Error = "Invalid token for the provided email." });
-
-                // Retrieve machine IDs from the token
-                if (!tokenData.TryGetValue("MachineIds", out var machineIds))
-                    return Unauthorized(new { Error = "Invalid token: no machine IDs found." });
-
-                // Generate a new authorization token for the engineer
-                var authToken = _authService.ParseLoginToken(tokenEmail, machineIds.Split(',').ToList());
-
-                return Ok(new { Token = request.EngineerToken });
-            }
-            catch (SecurityTokenException ex)
-            {
-                return Unauthorized(new { Error = "Invalid token: " + ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-        }
-
-        #endregion
-
-        #region Example APIs
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
-        [HttpGet("admin/get-all-machines")]
-        public IActionResult GetAllMachines()
-        {
-            try
-            {
-                return Ok(new { AccessibleMachines = _entityQueryService.GetListOfMachines() });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Parse and verify a token
-        /// </summary>
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [HttpPost("parse-token")]
-        public IActionResult ParseToken([FromBody] string token)
-        {
-            if (string.IsNullOrEmpty(token))
-                return BadRequest(new { Error = "Token is required." });
-
-            try
-            {
-                var tokenData = _authService.ParseToken(token);
-                return Ok(tokenData);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Shared endpoint for Admin and Engineer roles
-        /// </summary>
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
-        [HttpGet("shared-endpoint")]
-        public IActionResult SharedEndpoint()
-        {
-            var email = GetClaimValue(ClaimTypes.Email);
-            var role = GetClaimValue(ClaimTypes.Role);
-
-            return Ok(new { Email = email, Role = role });
-        }
-
-        #endregion
-
-        #region private methods
-
-        // Helper method to get claim value
-        private string? GetClaimValue(string claimType)
-        {
-            return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
-        }
-        #endregion
+        _authService = authService;
+        _entityQueryService = entityQuery;
+        _context = context;
     }
 
+    #endregion
+
+    #region Admin APIs
+
+    /// <summary>
+    /// Admin login
+    /// </summary>
+    /// <remarks>
+    /// This endpoint allows an admin to log in by providing email and password.
+    /// A JWT token is generated upon successful authentication.
+    /// </remarks>
+    /// <param name="request">The login request containing email and password</param>
+    /// <returns>Returns a token if login is successful, or error messages if validation fails.</returns>
+    /// <response code="200">Successful login</response>
+    /// <response code="400">Bad Request</response>
+    /// <response code="401">Unauthorized</response>
+    /// <response code="413">Payload Too Large</response>
+    /// <response code="429">Too Many Requests</response>
+    /// <response code="500">Internal Server Error</response>
+    [HttpPost("admin/login")]
+    [EnableRateLimiting("AdminLoginLimit")] // Apply rate limiting
+    [RequestSizeLimit(1024)] // Limit request body size
+    public IActionResult AdminLogin([FromBody] AdminCreateLoginRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            return BadRequest(new { Error = "Email and Password are required." });
+
+        try
+        {
+            var token = _authService.AdminLogin(request.Email, request.Password);
+
+            // Add security headers
+            Response.Headers.Append("X-Content-Type-Options", "nosniff");
+            Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+            Response.Headers.Append("Content-Security-Policy", "default-src 'self'");
+
+            return Ok(new { Token = token });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { Error = ex.Message });
+        }
+    }
+
+
+    [HttpPost("admin/create")]
+    public IActionResult AdminCreate([FromBody] AdminCreateRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            return BadRequest(new { Error = "Email and Password are required." });
+        try
+        {
+            var response = _entityQueryService.CreateAdminAccount(request.Name, request.Email, request.Password).Result;
+            if (response != DbErrorEnum.Success)
+                return BadRequest(new { Response = response });
+            else
+                return Ok();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
+
+
+    /// <summary>
+    /// Admin password change
+    /// </summary>
+    [Authorize(Roles = "Admin")]
+    [HttpPost("admin/change-password")]
+    public IActionResult ChangeAdminPassword([FromBody] ChangePasswordRequest request)
+    {
+        if (string.IsNullOrEmpty(request.OldPassword) || string.IsNullOrEmpty(request.NewPassword) ||
+            string.IsNullOrEmpty(request.ConfirmPassword))
+            return BadRequest(new { Error = "All fields are required." });
+
+        if (request.NewPassword != request.ConfirmPassword)
+            return BadRequest(new { Error = "New password and confirmation password do not match." });
+
+        try
+        {
+            // Get admin email from the claims to identify the admin
+            var adminEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(adminEmail))
+                return Unauthorized(new { Error = "Admin not authenticated." });
+
+            // Change the password
+            var result = _authService.ChangeAdminPassword(adminEmail, request.OldPassword, request.NewPassword);
+            if (!result)
+                return Unauthorized(new { Error = "Old password is incorrect." });
+
+            return Ok(new { Message = "Password changed successfully." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
+
+
+    /// <summary>
+    /// Admin creates a token for an engineer
+    /// </summary>
+    /// <remarks>
+    /// This endpoint allows an admin to create a new token for an engineer, granting them access to specified machines and Application.
+    /// The admin must be authenticated with the appropriate role to perform this operation.
+    /// </remarks>
+    /// <param name="request">The request containing the engineer's email and list of machine IDs</param>
+    /// <returns>Returns the engineer's token if creation is successful, or error messages if validation fails.</returns>
+    /// <response code="200">Token successfully created for the engineer</response>
+    /// <response code="400">Bad Request if the engineer's email or machine IDs are missing or invalid</response>
+    /// <response code="401">Unauthorized if the admin token is invalid or the admin does not have the correct role</response>
+    /// <response code="500">Internal Server Error in case of unexpected errors</response>
+    [HttpPost("admin/create-engineer-token")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+    public IActionResult CreateEngineerToken([FromBody] EngineerTokenRequest request)
+    {
+        if (string.IsNullOrEmpty(request.EngineerEmail) || request.MachineIds == null || !request.MachineIds.Any())
+            return BadRequest(new { Error = "EngineerEmail and MachineIds are required." });
+
+        try
+        {
+            var adminEmail = GetClaimValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(adminEmail))
+                return Unauthorized(new { Error = "Invalid admin token." });
+
+            var engineerToken =
+                _authService.GenerateEngineerToken(adminEmail, request.EngineerEmail, request.MachineIds);
+            return Ok(new { EngineerToken = engineerToken });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
+
+    #endregion
+
+    #region Engineer APIs
+
+    /// <summary>
+    /// Engineer login
+    /// </summary>
+    /// <remarks>
+    /// This endpoint allows an engineer to log in by providing their email and an engineer token. 
+    /// The engineer token is parsed and validated, and if valid, a new authorization token is generated 
+    /// for the engineer with access to the specified machines.
+    /// </remarks>
+    /// <param name="request">The login request containing the engineer's email and token</param>
+    /// <returns>Returns a new authorization token if login and validation are successful, or error messages if validation fails.</returns>
+    /// <response code="200">Successful login and token generation for the engineer</response>
+    /// <response code="400">Bad Request if email or token are missing or invalid</response>
+    /// <response code="401">Unauthorized if the token is invalid, revoked, or missing required claims</response>
+    /// <response code="500">Internal Server Error in case of unexpected errors</response>
+    [HttpPost("engineer/login")]
+    public IActionResult EngineerLogin([FromBody] EngineerLoginRequest request)
+    {
+        if (string.IsNullOrEmpty(request.EngineerToken))
+            return BadRequest(new { Error = "Email and token are required." });
+
+        try
+        {
+            // Parse and validate the engineer token
+            var tokenData = _authService.ParseToken(request.EngineerToken);
+
+            // Ensure the token contains an email claim
+            if (!tokenData.TryGetValue(ClaimTypes.Email, out var tokenEmail))
+                return Unauthorized(new { Error = "Invalid token: email missing." });
+
+            // Retrieve machine IDs from the token
+            if (!tokenData.TryGetValue("MachineIds", out var machineIds))
+                return Unauthorized(new { Error = "Invalid token: no machine IDs found." });
+
+            // Fetch the user ID from the Users table using the email
+            var user = _context.Users.FirstOrDefault(u => u.Email == tokenEmail);
+            if (user == null)
+                return Unauthorized(new { Error = "No user found with the provided email." });
+
+            // Check if the engineer's token has been revoked by looking up their user ID
+            var isRevoked = _context.Revokes.Any(r => r.UserId == user.UserId);
+            if (isRevoked)
+                return Unauthorized(new { Error = "This token has been revoked. Please contact an administrator." });
+
+            // Generate a new authorization token for the engineer
+            var authToken = _authService.ParseLoginToken(tokenEmail, machineIds.Split(',').ToList());
+
+            return Ok(new { Token = authToken });
+        }
+        catch (SecurityTokenException ex)
+        {
+            return Unauthorized(new { Error = "Invalid token: " + ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "An internal error occurred: " + ex.Message });
+        }
+    }
+
+    #endregion
+
+    #region APIs
+
+    /// <summary>
+    /// Parse and verify a token
+    /// </summary>
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [HttpPost("parse-token")]
+    public IActionResult ParseToken([FromBody] string token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return BadRequest(new { Error = "Token is required." });
+
+        try
+        {
+            var tokenData = _authService.ParseToken(token);
+            return Ok(tokenData);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Shared endpoint for Admin and Engineer roles
+    /// </summary>
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [HttpGet("shared-endpoint")]
+    public IActionResult SharedEndpoint()
+    {
+        var email = GetClaimValue(ClaimTypes.Email);
+        var role = GetClaimValue(ClaimTypes.Role);
+
+        return Ok(new { Email = email, Role = role });
+    }
+
+    #endregion
+
+    #region private methods
+
+    // Helper method to get claim value
+    private string? GetClaimValue(string claimType)
+    {
+        return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+    }
+
+    #endregion
 }

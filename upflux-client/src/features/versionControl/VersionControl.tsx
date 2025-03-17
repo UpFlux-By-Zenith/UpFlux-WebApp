@@ -33,14 +33,14 @@ export const VersionControl: React.FC = () => {
     "#00FF00",
     "#00FF00",
     "#00FF00",
-    "#00FF00", 
-    "#33FF00", 
+    "#00FF00",
+    "#33FF00",
     "#FFFF00", // Yellow 
     "#FFFF00",
-    "#FF0000", 
+    "#FF0000",
     "#FF0000", // Red 
   ];
-  
+
   const tempColors = [
     "#00FF00", // Green
     "#00FF00",
@@ -48,11 +48,11 @@ export const VersionControl: React.FC = () => {
     "#00FF00",
     "#00FF00",
     "#00FF00",
-    "#00FF00", 
-    "#33FF00", 
+    "#00FF00",
+    "#33FF00",
     "#FFFF00", // Yellow 
     "#FFFF00",
-    "#FF0000", 
+    "#FF0000",
     "#FF0000", // Red 
   ];
 
@@ -64,10 +64,10 @@ export const VersionControl: React.FC = () => {
     "#00FF00",
     "#00FF00",
     "#00FF00",
-    "#33FF00", 
+    "#33FF00",
     "#FFFF00",
     "#FFFF00", // Yellow 
-    "#FFFF00", 
+    "#FFFF00",
     "#FF0000", // Red 
   ];
 
@@ -79,11 +79,11 @@ export const VersionControl: React.FC = () => {
     "#00FF00",
     "#00FF00",
     "#00FF00",
-    "#00FF00", 
-    "#33FF00", 
+    "#00FF00",
+    "#33FF00",
     "#FFFF00", // Yellow 
     "#FFFF00",
-    "#FF0000", 
+    "#FF0000",
     "#FF0000", // Red 
   ];
 
@@ -99,14 +99,14 @@ export const VersionControl: React.FC = () => {
   //       },
   //     },
   //   };
-  
+
   //   // Hardcoded applications data
   //   const applications = {
   //     "M01": {
   //       VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
   //     },
   //   };
-  
+
   //   // Hardcoded app versions data
   //   const appVersions = [
   //     {
@@ -181,59 +181,34 @@ export const VersionControl: React.FC = () => {
 
   return (
     <Stack className="version-control-content">
-      {/* Header */}
-
-              {/* Tabs Section */}
-              <Tabs defaultValue="applications" className="custom-tabs">
-              <Tabs.List>
-                <Tabs.Tab value="dashboard" className="custom-tab" onClick={() => navigate("/update-management")}>
-                  Dashboard
-                </Tabs.Tab>
-                <Tabs.Tab value="applications" className="custom-tab">
-                  Applications
-                </Tabs.Tab>
-              </Tabs.List>
-            </Tabs>
 
       <Box className="content-wrapper">
-      <Box className="machine-id-box">
-        <Select
-          data={Object.keys(machineMetrics)} 
-          value={machineId}
-          onChange={(value) => navigate(".", { state: { machineId: value } })}
-          placeholder="Select Machine"
-        />
-      </Box>
-
-
-        {/* Overview Section */}
-        <Group className="overview-section">
-          {/* Action Buttons */}
-          {/* <Button
-            className="softwareDropdown"
-            onClick={() => setModalOpened(true)}
-          >
-            Configure App Version
-          </Button> */}
-        </Group>
+        <Box className="machine-id-box">
+          <Select
+            data={Object.keys(machineMetrics)}
+            value={machineId}
+            onChange={(value) => navigate(".", { state: { machineId: value } })}
+            placeholder="Select Machine"
+          />
+        </Box>
 
         {/* Machine Metrics Section */}
         <Box className="metrics-container">
-        <SimpleGrid cols={4}>
+          <SimpleGrid cols={4}>
             {metrics.map((metric, index) => (
               <Box key={index} style={{ textAlign: "center" }}>
                 <ReactSpeedometer
                   minValue={0}
                   maxValue={100}
-                  segments={cpuColors.length} 
+                  segments={cpuColors.length}
                   segmentColors={
                     index % 4 === 0
-                      ? cpuColors    
+                      ? cpuColors
                       : index % 4 === 1
-                      ? tempColors   
-                      : index % 4 === 2
-                      ? memoryColors  
-                      : diskColors 
+                        ? tempColors
+                        : index % 4 === 2
+                          ? memoryColors
+                          : diskColors
                   }
                   value={metric.value}
                   needleColor="black"
@@ -259,29 +234,29 @@ export const VersionControl: React.FC = () => {
 
         {/* Table Section */}
         <Box>
-            <Table className="version-table" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>App Name</Table.Th>
-                  <Table.Th>Version</Table.Th>
-                  <Table.Th>Added By</Table.Th>
-                  <Table.Th>Last Updated</Table.Th>
-                  <Table.Th>Updated By</Table.Th>
+          <Table className="version-table" highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>App Name</Table.Th>
+                <Table.Th>Version</Table.Th>
+                <Table.Th>Added By</Table.Th>
+                <Table.Th>Last Updated</Table.Th>
+                <Table.Th>Updated By</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {applications[machineId]?.VersionNames.map((appVersion, index) => (
+                <Table.Tr key={index}>
+                  <Table.Td>UpFlux-Monitoring-Service</Table.Td>
+                  <Table.Td>{appVersion}</Table.Td>
+                  <Table.Td>Jane Smith</Table.Td>
+                  <Table.Td>Jan 10 2024</Table.Td>
+                  <Table.Td>Alice Cole</Table.Td>
                 </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {applications[machineId].VersionNames.map((appVersion, index) => (
-                  <Table.Tr key={index}>
-                    <Table.Td>UpFlux-Monitoring-Service</Table.Td>
-                    <Table.Td>{appVersion}</Table.Td>
-                    <Table.Td>Jane Smith</Table.Td>
-                    <Table.Td>Jan 10 2024</Table.Td>
-                    <Table.Td>Alice Cole</Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          
+              ))}
+            </Table.Tbody>
+          </Table>
+
         </Box>
       </Box>
 

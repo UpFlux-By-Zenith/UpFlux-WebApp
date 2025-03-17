@@ -3,6 +3,7 @@ import { createContext, ReactNode, useContext, useState } from "react";
 export enum ROLES {
     GUEST,
     ENGINEER,
+    COMMON,
     ADMIN
 }
 

@@ -56,8 +56,6 @@ public class EntityQueryService : IEntityQueryService
     //        throw;
     //    }
     //}
-
-
     public async Task<DbErrorEnum> CheckAdminLogin(string email, string password)
     {
         // Find the user base entry by email (since email is in UserBases table)
@@ -327,29 +325,6 @@ public class EntityQueryService : IEntityQueryService
             )
             .ToListAsync();
     }
-    
-
-    // TODO: API Cleanup
-    //public async Task<List<Machine>> GetListOfMachinesWithApplications()
-    //{
-    //    var machinesWithApplications = await _context.Machines
-    //        .Include(m => m.Applications) // Including related Applications
-    //        .ThenInclude(a => a.Versions) // Including related Application Versions
-    //        .ToListAsync();
-
-    //    return machinesWithApplications;
-    //}
-
-    //public async Task<List<Machine>> GetListOfMachinesWithApplications(List<string> machineIds)
-    //{
-    //    var machinesWithLicencesAndApplications = await _context.Machines
-    //        .Where(m => machineIds.Contains(m.MachineId)) // Filtering by provided machine IDs
-    //        .Include(m => m.Applications) // Including related Applications
-    //        .ThenInclude(a => a.Versions) // Including related Application Versions
-    //        .ToListAsync();
-
-    //    return machinesWithLicencesAndApplications;
-    //}
 
     #endregion
 
@@ -385,13 +360,6 @@ public class EntityQueryService : IEntityQueryService
     public Task<List<Machine>> GetListOfMachines()
     {
         return _context.Machines.ToListAsync();
-    }
-
-    public Task<List<Machine>> GetListOfMachines(List<string> machineIds)
-    {
-        return _context.Machines
-            .Where(m => machineIds.Contains(m.MachineId)) // Assuming MachineId is the property you're filtering by
-            .ToListAsync();
     }
 
     #endregion

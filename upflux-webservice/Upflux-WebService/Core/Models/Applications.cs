@@ -5,27 +5,19 @@ using System.Text.Json.Serialization;
 namespace Upflux_WebService.Core.Models;
 
 /// <summary>
-/// Presents the available versions inside a machine
+/// Presents the available versions on cloud
 /// </summary>
+///
+[Table("Application_Versions")]
 public class ApplicationVersion
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    [Key] [Column("version_id")] public int VersionId { get; set; }
+    [Required] [Column("uploaded_by")] public string UploadedBy { get; set; }
 
     /// <summary>
     /// 
     /// </summary>
     [Required]
-    [ForeignKey("machine_id")]
-    [Column("machine_id")]
-    public string MachineId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 
-    /// </summary>
-    [Required]
+    [Key]
     [Column("version_name")]
     public string VersionName { get; set; } = string.Empty;
 
@@ -37,29 +29,6 @@ public class ApplicationVersion
     public DateTime Date { get; set; }
 }
 
-// TODO: Remove when application version is handled by control channel service
-public class ApplicationVersions
-{
-    [Key] [Column("version_id")] public int VersionId { get; set; }
-
-    [Required]
-    [ForeignKey("machine_id")]
-    [Column("machine_id")]
-    public int AppId { get; set; } 
-
-    [Required] [Column("version_name")]
-    public List<string> VersionNames { get; set; }
-
-    [Required] [Column("updated_by")] 
-    public string UpdatedBy { get; set; }
-
-    [JsonIgnore] 
-    public Application Application { get; set; } 
-
-    public string CurrentVersion { get; set; }
-    public string DeviceUuid { get; set; }
-}
-
 /// <summary>
 /// 
 /// </summary>
@@ -68,30 +37,41 @@ public class Application
     /// <summary>
     /// 
     /// </summary>
-    [Key][Column("app_id")] public int AppId { get; set; }
+    [Key]
+    [Column("app_id")]
+    public int AppId { get; set; }
 
     /// <summary>
     /// 
     /// </summary>
-    [Required][Column("machine_id")] public string MachineId { get; set; } = string.Empty;
+    [Required]
+    [Column("machine_id")]
+    public string MachineId { get; set; } = string.Empty;
 
     /// <summary>
     /// 
     /// </summary>
-    [Required][Column("app_name")] public string AppName { get; set; } = string.Empty;
+    [Required]
+    [Column("app_name")]
+    public string AppName { get; set; } = string.Empty;
 
     /// <summary>
     /// 
     /// </summary>
-    [Required][Column("added_by")] public string AddedBy { get; set; } = string.Empty;
+    [Required]
+    [Column("added_by")]
+    public string AddedBy { get; set; } = string.Empty;
 
     /// <summary>
     /// 
     /// </summary>
-    [Required][Column("current_version")] public string CurrentVersion { get; set; } = string.Empty;
+    [Required]
+    [Column("current_version")]
+    public string CurrentVersion { get; set; } = string.Empty;
 
     /// <summary>
     /// 
     /// </summary>
-	[Column("updated_at")] public DateTime UpdatedAt { get; set; }
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
 }

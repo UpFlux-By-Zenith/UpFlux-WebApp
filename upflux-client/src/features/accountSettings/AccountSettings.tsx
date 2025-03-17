@@ -24,23 +24,9 @@ export const AccountSettings: React.FC = () => {
 
   return (
     <Stack className="password-settings-content">
-      {/* Account Settings and Password Buttons */}
-      <Group className="setting-selector" align="center">
-        <Button className="selector-button active" variant="subtle">
-          Account Settings
-        </Button>
-        {/* Conditionally render the Password button */}
-        {role === 'ADMIN' && (
-          <Link to="/password-settings">
-            <Button className="selector-button" variant="subtle">
-              Password
-            </Button>
-          </Link>
-        )}
-      </Group>
+
 
       {/* Instructions and Input Fields */}
-      <Text className="instructions">View your account details below.</Text>
       <Box className="grid-container">
         <TextInput
           label="Name"
