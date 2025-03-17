@@ -15,6 +15,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
+import ReactSpeedometer, { Transition } from "react-d3-speedometer";
+import { getSpeedometerProps } from './speedometerUtils';
 import { getMachineDetails } from "../../api/applicationsRequest";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
@@ -23,44 +25,106 @@ import { IApplications } from "../reduxSubscription/applicationVersions";
 export const VersionControl: React.FC = () => {
   const navigate = useNavigate();
 
-    // Hardcoded machine metrics data
-    // const machineMetrics = {
-    //   "M01": {
-    //     metrics: {
-    //       cpuUsage: 45,
-    //       cpuTemperature: 60,
-    //       memoryUsage: 70,
-    //       diskUsage: 30,
-    //       systemUptime: 123456, // Uptime in seconds
-    //     },
-    //   },
-    // };
+  const cpuColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00", 
+    "#33FF00", 
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000", 
+    "#FF0000", // Red 
+  ];
   
-    // // Hardcoded applications data
-    // const applications = {
-    //   "M01": {
-    //     VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
-    //   },
-    // };
+  const tempColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00", 
+    "#33FF00", 
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000", 
+    "#FF0000", // Red 
+  ];
+
+  const memoryColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00", 
+    "#FFFF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00", 
+    "#FF0000", // Red 
+  ];
+
+  const diskColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00", 
+    "#33FF00", 
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000", 
+    "#FF0000", // Red 
+  ];
+
+  //  // Hardcoded machine metrics data
+  //   const machineMetrics = {
+  //     "M01": {
+  //       metrics: {
+  //         cpuUsage: 45,
+  //         cpuTemperature: 60,
+  //         memoryUsage: 70,
+  //         diskUsage: 30,
+  //         systemUptime: 123456, // Uptime in seconds
+  //       },
+  //     },
+  //   };
   
-    // // Hardcoded app versions data
-    // const appVersions = [
-    //   {
-    //     appName: "UpFlux-Monitoring-Service",
-    //     appVersion: "1.0.0",
-    //     lastUpdate: "Jan 10 2024",
-    //   },
-    //   {
-    //     appName: "UpFlux-Monitoring-Service",
-    //     appVersion: "1.1.0",
-    //     lastUpdate: "Feb 15 2024",
-    //   },
-    //   {
-    //     appName: "UpFlux-Monitoring-Service",
-    //     appVersion: "1.2.0",
-    //     lastUpdate: "Mar 20 2024",
-    //   },
-    // ];
+  //   // Hardcoded applications data
+  //   const applications = {
+  //     "M01": {
+  //       VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
+  //     },
+  //   };
+  
+  //   // Hardcoded app versions data
+  //   const appVersions = [
+  //     {
+  //       appName: "UpFlux-Monitoring-Service",
+  //       appVersion: "1.0.0",
+  //       lastUpdate: "Jan 10 2024",
+  //     },
+  //     {
+  //       appName: "UpFlux-Monitoring-Service",
+  //       appVersion: "1.1.0",
+  //       lastUpdate: "Feb 15 2024",
+  //     },
+  //     {
+  //       appName: "UpFlux-Monitoring-Service",
+  //       appVersion: "1.2.0",
+  //       lastUpdate: "Mar 20 2024",
+  //     },
+  //   ];
 
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
@@ -70,7 +134,7 @@ export const VersionControl: React.FC = () => {
   );
   // Retrieve machine ID from the route state
   const location = useLocation();
-  const machineId = location.state?.machineId || "Unknown Machine";
+  const machineId = "M01"; // Hardcoded to M01 for demonstration
 
   // State for app versions and loading status
   const [appVersions, setAppVersions] = useState<
@@ -115,35 +179,6 @@ export const VersionControl: React.FC = () => {
     return "red";
   };
 
-  // Fetch data from API
-  useEffect(() => {
-    const fetchMachineDetails = async () => {
-      try {
-        const data = await getMachineDetails();
-        if (data && typeof data !== "string" && data.applications) {
-          // Filter applications for the current machineId
-          const filteredApps = data.applications
-            .filter((app) => app.machineId === machineId)
-            .map((app) => ({
-              appName: app.appName,
-              appVersion: app.currentVersion,
-              lastUpdate: app.versions?.[0]?.date || "N/A",
-            }));
-
-          setAppVersions(filteredApps);
-        } else {
-          console.error("Failed to fetch or parse machine details.");
-        }
-      } catch (error) {
-        console.error("Error fetching machine details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMachineDetails();
-  }, [machineId]);
-
   return (
     <Stack className="version-control-content">
       {/* Header */}
@@ -184,36 +219,35 @@ export const VersionControl: React.FC = () => {
 
         {/* Machine Metrics Section */}
         <Box className="metrics-container">
-          <SimpleGrid cols={4}>
+        <SimpleGrid cols={4}>
             {metrics.map((metric, index) => (
-              <RingProgress
-                key={index}
-                roundCaps
-                size={150}
-                thickness={10}
-                sections={[
-                  { value: metric.value, color: getColor(metric.value) },
-                ]}
-                transitionDuration={250}
-                label={
-                  <Box
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100%",
-                    }}
-                  >
-                    <Text size="sm" fw="bold">
-                      {metric.value}%
-                    </Text>
-                    <Text size="xs" mt="xs" fw="bold">
-                      {metric.label}
-                    </Text>
-                  </Box>
-                }
-              />
+              <Box key={index} style={{ textAlign: "center" }}>
+                <ReactSpeedometer
+                  minValue={0}
+                  maxValue={100}
+                  segments={cpuColors.length} 
+                  segmentColors={
+                    index % 4 === 0
+                      ? cpuColors    
+                      : index % 4 === 1
+                      ? tempColors   
+                      : index % 4 === 2
+                      ? memoryColors  
+                      : diskColors 
+                  }
+                  value={metric.value}
+                  needleColor="black"
+                  width={250}
+                  height={150}
+                  ringWidth={30}
+                  currentValueText={""}
+                  forceRender={true}
+                  maxSegmentLabels={4}
+                />
+                <Text className="metrics-labels" size="sm" fw="bold" mt="sm">
+                  {metric.label}
+                </Text>
+              </Box>
             ))}
           </SimpleGrid>
           <center>
@@ -225,9 +259,6 @@ export const VersionControl: React.FC = () => {
 
         {/* Table Section */}
         <Box>
-          {isLoading ? (
-            <Text>Loading app versions...</Text>
-          ) : (
             <Table className="version-table" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
@@ -250,7 +281,7 @@ export const VersionControl: React.FC = () => {
                 ))}
               </Table.Tbody>
             </Table>
-          )}
+          
         </Box>
       </Box>
 
