@@ -106,7 +106,13 @@ namespace UpFlux_WebService
                 case ControlMessage.PayloadOneofCase.VersionDataResponse:
                     await HandleVersionDataResponse(gatewayId, msg.VersionDataResponse);
                     break;
-                default:
+				case ControlMessage.PayloadOneofCase.AiRecommendations:
+					HandleAiRecommendations(gatewayId, msg.AiRecommendations);
+					break;
+				case ControlMessage.PayloadOneofCase.DeviceStatus:
+					HandleDeviceStatus(gatewayId, msg.DeviceStatus);
+					break;
+				default:
                     _logger.LogWarning("Received unknown message from [{0}] => {1}", gatewayId, msg.PayloadCase);
                     break;
             }
@@ -587,10 +593,19 @@ namespace UpFlux_WebService
             return (succeededDevices, failedDevices);
         }
 
-        /// <summary>
-        /// receive current running version and available version
-        /// </summary>
-        private async Task HandleVersionDataResponse(string gatewayId, VersionDataResponse resp)
+		// ---------- EXACT device status logic ----------
+		private void HandleDeviceStatus(string gatewayId, DeviceStatus status)
+		{
+			_logger.LogInformation(
+				"DeviceStatus from Gateway [{0}]: device={1}, isOnline={2}, changedAt={3}",
+				gatewayId, status.DeviceUuid, status.IsOnline, status.LastSeen
+			);
+		}
+
+		/// <summary>
+		/// receive current running version and available version
+		/// </summary>
+		private async Task HandleVersionDataResponse(string gatewayId, VersionDataResponse resp)
         {
             // how to handle diffrent package version in cloud database and gateway version?
             // should this update database? (if gateway is the trusted version) or should cloud send what is supposed to be the correct version (if cloud is the trusted source)
@@ -728,14 +743,36 @@ namespace UpFlux_WebService
             }
         }
 
-        #endregion
-
-        #region PUBLIC METHODS
-
         /// <summary>
-        /// Sends a LicenceResponse to connected gateways.
+        /// Receives AI Recommendations and sent it through singnalR to the web application
         /// </summary>
-        public async Task SendLicenceResponseAsync(
+        /// <param name="gatewayId"></param>
+        /// <param name="aiRec"></param>
+		private void HandleAiRecommendations(string gatewayId, AIRecommendations aiRec)
+		{
+			_logger.LogInformation("AI Recommendations from [{0}]:", gatewayId);
+
+			foreach (AIScheduledCluster? cluster in aiRec.Clusters)
+			{
+				_logger.LogInformation(" Cluster={0}, updated={1}", cluster.ClusterId, cluster.UpdateTime.ToDateTime());
+				_logger.LogInformation("  Devices: {0}", string.Join(", ", cluster.DeviceUuids));
+			}
+
+			foreach (AIPlotPoint? plot in aiRec.PlotData)
+			{
+				_logger.LogInformation(" Plot: dev={0}, x={1}, y={2}, cluster={3}",
+					plot.DeviceUuid, plot.X, plot.Y, plot.ClusterId);
+			}
+		}
+
+		#endregion
+
+		#region PUBLIC METHODS
+
+		/// <summary>
+		/// Sends a LicenceResponse to connected gateways.
+		/// </summary>
+		public async Task SendLicenceResponseAsync(
             string gatewayId,
             string deviceUuid,
             bool approved,
@@ -945,7 +982,53 @@ namespace UpFlux_WebService
 
             _logger.LogInformation("VersionDataRequest sent to gateway [{0}].", gatewayId);
         }
-    }
+
+		/// <summary>
+		/// Sends a ScheduledUpdate to the gateway, which should install the package on the specified devices.
+		/// </summary>
+		/// <param name="gatewayId">The gateway to send the update to</param>
+		/// <param name="scheduleId">The unique ID for this scheduled update</param>
+		/// <param name="deviceUuids">The devices to target</param>
+		/// <param name="fileName">The name of the update package</param>
+		/// <param name="packageData">The binary data of the update package</param>
+		/// <param name="startTimeUtc">The start time for the update</param>
+		/// <returns>Returns the task for the async operation</returns>
+		public async Task SendScheduledUpdateAsync(
+			string gatewayId,
+			string scheduleId,
+			string[] deviceUuids,
+			string fileName,
+			byte[] packageData,
+			DateTime startTimeUtc
+		)
+		{
+			if (!_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
+			{
+				_logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
+				return;
+			}
+
+			// build ScheduledUpdate
+			ScheduledUpdate su = new()
+			{
+				ScheduleId = scheduleId,
+				FileName = fileName,
+				PackageData = Google.Protobuf.ByteString.CopyFrom(packageData),
+				StartTime = Timestamp.FromDateTime(startTimeUtc.ToUniversalTime())
+			};
+			su.DeviceUuids.AddRange(deviceUuids);
+
+			ControlMessage msg = new ControlMessage
+			{
+				SenderId = "Cloud",
+				ScheduledUpdate = su
+			};
+
+			await writer.WriteAsync(msg);
+			_logger.LogInformation("ScheduledUpdate {0} sent to gateway [{1}], devices={2}, start={3}",
+				scheduleId, gatewayId, string.Join(",", deviceUuids), startTimeUtc.ToString("o"));
+		}
+	}
 
     #endregion
 }

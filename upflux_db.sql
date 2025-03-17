@@ -4,14 +4,6 @@ USE upflux;
 
 /*Create Table Statements*/
 
--- Create Machines Table
-CREATE TABLE Machines (
-    machine_id VARCHAR(255) PRIMARY KEY,
-    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL
-);
-
 -- Create Users Table
 CREATE TABLE Users (
     user_id VARCHAR(50) PRIMARY KEY,
@@ -19,6 +11,25 @@ CREATE TABLE Users (
     email VARCHAR(255) NOT NULL,
     role ENUM('Admin', 'Engineer') NOT NULL,
 	last_login TIMESTAMP
+);
+
+-- Create Application_Versions Table
+CREATE TABLE Application_Versions (
+    version_name VARCHAR(50) NOT NULL PRIMARY KEY,
+    uploaded_by VARCHAR(50) NOT NULL,
+    date TIMESTAMP NOT NULL,
+    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id)
+);
+
+-- Create Machines Table
+CREATE TABLE Machines (
+    machine_id VARCHAR(255) PRIMARY KEY,
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(15) NOT NULL ,
+    machine_name varchar(255) NOT NULL,
+    app_name VARCHAR(100) DEFAULT 'Monitoring Service',
+    version_name VARCHAR(50),
+    FOREIGN KEY (version_name) REFERENCES Application_Versions(version_name)
 );
 
 -- Create Admin_Details Table 
@@ -85,25 +96,16 @@ CREATE TABLE Action_Logs (
 );
 
 -- Create Applications Table
-CREATE TABLE Applications (
-    app_id INT AUTO_INCREMENT PRIMARY KEY,
-	machine_id VARCHAR(255) NOT NULL,
-    app_name VARCHAR(255) NOT NULL,
-    added_by VARCHAR(50) NOT NULL,
-    current_version VARCHAR(50) NOT NULL,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (added_by) REFERENCES Users(user_id),
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
-);
-
--- Create Application_Versions Table
-CREATE TABLE Application_Versions (
-    version_id INT AUTO_INCREMENT PRIMARY KEY,  
-    machine_id VARCHAR(255) NOT NULL,
-    version_name VARCHAR(50) NOT NULL, 
-    date TIMESTAMP NOT NULL,
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
-);
+-- CREATE TABLE Applications (
+--     app_id INT AUTO_INCREMENT PRIMARY KEY,
+-- 	machine_id VARCHAR(255) NOT NULL,
+--     app_name VARCHAR(255) NOT NULL,
+--     added_by VARCHAR(50) NOT NULL,
+--     current_version VARCHAR(50) NOT NULL,
+--     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (added_by) REFERENCES Users(user_id),
+--     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
+-- );
 
 CREATE TABLE Generated_Machine_Ids (
     Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -111,13 +113,41 @@ CREATE TABLE Generated_Machine_Ids (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE Machine_Status (
+    machine_id varchar(50) PRIMARY KEY,  
+    is_online BOOLEAN,
+    last_seen TIMESTAMP,
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Revoked_tokens (
+    revoke_id INT NOT NULL AUTO_INCREMENT,
+    user_id VARCHAR(50),
+    revoked_by VARCHAR(50) NOT NULL,
+    revoked_at DATETIME NOT NULL,
+    reason MEDIUMTEXT,
+    PRIMARY KEY (revoke_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    FOREIGN KEY (revoked_by) REFERENCES Users(user_id)
+);
+
+CREATE TABLE Machine_Stored_Versions (
+    machine_id VARCHAR(255),
+    installed_date DATE,
+    user_id VARCHAR(50),
+    id INT NOT NULL AUTO_INCREMENT,
+    version_name VARCHAR(50),
+    PRIMARY KEY (id),
+    KEY (machine_id),
+    KEY (user_id),
+    KEY (version_name)
+);
 -- Temporary table for tracking user id in a session
 CREATE TEMPORARY TABLE User_Context (
     session_id CHAR(36) NOT NULL DEFAULT (UUID()), 
     user_id VARCHAR(50) NOT NULL,               
     PRIMARY KEY (session_id)
 );
-
 
 /*Show all tables present in the database*/
 SHOW TABLES;
