@@ -635,56 +635,26 @@ namespace UpFlux_WebService
 
                     // if there are no Application (current running service) in the database add the "current" of the gRPC version data info (if it is not null)
                     // if theres is an Application for the UUID update it if it is a different version
-                    var application = await applicationRepository.GetByMachineId(dv.DeviceUuid);
-                    if (application is null)
+                    var machine = await machineRepository.GetByIdAsync(dv.DeviceUuid);
+                    if (machine != null && machine.currentVersion == null)
                     {
                         // this situation where the application table does not have an existing application should not happen
                         // this means that the application is not uploaded through the front end
                         if (dv.Current is not null)
                         {
-                            var newApp = new Application
-                            {
-                                MachineId = dv.DeviceUuid,
-                                AppName = "Monitoring Service",
-                                AddedBy =
-                                    "Unknown", // because if this happens that mean the package didnt come from the front end where the user will be detected
-                                CurrentVersion = dv.Current.Version,
-                                UpdatedAt = DateTime.UtcNow
-                            };
+                            var applicationVerion = await applicationVersionRepository.GetByIdAsync(dv.Current);
+                            if (applicationVerion != null)
+                                machine.currentVersion = applicationVerion.VersionName;
+                            else
+                                machine.currentVersion = dv.Current.Version;
 
-                            await applicationRepository.AddAsync(newApp);
-                            await applicationRepository.SaveChangesAsync();
+
+                            machineRepository.Update(machine);
+                            await machineRepository.SaveChangesAsync();
                         }
 
                         _logger.LogInformation(
                             $"machine: [{dv.DeviceUuid}] have an application running that is not in the cloud database");
-                    }
-                    else
-                    {
-                        // if current is not null and different than the one in Application table; update the table
-                        if (dv.Current != null)
-                        {
-                            if (application.CurrentVersion != dv.Current.Version)
-                            {
-                                application.CurrentVersion = dv.Current.Version;
-                                application.UpdatedAt = dv.Current.InstalledAt.ToDateTime();
-
-                                applicationRepository.Update(application);
-                                await applicationRepository.SaveChangesAsync();
-                            }
-                            else
-                            {
-                                _logger.LogInformation(
-                                    $"No Database update required for Current Application Running in {dv.DeviceUuid}");
-                            }
-
-                            _logger.LogInformation("  CURRENT => Version={0}, InstalledAt={1}", dv.Current.Version,
-                                dv.Current.InstalledAt.ToDateTime());
-                        }
-                        else
-                        {
-                            _logger.LogInformation("  CURRENT => (none)");
-                        }
                     }
 
                     // if there are available versions in the message find in database a version with the same machineid and version name combination

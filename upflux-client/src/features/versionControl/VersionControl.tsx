@@ -23,44 +23,44 @@ import { IApplications } from "../reduxSubscription/applicationVersions";
 export const VersionControl: React.FC = () => {
   const navigate = useNavigate();
 
-    // Hardcoded machine metrics data
-    // const machineMetrics = {
-    //   "M01": {
-    //     metrics: {
-    //       cpuUsage: 45,
-    //       cpuTemperature: 60,
-    //       memoryUsage: 70,
-    //       diskUsage: 30,
-    //       systemUptime: 123456, // Uptime in seconds
-    //     },
-    //   },
-    // };
-  
-    // // Hardcoded applications data
-    // const applications = {
-    //   "M01": {
-    //     VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
-    //   },
-    // };
-  
-    // // Hardcoded app versions data
-    // const appVersions = [
-    //   {
-    //     appName: "UpFlux-Monitoring-Service",
-    //     appVersion: "1.0.0",
-    //     lastUpdate: "Jan 10 2024",
-    //   },
-    //   {
-    //     appName: "UpFlux-Monitoring-Service",
-    //     appVersion: "1.1.0",
-    //     lastUpdate: "Feb 15 2024",
-    //   },
-    //   {
-    //     appName: "UpFlux-Monitoring-Service",
-    //     appVersion: "1.2.0",
-    //     lastUpdate: "Mar 20 2024",
-    //   },
-    // ];
+  // Hardcoded machine metrics data
+  // const machineMetrics = {
+  //   "M01": {
+  //     metrics: {
+  //       cpuUsage: 45,
+  //       cpuTemperature: 60,
+  //       memoryUsage: 70,
+  //       diskUsage: 30,
+  //       systemUptime: 123456, // Uptime in seconds
+  //     },
+  //   },
+  // };
+
+  // // Hardcoded applications data
+  // const applications = {
+  //   "M01": {
+  //     VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
+  //   },
+  // };
+
+  // // Hardcoded app versions data
+  // const appVersions = [
+  //   {
+  //     appName: "UpFlux-Monitoring-Service",
+  //     appVersion: "1.0.0",
+  //     lastUpdate: "Jan 10 2024",
+  //   },
+  //   {
+  //     appName: "UpFlux-Monitoring-Service",
+  //     appVersion: "1.1.0",
+  //     lastUpdate: "Feb 15 2024",
+  //   },
+  //   {
+  //     appName: "UpFlux-Monitoring-Service",
+  //     appVersion: "1.2.0",
+  //     lastUpdate: "Mar 20 2024",
+  //   },
+  // ];
 
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
@@ -146,41 +146,16 @@ export const VersionControl: React.FC = () => {
 
   return (
     <Stack className="version-control-content">
-      {/* Header */}
-
-              {/* Tabs Section */}
-              <Tabs defaultValue="applications" className="custom-tabs">
-              <Tabs.List>
-                <Tabs.Tab value="dashboard" className="custom-tab" onClick={() => navigate("/update-management")}>
-                  Dashboard
-                </Tabs.Tab>
-                <Tabs.Tab value="applications" className="custom-tab">
-                  Applications
-                </Tabs.Tab>
-              </Tabs.List>
-            </Tabs>
 
       <Box className="content-wrapper">
-      <Box className="machine-id-box">
-        <Select
-          data={Object.keys(machineMetrics)} 
-          value={machineId}
-          onChange={(value) => navigate(".", { state: { machineId: value } })}
-          placeholder="Select Machine"
-        />
-      </Box>
-
-
-        {/* Overview Section */}
-        <Group className="overview-section">
-          {/* Action Buttons */}
-          {/* <Button
-            className="softwareDropdown"
-            onClick={() => setModalOpened(true)}
-          >
-            Configure App Version
-          </Button> */}
-        </Group>
+        <Box className="machine-id-box">
+          <Select
+            data={Object.keys(machineMetrics)}
+            value={machineId}
+            onChange={(value) => navigate(".", { state: { machineId: value } })}
+            placeholder="Select Machine"
+          />
+        </Box>
 
         {/* Machine Metrics Section */}
         <Box className="metrics-container">
@@ -239,7 +214,7 @@ export const VersionControl: React.FC = () => {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {applications[machineId].VersionNames.map((appVersion, index) => (
+                {applications[machineId]?.VersionNames.map((appVersion, index) => (
                   <Table.Tr key={index}>
                     <Table.Td>UpFlux-Monitoring-Service</Table.Td>
                     <Table.Td>{appVersion}</Table.Td>

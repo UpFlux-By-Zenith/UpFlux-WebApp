@@ -72,7 +72,7 @@ export const UpdateManagement = () => {
           <Stack className="legend">
             <Group className="legend-item">
               <Box className="circle green"></Box>
-              <Text size="sm">{3} Alive</Text>
+              <Text size="sm">{0} Alive</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
@@ -80,7 +80,7 @@ export const UpdateManagement = () => {
             </Group>
             <Group className="legend-item">
               <Box className="circle gray"></Box>
-              <Text size="sm">{0} Unknown</Text>
+              <Text size="sm">{machines.length} Unknown</Text>
             </Group>
           </Stack>
 
@@ -98,13 +98,6 @@ export const UpdateManagement = () => {
               onClick={() => setRollbackModalOpened(true)}
             >
               Configure Rollback
-            </Button>
-            <Button
-              color="rgba(0, 3, 255, 1)"
-              className="smart-button"
-              onClick={() => navigate("/clustering")}
-            >
-              Smart Update
             </Button>
           </Stack>
         </Group>
