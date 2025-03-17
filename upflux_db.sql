@@ -9,7 +9,8 @@ CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL
+    machine_name varchar(255) NOT NULL,
+	app_name VARCHAR(255) NOT NULL
 );
 
 -- Create Users Table
@@ -148,10 +149,10 @@ CREATE TEMPORARY TABLE User_Context (
 SHOW TABLES;
 
 -- Insert into Machines
-INSERT INTO Machines (machine_id, ip_address, machine_name) VALUES
-('MCH123ABC', '192.168.0.1', 'M456'),
-('MCH456DEF', '192.168.0.2', 'M789'),
-('MCH789GHI', '192.168.0.3', 'M321');
+INSERT INTO Machines (machine_id, ip_address, machine_name, app_name) VALUES
+('MCH123ABC', '192.168.0.1', 'M456', 'UpFlux-Monitoring-Service'),
+('MCH456DEF', '192.168.0.2', 'M789', 'UpFlux-Monitoring-Service'),
+('MCH789GHI', '192.168.0.3', 'M321', 'UpFlux-Monitoring-Service');
 
 -- Insert into Users
 INSERT INTO Users (user_id, name, email, role, last_login) VALUES
@@ -258,7 +259,6 @@ ORDER BY
 SELECT 
     ul.update_id,
     m.machine_id,
-    m.machine_status,
     p.version_number,
     p.package_signature,
     ul.update_status,
@@ -876,6 +876,7 @@ JOIN Packages p ON ul.package_id = p.package_id
 WHERE ul.update_status = 'Completed'
 GROUP BY ul.machine_id, p.version_number;
 
+/*
 -- View the list of apps and versions on each machine
 CREATE VIEW Application_Status AS
 SELECT 
@@ -883,6 +884,7 @@ SELECT
     a.app_name, 
     a.current_version
 FROM Applications a;
+*/
 
 -- View all machines with currently expired licences
 CREATE VIEW Expired_Licences AS
