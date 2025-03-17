@@ -204,16 +204,22 @@ INSERT INTO Applications (machine_id, app_name, added_by, current_version) VALUE
 */
 
 -- Insert into Application_Versions
-INSERT INTO Application_Versions (machine_id, version_name,  date) VALUES
-('MCH123ABC', 'v1.0.1', '2024-01-15 09:00:00'),
-('MCH123ABC', 'v1.1.1', '2024-01-16 10:30:00'),
-('MCH123ABC', 'v1.2.1', '2024-01-17 11:45:00');
+INSERT INTO Application_Versions (machine_id, version_name, uploaded_by, installed_date, storage_type) VALUES
+('MCH123ABC', 'v1.0.1', 'E123', '2024-01-15 09:00:00', 'cloud'),
+('MCH123ABC', 'v1.1.1', 'E123', '2024-01-16 10:30:00', 'machine'),
+('MCH123ABC', 'v1.2.1', 'E456', '2024-01-17 11:45:00', 'cloud');
 
 -- Insert into Generated_Machine_Ids
-INSERT INTO Generated_Machine_Ids (machine_id) VALUES
-('123e4567-e89b-12d3-a456-426614174000'),
-('987f6543-e21b-34c2-b789-526613274111'),
-('456a1234-b56c-45f1-c321-626612374222');
+INSERT INTO Generated_Machine_Ids (generated_uuid, machine_id) VALUES
+('123e4567-e89b-12d3-a456-426614174000', 'MCH123ABC'),
+('987f6543-e21b-34c2-b789-526613274111', 'MCH456DEF'),
+('456a1234-b56c-45f1-c321-626612374222', 'MCH789GHI');
+
+INSERT INTO Machine_Status (machine_id, isOnline, lastSeen) VALUES
+('MCH123ABC', TRUE, '2024-01-15 09:00:00'),
+('MCH456DEF', FALSE, '2024-01-16 10:30:00'),
+('MCH789GHI', TRUE, '2024-01-17 11:45:00');
+
 
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
