@@ -112,7 +112,7 @@ CREATE TABLE Applications (
 
 -- Create Application_Versions Table
 CREATE TABLE Application_Versions (
-    version_id SERIAL PRIMARY KEY, 
+    version_id INT AUTO_INCREMENT PRIMARY KEY, 
     version_name VARCHAR(50) NOT NULL,  
     machine_id VARCHAR(255) NOT NULL,
     uploaded_by VARCHAR(50), 
@@ -919,16 +919,17 @@ WHERE
 -- View relevant application data for an engineer
 CREATE VIEW Application_Details AS
 SELECT 
-    a.app_name,
-    a.current_version,
+    m.app_name,
+    av.version AS current_version,
     u1.name AS added_by,
     av.date AS last_updated,
     u2.name AS updated_by
-FROM Applications a
+FROM Machines m
 LEFT JOIN (
-    SELECT av1.app_id, av1.updated_by, av1.date
+    SELECT av1.machine_id, av1.version, av1.updated_by, av1.date
     FROM Application_Versions av1
-    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.app_id = av2.app_id)
-) av ON a.app_id = av.app_id
-LEFT JOIN Users u1 ON a.added_by = u1.user_id
+    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.machine_id = av2.machine_id)
+) av ON m.machine_id = av.machine_id
+LEFT JOIN Users u1 ON m.added_by = u1.user_id
 LEFT JOIN Users u2 ON av.updated_by = u2.user_id;
+
