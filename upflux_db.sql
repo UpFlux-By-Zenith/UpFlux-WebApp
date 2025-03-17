@@ -7,9 +7,9 @@ USE upflux;
 -- Create Machines Table
 CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
-    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL
+    installed_date DATE,
+	version_name VARCHAR(50),
 );
 
 -- Create Users Table
@@ -31,7 +31,6 @@ CREATE TABLE Revoked_Tokens (
     KEY (user_id),
     KEY (revoked_by)
 );
-
 
 -- Create Admin_Details Table 
 CREATE TABLE Admin_Details (
@@ -96,6 +95,7 @@ CREATE TABLE Action_Logs (
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
+/*
 -- Create Applications Table
 CREATE TABLE Applications (
     app_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -107,6 +107,7 @@ CREATE TABLE Applications (
     FOREIGN KEY (added_by) REFERENCES Users(user_id),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
 );
+*/
 
 -- Create Application_Versions Table
 CREATE TABLE Application_Versions (
@@ -190,11 +191,13 @@ INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed) VALU
 ('E456', 'UPDATE', 'Package', '2024-01-16 10:15:00'),
 ('E789', 'DELETE', 'Licence', '2024-01-17 11:30:00');
 
+/*
 -- Insert into Applications
 INSERT INTO Applications (machine_id, app_name, added_by, current_version) VALUES
 ('MCH123ABC', 'AppOne', 'E123', 'v1.0'),
 ('MCH456DEF', 'AppTwo', 'E456', 'v1.1'),
 ('MCH789GHI', 'AppThree', 'E789', 'v1.2');
+*/
 
 -- Insert into Application_Versions
 INSERT INTO Application_Versions (machine_id, version_name,  date) VALUES
@@ -522,15 +525,15 @@ BEGIN
     -- Get user's role (RBAC check)
     SELECT role INTO v_user_role FROM Users WHERE user_id = p_user_id;
 
-    -- Check if credential is valid (ABAC: not expired AND no newer revocation)
+    -- Check if credential is valid 
     SELECT EXISTS (
         SELECT 1 
         FROM Credentials c
         WHERE 
             c.user_id = p_user_id 
             AND c.machine_id = p_machine_id 
-            AND c.expires_at > NOW() -- Credential not expired
-            -- Ensure no revocation after this credential was granted
+            AND c.expires_at > NOW()
+            -- Check if Credential has been blacklisted since it was created
             AND NOT EXISTS (
                 SELECT 1 
                 FROM Revoked_Tokens rt
@@ -540,7 +543,7 @@ BEGIN
             )
     ) INTO v_credential_valid;
 
-    -- Check time constraint (ABAC: 8 AM to 6 PM)
+    -- Check that it's within working hours (8 AM to 6 PM)
     SET v_within_working_hours = (CURTIME() BETWEEN '08:00:00' AND '18:00:00');
 
     -- Apply ABAC policy based on role
