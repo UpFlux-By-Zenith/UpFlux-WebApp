@@ -7,9 +7,9 @@ USE upflux;
 -- Create Machines Table
 CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(15) NOT NULL ,
-    installed_date DATE,
-	version_name VARCHAR(50),
+    machine_name varchar(255) NOT NULL
 );
 
 -- Create Users Table
@@ -111,12 +111,14 @@ CREATE TABLE Applications (
 
 -- Create Application_Versions Table
 CREATE TABLE Application_Versions (
-    version_id INT AUTO_INCREMENT PRIMARY KEY,  
+    version_name VARCHAR(50) PRIMARY KEY,  
     machine_id VARCHAR(255) NOT NULL,
-    version_name VARCHAR(50) NOT NULL, 
-    date TIMESTAMP NOT NULL,
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id)
+    uploaded_by VARCHAR(50) NOT NULL,
+    upload_date TIMESTAMP NOT NULL,
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
+
 
 CREATE TABLE Generated_Machine_Ids (
     generated_uuid VARCHAR(36) PRIMARY KEY, 
@@ -129,7 +131,7 @@ CREATE TABLE Machine_Status (
     machine_id PRIMARY KEY,  
     isOnline BOOLEAN,
     lastSeen TIMESTAMP,
-    FOREIGN KEY (machine) REFERENCES Machines(machine_id) ON DELETE CASCADE
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
 -- Temporary table for tracking user id in a session
