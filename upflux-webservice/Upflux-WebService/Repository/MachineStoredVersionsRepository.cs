@@ -4,7 +4,7 @@ using Upflux_WebService.Data;
 
 namespace Upflux_WebService.Repository;
 
-public class MachineStoredVersionsRepository : Repository<MachineStoredVersions>, IMachineStoredVersionsRepository
+public class MachineStoredVersionsRepository : Repository<MachineStoredVersion>, IMachineStoredVersionsRepository
 {
     private readonly ApplicationDbContext _context;
 
@@ -13,12 +13,12 @@ public class MachineStoredVersionsRepository : Repository<MachineStoredVersions>
         _context = context;
     }
 
-    public List<MachineStoredVersions> GetMachineStoredVersions()
+    public List<MachineStoredVersion> GetMachineStoredVersions()
     {
         return _context.MachineStoredVersions.ToList();
     }
 
-    public List<MachineStoredVersions> GetMachineStoredVersions(string machineId)
+    public List<MachineStoredVersion> GetMachineStoredVersions(string machineId)
     {
         return _context.MachineStoredVersions.ToList().Where(v => v.MachineId == machineId).ToList();
     }

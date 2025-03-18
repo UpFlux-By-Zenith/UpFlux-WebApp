@@ -19,7 +19,7 @@ namespace Upflux_WebService.Core.Models
         public string MachineId { get; set; }
 
         [ForeignKey("admin_id")]
-        [Column("admin_granter_id")]
+        [Column("access_granted_by")]
         public string AdminId { get; set; }
 
         [Column("access_granted_at")]

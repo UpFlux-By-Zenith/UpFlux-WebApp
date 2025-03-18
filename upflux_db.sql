@@ -1,4 +1,4 @@
-/*CREATE DATABASE upflux*/
+/*CREATE DATABASE upflux;*/
 
 USE upflux;
 
@@ -16,9 +16,7 @@ CREATE TABLE Users (
 -- Create Application_Versions Table
 CREATE TABLE Application_Versions (
     version_name VARCHAR(50) NOT NULL PRIMARY KEY,
-    uploaded_by VARCHAR(50) NOT NULL,
     date TIMESTAMP NOT NULL,
-    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id)
 );
 
 -- Create Machines Table
@@ -28,8 +26,11 @@ CREATE TABLE Machines (
     ip_address VARCHAR(15) NOT NULL ,
     machine_name varchar(255) NOT NULL,
     app_name VARCHAR(100) DEFAULT 'Monitoring Service',
-    version_name VARCHAR(50),
-    FOREIGN KEY (version_name) REFERENCES Application_Versions(version_name)
+    version_name VARCHAR(50) DEFAULT NULL,
+    last_updated_by VARCHAR(50) DEFAULT NULL,
+    FOREIGN KEY (version_name) REFERENCES Application_Versions(version_name),
+    FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
+
 );
 
 -- Create Admin_Details Table 
@@ -132,16 +133,17 @@ CREATE TABLE Revoked_tokens (
 );
 
 CREATE TABLE Machine_Stored_Versions (
-    machine_id VARCHAR(255),
-    installed_date DATE,
-    user_id VARCHAR(50),
     id INT NOT NULL AUTO_INCREMENT,
-    version_name VARCHAR(50),
+    machine_id VARCHAR(255) NOT NULL,
+    installed_date DATE DEFAULT NULL,
+    user_id VARCHAR(50) DEFAULT NULL,
+    version_name VARCHAR(50) DEFAULT NULL,
     PRIMARY KEY (id),
-    KEY (machine_id),
-    KEY (user_id),
-    KEY (version_name)
+    FOREIGN KEY (machine_id) REFERENCES `Machines` (`machine_id`),
+    FOREIGN KEY (user_id) REFERENCES `Users` (`user_id`),
+    FOREIGN KEY (version_name) REFERENCES `Application_Versions` (`version_name`)
 );
+
 -- Temporary table for tracking user id in a session
 CREATE TEMPORARY TABLE User_Context (
     session_id CHAR(36) NOT NULL DEFAULT (UUID()), 
