@@ -4,6 +4,9 @@ using Upflux_WebService.Core.Models.Enums;
 
 namespace Upflux_WebService.Data;
 
+/// <summary>
+/// 
+/// </summary>
 public class ApplicationDbContext : DbContext
 {
     public DbSet<Licence> Licences { get; set; }
@@ -24,9 +27,11 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<ApplicationVersion> ApplicationVersions { get; set; }
 
-    public DbSet<MachineStoredVersions> MachineStoredVersions { get; set; }
+    public DbSet<MachineStoredVersion> MachineStoredVersions { get; set; }
 
-    public DbSet<Revokes> Revokes { get; set; }
+	public DbSet<MachineStatus> Machine_Status { get; set; }
+
+	public DbSet<Revokes> Revokes { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)

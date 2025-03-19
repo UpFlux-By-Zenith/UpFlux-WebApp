@@ -3,9 +3,9 @@ using Upflux_WebService.Repository.Interfaces;
 
 namespace Upflux_WebService.Repository;
 
-public interface IMachineStoredVersionsRepository : IRepository<MachineStoredVersions>
+public interface IMachineStoredVersionsRepository : IRepository<MachineStoredVersion>
 {
-    public List<MachineStoredVersions> GetMachineStoredVersions();
+    public List<MachineStoredVersion> GetMachineStoredVersions();
 
-    public List<MachineStoredVersions> GetMachineStoredVersions(string machineId);
+    public List<MachineStoredVersion> GetMachineStoredVersions(string machineId);
 }

@@ -70,3 +70,4 @@ packages/
 /upflux-webservice/Upflux-WebService/appsettings.json
 /Upflux-GatewaySimulator/Upflux-GatewaySimulator/Available
 /Upflux-GatewaySimulator/Upflux-GatewaySimulator/Current
+/Upflux-GatewaySimulator/Upflux-GatewaySimulator/ScheduledUpdates
