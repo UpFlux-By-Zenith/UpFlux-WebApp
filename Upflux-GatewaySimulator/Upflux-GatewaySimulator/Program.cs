@@ -1,8 +1,8 @@
 ﻿using Grpc.Core;
 using Grpc.Net.Client;
 using UpFlux_GatewaySimulator.Protos;
-using UpFlux_GatewaySimulator;
 using Upflux_GatewaySimulator;
+using Google.Protobuf.WellKnownTypes;
 
 Console.WriteLine("Starting gRPC Client...");
 
@@ -33,9 +33,17 @@ var mockDataGenerator = new MockDataGenerator();
 // Dictionary to store and reuse UUIDs for monitoring data
 var monitoringDataDict = new Dictionary<string, MonitoringDataMessage>();
 
+// ---------------------------------------------Update/Rollback Success type Related Debugging Variables--------------------------------------------
 // A= full success B=partial success C=failure
 string commandSuccessResponse = "A";
 string updateSuccessResponse = "A";
+
+//----------------------------------------------AI Recommendation Related Debugging Variables--------------------------------------------------------
+// Device UUID
+List<string> deviceUUIDs = ["test1", "test2", "test3"];
+
+// Ai recommendation generator
+AIRecommendationSender aIRecommendationSender = new(call, senderId,deviceUUIDs);
 
 // Task for receiving messages from the server
 var receiveTask = Task.Run(async () =>
@@ -66,6 +74,10 @@ var receiveTask = Task.Run(async () =>
             {
                 await HandleVersionDataRequest(response.VersionDataRequest);
             }
+            else if (response.PayloadCase == ControlMessage.PayloadOneofCase.ScheduledUpdate)
+            {
+                await HandleScheduledUpdate(response.ScheduledUpdate);
+            }
             else
             {
                 Console.WriteLine($"Received: SenderId={response.SenderId}, Description={response.Description}");
@@ -90,7 +102,9 @@ void ShowMenu()
     Console.WriteLine("3. Send License Request");
     Console.WriteLine("4. Send Log Upload");
     Console.WriteLine("5. Send Alert");
-    Console.WriteLine("6. Exit");
+	Console.WriteLine("6. Send AI Recommendations");
+	Console.WriteLine("7. Send Device Status");
+	Console.WriteLine("8. Exit");
 }
 
 async Task SendMonitoringData()
@@ -139,7 +153,6 @@ async Task SendMonitoringData()
         Console.WriteLine($"Error sending monitoring data: {ex.Message}");
     }
 }
-
 
 async Task SendLicenseRequest()
 {
@@ -410,8 +423,6 @@ string ExtractVersionFromFilename(string filename)
 	return match.Success ? match.Groups[1].Value : "Unknown";
 }
 
-
-
 // HandleCommandRequest now uses the global currentExecutionMode
 async Task HandleCommandRequest(CommandRequest commandRequest)
 {
@@ -503,6 +514,25 @@ async Task HandleCommandRequest(CommandRequest commandRequest)
 
 		await call.RequestStream.WriteAsync(controlMessage);
 		Console.WriteLine($"Sent CommandResponse for CommandId={commandRequest.CommandId} with details: {details}");
+
+		//simulate successfull update
+		foreach (var uuid in devicesSucceeded)
+		{
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + commandRequest.Parameters + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
+
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
 	}
 	catch (Exception ex)
 	{
@@ -642,6 +672,26 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
 
 		await call.RequestStream.WriteAsync(ackMessage);
 		Console.WriteLine($"Sent UpdateAck for FileName={updatePackage.FileName}: {detailMsg}");
+
+		foreach (var uuid in succeededDevices)
+		{
+
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + updatePackage.FileName + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
+
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
+
 	}
 	catch (Exception ex)
 	{
@@ -663,6 +713,119 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
 
 		await call.RequestStream.WriteAsync(ackMessage);
 		Console.WriteLine($"Sent failure UpdateAck for FileName={updatePackage.FileName}");
+	}
+}
+
+
+async Task SendDeviceStatus()
+{
+	try
+	{
+		Console.Write("\nEnter UUID of the device: ");
+		var deviceUuid = Console.ReadLine()?.Trim();
+
+		if (string.IsNullOrWhiteSpace(deviceUuid))
+		{
+			Console.WriteLine("❌ Invalid UUID. Aborting.");
+			return;
+		}
+
+		Console.Write("Is the device online? (y/n): ");
+		var isOnlineInput = Console.ReadLine()?.Trim().ToLower();
+		bool isOnline = isOnlineInput == "y";
+
+		var deviceStatus = new DeviceStatus
+		{
+			DeviceUuid = deviceUuid,
+			IsOnline = isOnline,
+			LastSeen = Timestamp.FromDateTime(DateTime.UtcNow)
+		};
+
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			Description = "Device Status Update",
+			DeviceStatus = deviceStatus
+		};
+
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"📤 Sent DeviceStatus: UUID={deviceUuid}, Online={isOnline}, LastSeen={DateTime.UtcNow}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"❌ Error sending DeviceStatus: {ex.Message}");
+	}
+}
+
+async Task HandleScheduledUpdate(ScheduledUpdate scheduledUpdate)
+{
+	try
+	{
+		Console.WriteLine($"\n📦 Received Scheduled Update:");
+		Console.WriteLine($"  - Schedule ID: {scheduledUpdate.ScheduleId}");
+		Console.WriteLine($"  - Cluster: {scheduledUpdate.ClusterId}");
+		Console.WriteLine($"  - File Name: {scheduledUpdate.FileName}");
+		Console.WriteLine($"  - Target Devices: {string.Join(", ", scheduledUpdate.DeviceUuids)}");
+		Console.WriteLine($"  - Start Time: {scheduledUpdate.StartTime.ToDateTime()}");
+
+		// Save package data to disk
+
+		var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+
+		// Define the directory for scheduled updates
+		var scheduledUpdateDirectory = Path.Combine(rootDirectory, "ScheduledUpdates");
+
+		// Ensure the directory exists
+		Directory.CreateDirectory(scheduledUpdateDirectory);
+
+		// Save package data to disk
+		string savePath = Path.Combine(scheduledUpdateDirectory, scheduledUpdate.FileName);
+		await File.WriteAllBytesAsync(savePath, scheduledUpdate.PackageData.ToByteArray());
+
+		Console.WriteLine($"✅ Package saved at {savePath}");
+
+		DateTime startUtc = scheduledUpdate.StartTime.ToDateTime();
+
+		// Send acknowledgment back to server
+		CommandResponse resp = new CommandResponse
+		{
+			CommandId = scheduledUpdate.ScheduleId,
+			Success = true,
+			Details = $"Scheduled update stored for {startUtc:o}"
+		};
+		ControlMessage msg = new ControlMessage
+		{
+			SenderId = senderId,
+			CommandResponse = resp
+		};
+
+		await call.RequestStream.WriteAsync(msg);
+
+		Console.WriteLine($"📤 Sent command response for Scheduled Update {scheduledUpdate.ScheduleId}.");
+
+		//simulate successfull update
+		foreach (var uuid in scheduledUpdate.DeviceUuids)
+		{
+
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + scheduledUpdate.FileName + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
+
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"❌ Error processing ScheduledUpdate: {ex.Message}");
 	}
 }
 
@@ -690,7 +853,13 @@ while (running)
         case "5":
             await SendAlert();
             break;
-        case "6":
+		case "6":
+			await aIRecommendationSender.SendAIRecommendationsAsync();
+			break;
+		case "7":
+			await SendDeviceStatus();
+			break;
+		case "8":
             Console.WriteLine("Exiting...");
             running = false;
             break;

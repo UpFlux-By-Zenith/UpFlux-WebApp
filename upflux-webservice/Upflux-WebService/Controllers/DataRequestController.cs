@@ -95,6 +95,8 @@ public class DataRequestController : ControllerBase
     /// Get applications running on machines
     /// </summary>
     /// TODO: Delete.. Marked as Depricated
+    /// This endpoint is to get the gateway's version data, this does not get data from the cloud database and return it.
+    /// this is needed will change name 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("engineer/machines-application")]
     public async Task<IActionResult> GetRunningApplications()
@@ -108,16 +110,23 @@ public class DataRequestController : ControllerBase
             // Send version data request via control channel service
             await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
 
-            var storedVersionsList = new List<MachineStoredVersions>();
+			return Ok(new
+			{
+				Message = "Version data request sent successfully.",
+				//EngineerEmail = engineerEmail,
+				Timestamp = DateTime.UtcNow
+			});
 
-            if (role == "Engineer")
-                storedVersionsList = await _context.MachineStoredVersions
-                    .Where(msv => machineIds.Contains(msv.MachineId.ToString()))
-                    .ToListAsync();
-            else if (role == "Admin") storedVersionsList = await _context.MachineStoredVersions.ToListAsync();
+			//var storedVersionsList = new List<MachineStoredVersions>();
 
-            return Ok(storedVersionsList);
-        }
+			//if (role == "Engineer")
+			//    storedVersionsList = await _context.Machine_Stored_Versions
+			//        .Where(msv => machineIds.Contains(msv.MachineId.ToString()))
+			//        .ToListAsync();
+			//else if (role == "Admin") storedVersionsList = await _context.Machine_Stored_Versions.ToListAsync();
+
+			//return Ok(storedVersionsList);
+		}
         catch (Exception ex)
         {
             return StatusCode(500, new

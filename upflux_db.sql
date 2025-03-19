@@ -1,4 +1,4 @@
-/*CREATE DATABASE upflux*/
+/*CREATE DATABASE upflux;*/
 
 USE upflux;
 
@@ -20,6 +20,26 @@ CREATE TABLE Users (
     email VARCHAR(255) NOT NULL,
     role ENUM('Admin', 'Engineer') NOT NULL,
 	last_login TIMESTAMP
+);
+
+-- Create Application_Versions Table
+CREATE TABLE Application_Versions (
+    version_name VARCHAR(50) NOT NULL PRIMARY KEY,
+    date TIMESTAMP NOT NULL,
+);
+
+-- Create Machines Table
+CREATE TABLE Machines (
+    machine_id VARCHAR(255) PRIMARY KEY,
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(15) NOT NULL ,
+    machine_name varchar(255) NOT NULL,
+    app_name VARCHAR(100) DEFAULT 'Monitoring Service',
+    version_name VARCHAR(50) DEFAULT NULL,
+    last_updated_by VARCHAR(50) DEFAULT NULL,
+    FOREIGN KEY (version_name) REFERENCES Application_Versions(version_name),
+    FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
+
 );
 
 -- Create Admin_Details Table 
@@ -138,13 +158,42 @@ CREATE TABLE Machine_Status (
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
+CREATE TABLE Machine_Status (
+    machine_id varchar(50) PRIMARY KEY,  
+    is_online BOOLEAN,
+    last_seen TIMESTAMP,
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Revoked_tokens (
+    revoke_id INT NOT NULL AUTO_INCREMENT,
+    user_id VARCHAR(50),
+    revoked_by VARCHAR(50) NOT NULL,
+    revoked_at DATETIME NOT NULL,
+    reason MEDIUMTEXT,
+    PRIMARY KEY (revoke_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    FOREIGN KEY (revoked_by) REFERENCES Users(user_id)
+);
+
+CREATE TABLE Machine_Stored_Versions (
+    id INT NOT NULL AUTO_INCREMENT,
+    machine_id VARCHAR(255) NOT NULL,
+    installed_date DATE DEFAULT NULL,
+    user_id VARCHAR(50) DEFAULT NULL,
+    version_name VARCHAR(50) DEFAULT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (machine_id) REFERENCES `Machines` (`machine_id`),
+    FOREIGN KEY (user_id) REFERENCES `Users` (`user_id`),
+    FOREIGN KEY (version_name) REFERENCES `Application_Versions` (`version_name`)
+);
+
 -- Temporary table for tracking user id in a session
 CREATE TEMPORARY TABLE User_Context (
     session_id CHAR(36) NOT NULL DEFAULT (UUID()), 
     user_id VARCHAR(50) NOT NULL,               
     PRIMARY KEY (session_id)
 );
-
 
 /*Show all tables present in the database*/
 SHOW TABLES;

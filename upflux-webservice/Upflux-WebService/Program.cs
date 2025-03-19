@@ -94,7 +94,8 @@ public class Program
             .AddScoped<ILogFileService, LogFileService>()
             .AddScoped<IUserRepository, UserRepository>()
             .AddScoped<IMachineStoredVersionsRepository, MachineStoredVersionsRepository>()
-            .AddSingleton<ControlChannelService>()
+			.AddScoped<IMachineStatusRepository, MachineStatusRepository>()
+			.AddSingleton<ControlChannelService>()
             .AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 
         // Load JWT settings from configuration
