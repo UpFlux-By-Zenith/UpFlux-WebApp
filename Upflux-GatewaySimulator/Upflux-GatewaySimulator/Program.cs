@@ -514,6 +514,25 @@ async Task HandleCommandRequest(CommandRequest commandRequest)
 
 		await call.RequestStream.WriteAsync(controlMessage);
 		Console.WriteLine($"Sent CommandResponse for CommandId={commandRequest.CommandId} with details: {details}");
+
+		//simulate successfull update
+		foreach (var uuid in devicesSucceeded)
+		{
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + commandRequest.Parameters + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
+
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
 	}
 	catch (Exception ex)
 	{
@@ -653,6 +672,26 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
 
 		await call.RequestStream.WriteAsync(ackMessage);
 		Console.WriteLine($"Sent UpdateAck for FileName={updatePackage.FileName}: {detailMsg}");
+
+		foreach (var uuid in succeededDevices)
+		{
+
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + updatePackage.FileName + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
+
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
+
 	}
 	catch (Exception ex)
 	{
@@ -730,21 +769,59 @@ async Task HandleScheduledUpdate(ScheduledUpdate scheduledUpdate)
 		Console.WriteLine($"  - Start Time: {scheduledUpdate.StartTime.ToDateTime()}");
 
 		// Save package data to disk
-		string savePath = Path.Combine("ReceivedUpdates", scheduledUpdate.FileName);
-		Directory.CreateDirectory("ReceivedUpdates"); // Ensure directory exists
+
+		var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+
+		// Define the directory for scheduled updates
+		var scheduledUpdateDirectory = Path.Combine(rootDirectory, "ScheduledUpdates");
+
+		// Ensure the directory exists
+		Directory.CreateDirectory(scheduledUpdateDirectory);
+
+		// Save package data to disk
+		string savePath = Path.Combine(scheduledUpdateDirectory, scheduledUpdate.FileName);
 		await File.WriteAllBytesAsync(savePath, scheduledUpdate.PackageData.ToByteArray());
 
 		Console.WriteLine($"✅ Package saved at {savePath}");
 
+		DateTime startUtc = scheduledUpdate.StartTime.ToDateTime();
+
 		// Send acknowledgment back to server
-		var ackMessage = new ControlMessage
+		CommandResponse resp = new CommandResponse
+		{
+			CommandId = scheduledUpdate.ScheduleId,
+			Success = true,
+			Details = $"Scheduled update stored for {startUtc:o}"
+		};
+		ControlMessage msg = new ControlMessage
 		{
 			SenderId = senderId,
-			Description = $"Update {scheduledUpdate.ScheduleId} received successfully."
+			CommandResponse = resp
 		};
 
-		await call.RequestStream.WriteAsync(ackMessage);
-		Console.WriteLine($"📤 Sent acknowledgment for Scheduled Update {scheduledUpdate.ScheduleId}.");
+		await call.RequestStream.WriteAsync(msg);
+
+		Console.WriteLine($"📤 Sent command response for Scheduled Update {scheduledUpdate.ScheduleId}.");
+
+		//simulate successfull update
+		foreach (var uuid in scheduledUpdate.DeviceUuids)
+		{
+
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + scheduledUpdate.FileName + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
+
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
 	}
 	catch (Exception ex)
 	{

@@ -54,5 +54,26 @@ namespace Upflux_WebService.Services.Interfaces
 		/// <param name="gatewayId"></param>
 		/// <returns></returns>
 		Task SendVersionDataRequestAsync(string gatewayId);
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="gatewayId"></param>
+		/// <param name="scheduleId"></param>
+		/// <param name="deviceUuids"></param>
+		/// <param name="fileName"></param>
+		/// <param name="packageData"></param>
+		/// <param name="startTimeUtc"></param>
+		/// <param name="userEmail"></param>
+		/// <returns></returns>
+		Task SendScheduledUpdateAsync(
+			string gatewayId,
+			string scheduleId,
+			string[] deviceUuids,
+			string fileName,
+			byte[] packageData,
+			DateTime startTimeUtc,
+			string userEmail
+		);
 	}
 }
