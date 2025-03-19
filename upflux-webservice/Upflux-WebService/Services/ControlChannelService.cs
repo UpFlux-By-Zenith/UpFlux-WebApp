@@ -112,7 +112,7 @@ namespace UpFlux_WebService
 					await HandleVersionDataResponse(gatewayId, msg.VersionDataResponse);
 					break;
 				case ControlMessage.PayloadOneofCase.AiRecommendations:
-					HandleAiRecommendations(gatewayId, msg.AiRecommendations);
+					await HandleAiRecommendations(gatewayId, msg.AiRecommendations);
 					break;
 				case ControlMessage.PayloadOneofCase.DeviceStatus:
 					await HandleDeviceStatus(gatewayId, msg.DeviceStatus);
@@ -129,11 +129,24 @@ namespace UpFlux_WebService
 				"Handling license request for Gateway ID: {GatewayId}, IsRenewal: {IsRenewal}, Device UUID: {DeviceUuid}",
 				gatewayId, req.IsRenewal, req.DeviceUuid);
 
+			using var scope = _serviceScopeFactory.CreateScope();
+			var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+			var generatedMachineIdRepository =
+				scope.ServiceProvider.GetRequiredService<IGeneratedMachineIdRepository>();
+
 			try
 			{
-				if (!req.IsRenewal)
+				var generatedId = await generatedMachineIdRepository.GetByMachineId(req.DeviceUuid);
+				if (generatedId is null)
+				{
+					_logger.LogWarning($"An unrecognized device is trying to communicate using the machine id: {req.DeviceUuid}");
+					return;
+				}
+				var machine = await machineRepository.GetByIdAsync(req.DeviceUuid);
+
+				if (machine is null)
 					await AddUnregisteredDevice(gatewayId, req.DeviceUuid);
-				else
+				else if (machine is not null)
 					await ProcessRenewalRequest(gatewayId, req.DeviceUuid);
 			}
 			catch (Exception ex)
