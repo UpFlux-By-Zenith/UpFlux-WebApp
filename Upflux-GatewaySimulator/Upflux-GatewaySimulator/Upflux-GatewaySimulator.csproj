@@ -30,6 +30,7 @@
         <Folder Include="Current\" />
         <Folder Include="Available\" />
         <Folder Include="ScheduledUpdates\" />
+        <Folder Include="Signature\" />
     </ItemGroup>
 
 </Project>

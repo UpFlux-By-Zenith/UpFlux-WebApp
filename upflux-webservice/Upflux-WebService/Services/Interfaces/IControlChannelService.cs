@@ -43,10 +43,13 @@ namespace Upflux_WebService.Services.Interfaces
 		/// <param name="gatewayId"></param>
 		/// <param name="fileName"></param>
 		/// <param name="packageData"></param>
+		/// <param name="signatureData"></param>
 		/// <param name="targetDevices"></param>
 		/// <param name="appName"></param>
+		/// <param name="version"></param>
+		/// <param name="userEmail"></param>
 		/// <returns></returns>
-		Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, string[] targetDevices, string appName, string version, string userEmail);
+		Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData, byte[] signatureData, string[] targetDevices, string appName, string version, string userEmail);
 
 		/// <summary>
 		/// 
@@ -63,6 +66,7 @@ namespace Upflux_WebService.Services.Interfaces
 		/// <param name="deviceUuids"></param>
 		/// <param name="fileName"></param>
 		/// <param name="packageData"></param>
+		/// <param name="signatureData"></param>
 		/// <param name="startTimeUtc"></param>
 		/// <param name="userEmail"></param>
 		/// <returns></returns>
@@ -72,6 +76,7 @@ namespace Upflux_WebService.Services.Interfaces
 			string[] deviceUuids,
 			string fileName,
 			byte[] packageData,
+			byte[] signatureData,
 			DateTime startTimeUtc,
 			string userEmail
 		);

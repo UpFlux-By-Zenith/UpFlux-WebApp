@@ -972,6 +972,7 @@ namespace UpFlux_WebService
 			string gatewayId,
 			string fileName,
 			byte[] packageData,
+			byte[] signatureData,
 			string[] targetDevices,
 			string appName,
 			string version,
@@ -996,14 +997,15 @@ namespace UpFlux_WebService
 			var update = new UpdatePackage
 			{
 				FileName = fileName,
-				PackageData = Google.Protobuf.ByteString.CopyFrom(packageData)
+				PackageData = Google.Protobuf.ByteString.CopyFrom(packageData),
+				SignatureData = Google.Protobuf.ByteString.CopyFrom(signatureData)
 			};
 			update.TargetDevices.AddRange(targetDevices);
 
 			var msg = new ControlMessage
 			{
 				SenderId = "Cloud",
-				UpdatePackage = update
+				UpdatePackage = update,
 			};
 
 			_updateMetadataMap[fileName] = new UpdateMetadata
@@ -1058,7 +1060,9 @@ namespace UpFlux_WebService
 		/// <param name="deviceUuids">The devices to target</param>
 		/// <param name="fileName">The name of the update package</param>
 		/// <param name="packageData">The binary data of the update package</param>
+		/// <param name="signatureData">The binary data of the signature file</param>
 		/// <param name="startTimeUtc">The start time for the update</param>
+		/// <param name="userEmail">the user who initiated the scheduledUpdate</param>
 		/// <returns>Returns the task for the async operation</returns>
 		public async Task SendScheduledUpdateAsync(
 			string gatewayId,
@@ -1066,6 +1070,7 @@ namespace UpFlux_WebService
 			string[] deviceUuids,
 			string fileName,
 			byte[] packageData,
+			byte[] signatureData,
 			DateTime startTimeUtc,
 			string userEmail
 		)
@@ -1092,11 +1097,12 @@ namespace UpFlux_WebService
 				ScheduleId = scheduleId,
 				FileName = fileName,
 				PackageData = Google.Protobuf.ByteString.CopyFrom(packageData),
+				SignatureData = Google.Protobuf.ByteString.CopyFrom(signatureData),
 				StartTime = Timestamp.FromDateTime(startTimeUtc.ToUniversalTime())
 			};
 			su.DeviceUuids.AddRange(deviceUuids);
 
-			ControlMessage msg = new ControlMessage
+			ControlMessage msg = new()
 			{
 				SenderId = "Cloud",
 				ScheduledUpdate = su
