@@ -589,16 +589,21 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
 		Console.WriteLine(
 			$"Received UpdatePackage: FileName={updatePackage.FileName}, Size={updatePackage.PackageData.Length} bytes");
 
+		Console.WriteLine(
+			$"Received Signature: Size={updatePackage.SignatureData.Length} bytes");
+
 		// Traverse to the root directory of the project
 		var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
 
 		// Define directories
 		var currentDirectory = Path.Combine(rootDirectory, "Current");
 		var availableDirectory = Path.Combine(rootDirectory, "Available");
+		var signatureDirectory = Path.Combine(rootDirectory, "Signature");
 
 		// Ensure directories exist
 		Directory.CreateDirectory(currentDirectory);
 		Directory.CreateDirectory(availableDirectory);
+		Directory.CreateDirectory(signatureDirectory);
 
 		// Get any existing file in "Current" (since only one should exist)
 		var existingFiles = Directory.GetFiles(currentDirectory);
@@ -628,6 +633,10 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
 		var newFilePath = Path.Combine(currentDirectory, updatePackage.FileName);
 		await File.WriteAllBytesAsync(newFilePath, updatePackage.PackageData.ToByteArray());
 		Console.WriteLine($"UpdatePackage saved to: {newFilePath}");
+
+		var signatureFilePath = Path.Combine(signatureDirectory, updatePackage.FileName + ".sig");
+		await File.WriteAllBytesAsync(signatureFilePath, updatePackage.SignatureData.ToByteArray());
+		Console.WriteLine($"Signature saved to: {signatureFilePath}");
 
 		// Simulate success/failure for target devices
 		List<string> succeededDevices = new List<string>();
@@ -774,13 +783,19 @@ async Task HandleScheduledUpdate(ScheduledUpdate scheduledUpdate)
 
 		// Define the directory for scheduled updates
 		var scheduledUpdateDirectory = Path.Combine(rootDirectory, "ScheduledUpdates");
+		var scheduledUpdateSignatureDirectory = Path.Combine(rootDirectory, "ScheduledUpdateSignature");
 
 		// Ensure the directory exists
 		Directory.CreateDirectory(scheduledUpdateDirectory);
+		Directory.CreateDirectory(scheduledUpdateSignatureDirectory);
 
 		// Save package data to disk
 		string savePath = Path.Combine(scheduledUpdateDirectory, scheduledUpdate.FileName);
 		await File.WriteAllBytesAsync(savePath, scheduledUpdate.PackageData.ToByteArray());
+
+		// save signature
+		string saveSignaturePath = Path.Combine(scheduledUpdateSignatureDirectory, scheduledUpdate.FileName + ".sig");
+		await File.WriteAllBytesAsync(saveSignaturePath, scheduledUpdate.SignatureData.ToByteArray());
 
 		Console.WriteLine($"✅ Package saved at {savePath}");
 
