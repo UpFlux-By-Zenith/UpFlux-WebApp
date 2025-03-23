@@ -34,6 +34,20 @@ public class DataRequestController : ControllerBase
         _controlChannelService = controlChannelService;
     }
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [HttpGet("machines/storedVersions")]
+    public IActionResult GetStoredVersions()
+    {
+        try
+        {
+            return Ok(_context.MachineStoredVersions.ToList());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching applications: {ex.Message}");
+            return StatusCode(500, new { Error = "An internal error occurred." });
+        }
+    }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("applications")]
@@ -70,18 +84,62 @@ public class DataRequestController : ControllerBase
             var machineIds = GetClaimValue("MachineIds");
 
             var role = GetClaimValue(ClaimTypes.Role);
-            if (role == "Admin") return Ok(new { engineerEmail, AccessibleMachines = _context.Machines.ToListAsync() });
+
+            // C# Query to fetch all Machines with UserName for Admin
+            var allMachines = (
+                from m in _context.Machines
+                join u in _context.Users on m.lastUpdatedBy equals u.UserId into userGroup
+                from user in userGroup.DefaultIfEmpty()
+                select new
+                {
+                    m.MachineId,
+                    m.machineName,
+                    m.ipAddress,
+                    m.currentVersion,
+                    m.dateAddedOn,
+                    m.appName,
+                    LastUpdatedBy = user != null ? user.Name : "Unknown"
+                }
+            ).ToListAsync();
+
+            if (role == "Admin") return Ok(new { engineerEmail, AccessibleMachines = allMachines });
 
             if (string.IsNullOrEmpty(engineerEmail) || string.IsNullOrEmpty(machineIds))
                 return Unauthorized(new { Error = "Invalid engineer token." });
 
             var machines = machineIds.Split(',').ToList();
+
+            var accessibleMachines = (
+                from m in _context.Machines
+                join u in _context.Users on m.lastUpdatedBy equals u.UserId into userGroup
+                from user in userGroup.DefaultIfEmpty()
+                where machines.Contains(m.MachineId)
+                select new
+                {
+                    m.MachineId,
+                    m.machineName,
+                    m.ipAddress,
+                    m.currentVersion,
+                    LastUpdatedBy = user != null ? user.Name : "Unknown"
+                }
+            ).ToListAsync();
+
             return Ok(new
             {
                 EngineerEmail = engineerEmail,
                 AccessibleMachines = _context.Machines
-                    .Where(m => machines.Contains(m
-                        .MachineId)) // Assuming MachineId is the property you're filtering by
+                    .Where(m => machines.Contains(m.MachineId))
+                    .Select(m => new
+                    {
+                        m.MachineId,
+                        m.machineName,
+                        m.ipAddress,
+                        m.currentVersion,
+                        LastUpdatedBy = _context.Users
+                            .Where(u => u.UserId == m.lastUpdatedBy)
+                            .Select(u => u.Name)
+                            .FirstOrDefault()
+                    })
                     .ToListAsync()
             });
         }
@@ -110,23 +168,23 @@ public class DataRequestController : ControllerBase
             // Send version data request via control channel service
             await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
 
-			return Ok(new
-			{
-				Message = "Version data request sent successfully.",
-				//EngineerEmail = engineerEmail,
-				Timestamp = DateTime.UtcNow
-			});
+            // return Ok(new
+            // {
+            // 	Message = "Version data request sent successfully.",
+            // 	//EngineerEmail = engineerEmail,
+            // 	Timestamp = DateTime.UtcNow
+            // });
 
-			//var storedVersionsList = new List<MachineStoredVersions>();
+            var storedVersionsList = new List<MachineStoredVersion>();
 
-			//if (role == "Engineer")
-			//    storedVersionsList = await _context.Machine_Stored_Versions
-			//        .Where(msv => machineIds.Contains(msv.MachineId.ToString()))
-			//        .ToListAsync();
-			//else if (role == "Admin") storedVersionsList = await _context.Machine_Stored_Versions.ToListAsync();
+            if (role == "Engineer")
+                storedVersionsList = await _context.MachineStoredVersions
+                    .Where(msv => machineIds.Contains(msv.MachineId.ToString()))
+                    .ToListAsync();
+            else if (role == "Admin") storedVersionsList = await _context.MachineStoredVersions.ToListAsync();
 
-			//return Ok(storedVersionsList);
-		}
+            return Ok(storedVersionsList);
+        }
         catch (Exception ex)
         {
             return StatusCode(500, new

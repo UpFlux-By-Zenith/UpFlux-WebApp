@@ -1,7 +1,7 @@
 import { Table, Stack, Text } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
-
+import "./admin-dashboard.css";
 const applications = [
     {
         name: "upflux-monitoring-service",

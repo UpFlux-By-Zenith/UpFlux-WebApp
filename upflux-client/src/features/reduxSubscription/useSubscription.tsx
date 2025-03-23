@@ -9,13 +9,17 @@ import { changeConnectionStatus } from "./connectionSlice";
 import { RootState } from "./store";
 import classes from "./notification.module.css"
 import { IApplications, updateApps } from "./applicationVersions";
+import { GROUP_TYPES, IClusterResponse, IMachineStatus } from "./subscriptionConsts";
+import { updateMachine, updateMachineStatus, updatePlotValues } from "./machinesSlice";
+import { useAppDispatch } from "./hook";
 
 const hubUrl = "http://localhost:5000/notificationHub"; // Replace with your SignalR hub URL
 
 export const useSubscription = (groupId: string) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const connectionStatus = useSelector((root: RootState) => root.connectionStatus.isConnected)
   const isConnectedRef = useRef(false);
+  const machines = useSelector((root: RootState) => root.machines.messages)
 
   useEffect(() => {
     let connection: signalR.HubConnection | null = null;
@@ -31,8 +35,13 @@ export const useSubscription = (groupId: string) => {
             .build();
           dispatch(changeConnectionStatus(true));
 
+          connection.invoke("CreateGroup", groupId)
+            .then(() => console.log("Group created:", groupId))
+            .catch((err) => console.error("Error invoking CreateGroup:", err));
+
+
           connection.on("ReceiveMessage", (uri: string, message) => {
-            if (uri.endsWith("alert")) {
+            if (uri === GROUP_TYPES.GENERIC_ALERT) {
               const parsedData: IAlertMessage = JSON.parse(message);
               const color = parsedData.level === "Information" ? "blue" : "red";
 
@@ -48,10 +57,26 @@ export const useSubscription = (groupId: string) => {
                 });
               }
               dispatch(addAlert(parsedData));
-            } else if (uri.endsWith("versions")) {
-              const parsedData: IApplications = JSON.parse(message);
-              dispatch(updateApps(parsedData))
-            } else {
+            } else if (uri === GROUP_TYPES.LICENSE_ALERT) {
+
+            } else if (uri === GROUP_TYPES.UPDATE_ALERT) {
+
+            } else if (uri === GROUP_TYPES.RECOMMENDATION_ALERT) {
+
+            } else if (uri === GROUP_TYPES.ROLLBACK_ALERT) {
+
+            } else if (uri === GROUP_TYPES.SCHEDULED_UPDATE_ALERT) {
+
+            } else if (uri.includes(GROUP_TYPES.STATUS_ALERT)) {
+              const statusAlert: IMachineStatus = JSON.parse(message);
+              dispatch(updateMachineStatus(statusAlert))
+
+            } else if (uri.startsWith(GROUP_TYPES.RECOMMENDATION_PLOT)) {
+              const recommendationReponse: IClusterResponse = JSON.parse(message)
+
+              dispatch(updatePlotValues(recommendationReponse))
+            }
+            else {
               const parsedData: MonitoringData = JSON.parse(message);
               dispatch(addMetrics(parsedData));
             }
@@ -75,11 +100,10 @@ export const useSubscription = (groupId: string) => {
       return () => {
         if (connection) {
           connection.stop().then(() => {
-            console.log("SignalR disconnected.");
             isConnectedRef.current = false; // Reset on cleanup
           });
         }
       };
     }
-  }, [groupId, dispatch, connectionStatus]);
+  }, [groupId, connectionStatus]);
 };

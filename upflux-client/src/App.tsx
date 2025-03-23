@@ -20,7 +20,7 @@ import { Provider } from 'react-redux';
 import { CommonDashboard } from './features/commonDashboard/CommonDashboard';
 import store from './features/reduxSubscription/store';
 import SessionTimeout from './features/sessionTimeout/SessionTimeout';
-
+import '@mantine/charts/styles.css';
 export const App = () => {
 
   // This function is called when the session times out.
@@ -66,7 +66,14 @@ const ProtectedRoutes = () => (
     <Route element={<PrivateRoutes role={ROLES.COMMON} />}>
       <Route path="/dashboard" element={<Layout> <CommonDashboard /></Layout>}></Route>
     </Route>
-
+    <Route
+      path="/cluster-management"
+      element={
+        <Layout>
+          <ClusterManagement />
+        </Layout>
+      }
+    />
     {/* Admin Protected Routes */}
     {/* <Route element={<PrivateRoutes role={ROLES.ADMIN} />}>
       <Route

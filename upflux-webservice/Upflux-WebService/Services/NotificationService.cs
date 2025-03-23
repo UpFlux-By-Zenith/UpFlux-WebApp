@@ -39,9 +39,18 @@ public class NotificationService : INotificationService
             {
                 GroupUriMapping[groupId] = new List<string>();
 
-                await AddUriToGroupAsync(groupId, "alert");
-                await AddUriToGroupAsync(groupId, "versions");
-                foreach (var machineId in machineIds) await AddUriToGroupAsync(groupId, machineId);
+                await AddUriToGroupAsync(groupId, "Alert");
+                await AddUriToGroupAsync(groupId, "Alert/Licence");
+                await AddUriToGroupAsync(groupId, "Alert/Update");
+                await AddUriToGroupAsync(groupId, "Alert/ScheduledUpdate");
+                await AddUriToGroupAsync(groupId, "Alert/Rollback");
+                await AddUriToGroupAsync(groupId, "Recommendation/Cluster");
+                foreach (var machineId in machineIds)
+                {
+                    await AddUriToGroupAsync(groupId, machineId);
+                    await AddUriToGroupAsync(groupId, $"Status/{machineId}");
+                    await AddUriToGroupAsync(groupId, $"Recommendations/Plot/{machineId}");
+                }
 
                 _logger.LogInformation("Group created successfully with ID: {GroupId}", groupId);
             }

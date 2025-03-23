@@ -6,10 +6,12 @@ import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import "./update-management.css";
 import { useSubscription } from "../reduxSubscription/useSubscription";
 import { useAuth } from "../../common/authProvider/AuthProvider";
-import { getRunningMachinesApplications } from "../../api/applicationsRequest";
 import { ConfigureUpdate } from "./ConfigureUpdate";
 import { IMachine } from "../../api/reponseTypes";
 import { ConfigureRollback } from "./ConfigureRollback";
+import { useDispatch, useSelector } from "react-redux";
+import { updateMachine } from "../reduxSubscription/machinesSlice";
+import { RootState } from "../reduxSubscription/store";
 
 export const UpdateManagement = () => {
   const [rollbackModalOpened, setRollbackModalOpened] = useState(false);
@@ -19,6 +21,11 @@ export const UpdateManagement = () => {
   const [updateModal, setUpdateModal] = useState<boolean>(false)
   const { authToken } = useAuth();
 
+  //Machine list from redux 
+  const storedMachines = useSelector((root: RootState) => root.machines.messages)
+
+  const machineIds = machines.map(m => m.machineId)
+  const dispatch = useDispatch();
 
   useSubscription(authToken);
 
@@ -28,33 +35,38 @@ export const UpdateManagement = () => {
       const result = await getAccessibleMachines();
       if (typeof result === "object" && result?.accessibleMachines?.result) {
         setMachines(result.accessibleMachines.result as IMachine[]);
+
       } else {
         console.error("Failed to fetch machines:", result);
         setMachines([]); // Clear machines in case of failure
       }
       setLoading(false);
     };
-
-    const getRunningMachines = async () => {
-      await getRunningMachinesApplications().then(res => {
-        console.log(res)
-      })
-    }
-
-    // getRunningMachines()
     fetchMachines();
   }, []);
 
 
-  // Chart data for multiple measures
+  useEffect(() => {
+    machines.forEach(m => dispatch(updateMachine(m)))
+  }, [machines])
+
+  // Calculate machine statuses
+  const machineValues = Object.values(storedMachines);
+
+  const aliveCount = machineValues.filter((machine) => machine.isOnline).length;
+  const shutdownCount = machineValues.filter((machine) => !machine.isOnline).length;
+
   const chartData = [
-    { name: "Alive", value: machines.length, color: "#40C057" },
-    { name: "Shutdown", value: 0, color: "#FA5252" },
-    { name: "Unknown", value: 0, color: "#6c757d" },
+    { name: "Alive", value: aliveCount, color: "#40C057" },
+    { name: "Shutdown", value: shutdownCount, color: "#FA5252" },
+    { name: "Unknown", value: machineValues.length === 0 ? 1 : 0, color: "#6c757d" },
   ];
 
+  const getStatusBadge = (isOnline) => {
+    if (isOnline) return <Badge color="green">Alive</Badge>;
+    return <Badge color="red">Shutdown</Badge>;
+  };
 
-  const machineIds = machines.map(m => m.machineId)
 
   return (
 
@@ -72,15 +84,15 @@ export const UpdateManagement = () => {
           <Stack className="legend">
             <Group className="legend-item">
               <Box className="circle green"></Box>
-              <Text size="sm">{0} Alive</Text>
+              <Text size="sm">{aliveCount} Alive</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
-              <Text size="sm">{0} Shutdown</Text>
+              <Text size="sm">{shutdownCount} Shutdown</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle gray"></Box>
-              <Text size="sm">{machines.length} Unknown</Text>
+              <Text size="sm">{machineValues.length === 0 ? 1 : 0} Unknown</Text>
             </Group>
           </Stack>
 
@@ -119,7 +131,7 @@ export const UpdateManagement = () => {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {machines?.map((machine) => (
+                {Object.values(storedMachines)?.map((machine) => (
                   <Table.Tr
                     key={machine.machineId}
                     onClick={() => navigate("/version-control", { state: { machineId: machine.machineId } })}
@@ -131,9 +143,7 @@ export const UpdateManagement = () => {
                     <Table.Td>{machine.appName}</Table.Td>
                     <Table.Td>{machine.currentVersion}</Table.Td>
                     <Table.Td>{machine.dateAddedOn}</Table.Td>
-                    <Table.Td>
-                      <Badge color="green">{"Alive"}</Badge>
-                    </Table.Td>
+                    <Table.Td>{getStatusBadge(machine.isOnline)}</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Tbody>

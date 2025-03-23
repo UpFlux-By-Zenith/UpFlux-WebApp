@@ -1,8 +1,9 @@
-import { Table, Stack, Text } from "@mantine/core";
+import { Table, Stack, Text, ActionIcon } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { getAllEngineers } from "../../api/applicationsRequest";
 import { formatTimestamp } from "../../common/appUtils";
-
+import "./admin-dashboard.css";
+import { IconCopyXFilled } from "@tabler/icons-react";
 export interface IEngineers {
     userId: string,
     name: string,
@@ -22,6 +23,11 @@ export const ViewEngineers = () => {
                     <Table.Td>{engineer.name}</Table.Td>
                     <Table.Td>{engineer.email}</Table.Td>
                     <Table.Td>{formatTimestamp(engineer.lastLogin)}</Table.Td>
+                    <Table.Td>
+                        <ActionIcon>
+                            <IconCopyXFilled />
+                        </ActionIcon>
+                    </Table.Td>
                 </Table.Tr>
             ));
             setRows(mappedRows);
@@ -39,6 +45,7 @@ export const ViewEngineers = () => {
                             <Table.Th>Name</Table.Th>
                             <Table.Th>Email</Table.Th>
                             <Table.Th>Last Login</Table.Th>
+                            <Table.Td>Revoke Token</Table.Td>
                         </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>{rows}</Table.Tbody>

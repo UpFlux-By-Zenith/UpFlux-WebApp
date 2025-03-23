@@ -11,7 +11,8 @@ import {
 } from "@mantine/core";
 import { useAuth } from "../../common/authProvider/AuthProvider";
 import { getEngineerToken } from "../../api/adminApiActions";
-import { getAllMachineDetails } from "../../api/applicationsRequest";
+import { useSelector } from "react-redux";
+import { RootState } from "../reduxSubscription/store";
 
 interface IMachineDetails {
   machineId: number;
@@ -28,6 +29,8 @@ export const GetEngineerToken: React.FC = () => {
   const [token, setToken] = useState("");
   const [multiSelectOptions, setMultiSelectOptions] = useState([]);
   const { authToken } = useAuth();
+  //Machine list from redux 
+  const storedMachines = useSelector((root: RootState) => root.machines.messages)
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,14 +47,11 @@ export const GetEngineerToken: React.FC = () => {
   };
 
   useEffect(() => {
-    getAllMachineDetails().then((res: IMachineDetails[]) => {
-      console.log(res);
-      const multiSelectOptions = res.map((val) => {
-        return { value: val.machineId, label: val.machineId };
-      });
-      setMultiSelectOptions(multiSelectOptions);
+    const multiSelectOptions = Object.keys(storedMachines).map((val) => {
+      return { value: val, label: val };
     });
-  }, []);
+    setMultiSelectOptions(multiSelectOptions);
+  }, [storedMachines]);
 
   const handleChange = useCallback((va) => {
     setMachineIds([...va]); // Ensure state is properly updated

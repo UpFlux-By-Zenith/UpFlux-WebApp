@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button, FileInput, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-
+import "./admin-dashboard.css";
 export const PackageFileInput = () => {
   const [file, setFile] = useState<File | null>(null);
 
@@ -42,7 +42,6 @@ export const PackageFileInput = () => {
           })
         }
         const data = await response.json();
-        console.log("Upload response:", data);
       } catch (error) {
         console.error("Error during package upload:", error);
       }

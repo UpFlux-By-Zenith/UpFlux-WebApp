@@ -24,7 +24,8 @@ export const ADMIN_REQUEST_API = {
 //DataRequest-related endpoints
 export const DATA_REQUEST_API = {
   GET_ACCESS_MACHINES: `${API_BASE_URL}/api/DataRequest/engineer/access-machines`,
-  GET_MACHINE_DETAILS: `${API_BASE_URL}/api/DataRequest/applications`,
+  GET_AVAILABLE_APPLICATIONS: `${API_BASE_URL}/api/DataRequest/applications`,
+  GET_MACHINE_STORED_VERSIONS: `${API_BASE_URL}/api/DataRequest/machines/storedVersions`,
   GET_RUNNING_APPS: `${API_BASE_URL}/api/DataRequest/engineer/machines-application`
 };
 

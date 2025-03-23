@@ -20,7 +20,7 @@ export const AdminLogin = () => {
 
 
   if (isAuthenticated) {
-    navigate('/common-dashboard');
+    navigate('/dashboard');
   }
   const handleInputChange = (field: keyof AdminLoginFormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormState({ ...formState, [field]: event.target.value });

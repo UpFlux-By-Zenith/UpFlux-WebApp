@@ -15,17 +15,15 @@ const sendEmailNotification = async (email: string) => {
   });
 
   if (response.ok) {
-    console.log('Email sent successfully');
   } else {
-    console.log('Failed to send email');
   }
 };
 
 export const ForgotPassword = () => {
   const [email, setEmail] = useState('');
-  const [successMessage, setSuccessMessage] = useState<string | null>(null); 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
+
   // Use navigate hook to redirect to login page
   const navigate = useNavigate();
 
@@ -49,15 +47,15 @@ export const ForgotPassword = () => {
       await sendEmailNotification(email);
       // On success, show success message
       setSuccessMessage("An email has been sent to reset your password.");
-      
+
       // Redirect to login page after success
       setTimeout(() => {
-        navigate('/admin-login'); 
+        navigate('/admin-login');
       });
 
     } catch (err) {
       setErrorMessage("Failed to send email.");
-      setSuccessMessage(null); 
+      setSuccessMessage(null);
     }
   };
 
@@ -65,7 +63,7 @@ export const ForgotPassword = () => {
     <Container className="login-container">
       <Box className="main-card">
         <Image src={logo} alt="UpFlux Logo" className="upflux-logo" />
-        
+
         {/* Error message display */}
         <Box className="request-error-message-container" style={{ color: 'red', fontWeight: 'bold' }}>
           {errorMessage && <Text className={`request-error-message ${errorMessage ? 'active' : ''}`}>{errorMessage}</Text>}
@@ -82,7 +80,7 @@ export const ForgotPassword = () => {
             required
           />
         </Box>
-        
+
         <Button className="submit-request" onClick={handleSubmit}>Submit Request</Button>
       </Box>
     </Container>
