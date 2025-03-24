@@ -4,6 +4,21 @@ USE upflux;
 
 /*Create Table Statements*/
 
+-- Create Users Table
+CREATE TABLE Users (
+    user_id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    role ENUM('Admin', 'Engineer') NOT NULL,
+	last_login TIMESTAMP
+);
+
+CREATE TABLE Application_Versions (
+    version_name VARCHAR(255) NOT NULL PRIMARY KEY,
+    uploaded_by VARCHAR(255) NOT NULL,
+    date DATETIME NOT NULL
+);
+
 -- Create Machines Table
 CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
@@ -14,15 +29,6 @@ CREATE TABLE Machines (
 	current_version VARCHAR(255) NOT NULL,
 	lastUpdatedBy VARCHAR(255) NOT NULL,
 	FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
-);
-
--- Create Users Table
-CREATE TABLE Users (
-    user_id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    role ENUM('Admin', 'Engineer') NOT NULL,
-	last_login TIMESTAMP
 );
 
 -- Create Admin_Details Table 
@@ -118,22 +124,8 @@ CREATE TABLE Application_Versions (
 );
 */
 
-CREATE TABLE Application_Versions (
-    version_name VARCHAR(255) NOT NULL PRIMARY KEY,
-    uploaded_by VARCHAR(255) NOT NULL,
-    date DATETIME NOT NULL
-);
-
-CREATE TABLE Machine_Stored_Versions (
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    machine_id VARCHAR(255) NOT NULL,
-    version_name VARCHAR(255),
-    installed_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
-);
-
 CREATE TABLE Generated_Machine_Ids (
-    generated_uuid VARCHAR(36) PRIMARY KEY, 
+    Id VARCHAR(36) PRIMARY KEY, 
     machine_id VARCHAR(255) NOT NULL,  
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 );
@@ -153,6 +145,14 @@ CREATE TABLE Revoked_tokens (
     reason MEDIUMTEXT,
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (revoked_by) REFERENCES Users(user_id)
+);
+
+CREATE TABLE Machine_Stored_Versions (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    machine_id VARCHAR(255) NOT NULL,
+    version_name VARCHAR(255),
+    installed_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
 -- Temporary table for tracking user id in a session
