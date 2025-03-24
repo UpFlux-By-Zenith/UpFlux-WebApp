@@ -9,8 +9,11 @@ CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL,
-	app_name VARCHAR(255) NOT NULL
+    machine_name VARCHAR(255) NOT NULL,
+	app_name VARCHAR(255) DEFAULT 'Monitoring Service',
+	current_version VARCHAR(255) NOT NULL,
+	lastUpdatedBy VARCHAR(255) NOT NULL,
+	FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
 );
 
 -- Create Users Table
@@ -22,44 +25,12 @@ CREATE TABLE Users (
 	last_login TIMESTAMP
 );
 
--- Create Application_Versions Table
-CREATE TABLE Application_Versions (
-    version_name VARCHAR(50) NOT NULL PRIMARY KEY,
-    date TIMESTAMP NOT NULL,
-);
-
--- Create Machines Table
-CREATE TABLE Machines (
-    machine_id VARCHAR(255) PRIMARY KEY,
-    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL,
-    app_name VARCHAR(100) DEFAULT 'Monitoring Service',
-    version_name VARCHAR(50) DEFAULT NULL,
-    last_updated_by VARCHAR(50) DEFAULT NULL,
-    FOREIGN KEY (version_name) REFERENCES Application_Versions(version_name),
-    FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
-
-);
-
 -- Create Admin_Details Table 
 CREATE TABLE Admin_Details (
     admin_id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
-);
-
-CREATE TABLE Revoked_Tokens (
-    revoke_id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id VARCHAR(50),
-    revoked_by VARCHAR(50) NOT NULL,
-    revoked_at DATETIME NOT NULL,
-    reason MEDIUMTEXT,
-	FOREIGN KEY (revoked_by) REFERENCES Admin_Details(admin_id),
-    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-    KEY (user_id),
-    KEY (revoked_by)
 );
 
 
@@ -132,6 +103,7 @@ CREATE TABLE Applications (
 );
 */
 
+/*
 -- Create Application_Versions Table
 CREATE TABLE Application_Versions (
     version_id INT AUTO_INCREMENT PRIMARY KEY, 
@@ -144,18 +116,26 @@ CREATE TABLE Application_Versions (
     FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
     UNIQUE (version_name, machine_id, storage_type) 
 );
+*/
+
+CREATE TABLE Application_Versions (
+    version_name VARCHAR(255) NOT NULL PRIMARY KEY,
+    uploaded_by VARCHAR(255) NOT NULL,
+    date DATETIME NOT NULL
+);
+
+CREATE TABLE Machine_Stored_Versions (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    machine_id VARCHAR(255) NOT NULL,
+    version_name VARCHAR(255),
+    installed_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
+);
 
 CREATE TABLE Generated_Machine_Ids (
     generated_uuid VARCHAR(36) PRIMARY KEY, 
     machine_id VARCHAR(255) NOT NULL,  
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-);
-
-CREATE TABLE Machine_Status (
-    machine_id PRIMARY KEY,  
-    isOnline BOOLEAN,
-    lastSeen TIMESTAMP,
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
 CREATE TABLE Machine_Status (
@@ -166,26 +146,13 @@ CREATE TABLE Machine_Status (
 );
 
 CREATE TABLE Revoked_tokens (
-    revoke_id INT NOT NULL AUTO_INCREMENT,
+    revoke_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(50),
     revoked_by VARCHAR(50) NOT NULL,
     revoked_at DATETIME NOT NULL,
     reason MEDIUMTEXT,
-    PRIMARY KEY (revoke_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (revoked_by) REFERENCES Users(user_id)
-);
-
-CREATE TABLE Machine_Stored_Versions (
-    id INT NOT NULL AUTO_INCREMENT,
-    machine_id VARCHAR(255) NOT NULL,
-    installed_date DATE DEFAULT NULL,
-    user_id VARCHAR(50) DEFAULT NULL,
-    version_name VARCHAR(50) DEFAULT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (machine_id) REFERENCES `Machines` (`machine_id`),
-    FOREIGN KEY (user_id) REFERENCES `Users` (`user_id`),
-    FOREIGN KEY (version_name) REFERENCES `Application_Versions` (`version_name`)
 );
 
 -- Temporary table for tracking user id in a session
