@@ -27,7 +27,7 @@ CREATE TABLE Machines (
     machine_name VARCHAR(255) NOT NULL,
 	app_name VARCHAR(255) DEFAULT 'Monitoring Service',
 	current_version VARCHAR(255) NOT NULL,
-	lastUpdatedBy VARCHAR(255) NOT NULL,
+	last_updated_by VARCHAR(255) NOT NULL,
 	FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
 );
 
