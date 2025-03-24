@@ -16,7 +16,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
 import ReactSpeedometer, { Transition } from "react-d3-speedometer";
-import { getSpeedometerProps } from './speedometerUtils';
 import { getMachineDetails } from "../../api/applicationsRequest";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
@@ -153,21 +152,21 @@ export const VersionControl: React.FC = () => {
   // Mocked machine metrics data
   const metrics = [
     {
-      label: "CPU",
+      label: "CPU (%)",
       value: parseInt(machineMetrics[machineId]?.metrics.cpuUsage.toFixed()) || 0,
     },
     {
-      label: "CPU Temp",
+      label: "CPU Temp (°C)",
       value: parseInt(
         machineMetrics[machineId]?.metrics.cpuTemperature.toFixed()
       ) || 0,
     },
     {
-      label: "Memory Usage",
+      label: "Memory Usage (%)",
       value: parseInt(machineMetrics[machineId]?.metrics.memoryUsage.toFixed()) || 0,
     },
     {
-      label: "Disk Usage",
+      label: "Disk Usage (%)",
       value: parseInt(machineMetrics[machineId]?.metrics.diskUsage.toFixed()) || 0,
     },
   ];
