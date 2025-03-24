@@ -1,7 +1,36 @@
-import { AUTH_API, LICENCE_APIS } from './apiConsts';
+import { ADMIN_REQUEST_API, AUTH_API, LICENCE_APIS } from './apiConsts';
 import { AdminLoginPayload, EngineerTokenPayload, LoginResponse } from './apiTypes';
 
+export const revokeEngineer = async (engineerId: string, reason: string) => {
+  try {
 
+    // Retrieve the token from session storage
+    const authToken = sessionStorage.getItem('authToken');
+
+    if (!authToken) {
+      console.error('No authentication token found in session storage.');
+      return null;
+    }
+    // Make the API request with the Bearer token
+    const response = await fetch(ADMIN_REQUEST_API.REVOKE_ENGINEER, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Add the Bearer token
+      },
+      body: JSON.stringify({ engineerId, reason }),
+    });
+
+    if (response.ok) {
+      return response.json()
+    } else {
+      const errorData = await response.json();
+      console.error('Error fetching engineer token:', errorData);
+    }
+  } catch (error) {
+    console.error('Error during engineer token request:', error);
+  }
+}
 
 export const adminLogin = async (payload: AdminLoginPayload) => {
   try {

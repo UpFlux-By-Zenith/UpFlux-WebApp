@@ -16,6 +16,8 @@ export const ConfigureRollback = ({ rollbackModalOpened, setRollbackModalOpened,
     const [availableVersions, setAvailableVersions] = useState<string[]>([]);
     const [allAvailableVersions, setAllAvailableVersions] = useState<IStoredVersionsResponse[]>([]);
 
+
+
     useEffect(() => {
         const fetchVersions = async () => {
             const res = await getMachineStoredVersions();

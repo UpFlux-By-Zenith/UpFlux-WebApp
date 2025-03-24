@@ -2,27 +2,25 @@
 using Upflux_WebService.Data;
 using Upflux_WebService.Repository.Interfaces;
 
-namespace Upflux_WebService.Repository
+namespace Upflux_WebService.Repository;
+
+public class MachineRepository : Repository<Machine>, IMachineRepository
 {
-	public class MachineRepository : Repository<Machine>, IMachineRepository
-	{
-		private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext _context;
 
-		public MachineRepository(ApplicationDbContext context) : base(context)
-		{
-			_context = context;
-		}
+    public MachineRepository(ApplicationDbContext context) : base(context)
+    {
+        _context = context;
+    }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <returns></returns>
-		public string[] GetAllMachineIds()
-		{
-			return _context.Machines
-						   .Select(machine => machine.MachineId)
-						   .ToArray();
-		}
-
-	}
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    public string[] GetAllMachineIds()
+    {
+        return _context.Machines
+            .Select(machine => machine.MachineId)
+            .ToArray();
+    }
 }

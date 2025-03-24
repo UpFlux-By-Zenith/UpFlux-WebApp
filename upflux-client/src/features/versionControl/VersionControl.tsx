@@ -10,7 +10,8 @@ import {
   Modal,
   RingProgress,
   SimpleGrid,
-  Tabs
+  Tabs,
+  Indicator
 } from "@mantine/core";
 import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
@@ -152,12 +153,30 @@ export const VersionControl: React.FC = () => {
 
       <Box className="content-wrapper">
         <Box className="machine-id-box">
-          <Select
-            data={Object.values(storedMachines).map(m => m.machineName)}
-            value={selectedMachineName}
-            onChange={(value) => setSelectedMachineName(value)}
-            placeholder="Select Machine"
-          />
+          {selectedMachineName && (
+            <Indicator
+              inline
+              color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
+              label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
+              size={16}
+            >
+              <Select
+                data={Object.values(storedMachines).map(m => m.machineName)}
+                value={selectedMachineName}
+                onChange={(value) => setSelectedMachineName(value)}
+                placeholder="Select Machine"
+              />
+            </Indicator>
+          )}
+
+          {!selectedMachineName && (
+            <Select
+              data={Object.values(storedMachines).map(m => m.machineName)}
+              value={selectedMachineName}
+              onChange={(value) => setSelectedMachineName(value)}
+              placeholder="Select Machine"
+            />
+          )}
         </Box>
 
         {/* Machine Metrics Section */}
@@ -166,6 +185,7 @@ export const VersionControl: React.FC = () => {
             {metrics.map((metric, index) => (
               <Box key={index} style={{ textAlign: "center" }}>
                 <ReactSpeedometer
+                  key={index}
                   minValue={0}
                   maxValue={100}
                   segments={cpuColors.length}
@@ -183,8 +203,6 @@ export const VersionControl: React.FC = () => {
                   width={250}
                   height={150}
                   ringWidth={30}
-                  currentValueText={""}
-                  forceRender={true}
                   maxSegmentLabels={4}
                 />
                 <Text className="metrics-labels" size="sm" fw="bold" mt="sm">

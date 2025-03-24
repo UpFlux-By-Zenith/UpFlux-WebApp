@@ -10,8 +10,10 @@ import { ConfigureUpdate } from "./ConfigureUpdate";
 import { IMachine } from "../../api/reponseTypes";
 import { ConfigureRollback } from "./ConfigureRollback";
 import { useDispatch, useSelector } from "react-redux";
-import { updateMachine } from "../reduxSubscription/machinesSlice";
+import { updateMachine, updateMachineStatus } from "../reduxSubscription/machinesSlice";
 import { RootState } from "../reduxSubscription/store";
+import { getMachineStatus } from "../../api/applicationsRequest";
+import { IMachineStatus } from "../reduxSubscription/subscriptionConsts";
 
 export const UpdateManagement = () => {
   const [rollbackModalOpened, setRollbackModalOpened] = useState(false);
@@ -31,8 +33,12 @@ export const UpdateManagement = () => {
 
   //Fetch accessible machines on component load
   useEffect(() => {
+
+
+
     const fetchMachines = async () => {
       const result = await getAccessibleMachines();
+
       if (typeof result === "object" && result?.accessibleMachines?.result) {
         setMachines(result.accessibleMachines.result as IMachine[]);
 
@@ -46,8 +52,23 @@ export const UpdateManagement = () => {
   }, []);
 
 
+  const fetchMachineStatus = async () => {
+    const res: IMachineStatus[] = await getMachineStatus()
+
+    console.log(res)
+    res.forEach((m: any) => dispatch(updateMachineStatus({
+      DeviceUuid: m.machineId,
+      IsOnline: m.isOnline,
+      LastSeen: {
+        Seconds: 0,
+        Nanos: 0
+      }
+    })))
+  }
+
   useEffect(() => {
     machines.forEach(m => dispatch(updateMachine(m)))
+    fetchMachineStatus()
   }, [machines])
 
   // Calculate machine statuses
@@ -57,14 +78,14 @@ export const UpdateManagement = () => {
   const shutdownCount = machineValues.filter((machine) => !machine.isOnline).length;
 
   const chartData = [
-    { name: "Alive", value: aliveCount, color: "#40C057" },
-    { name: "Shutdown", value: shutdownCount, color: "#FA5252" },
+    { name: "Online", value: aliveCount, color: "#40C057" },
+    { name: "Offline", value: shutdownCount, color: "#FA5252" },
     { name: "Unknown", value: machineValues.length === 0 ? 1 : 0, color: "#6c757d" },
   ];
 
   const getStatusBadge = (isOnline) => {
-    if (isOnline) return <Badge color="green">Alive</Badge>;
-    return <Badge color="red">Shutdown</Badge>;
+    if (isOnline) return <Badge color="green">Online</Badge>;
+    return <Badge color="red">Offline</Badge>;
   };
 
 
@@ -84,11 +105,11 @@ export const UpdateManagement = () => {
           <Stack className="legend">
             <Group className="legend-item">
               <Box className="circle green"></Box>
-              <Text size="sm">{aliveCount} Alive</Text>
+              <Text size="sm">{aliveCount} Online</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
-              <Text size="sm">{shutdownCount} Shutdown</Text>
+              <Text size="sm">{shutdownCount} Offline</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle gray"></Box>
@@ -123,7 +144,7 @@ export const UpdateManagement = () => {
                 <Table.Tr>
                   <Table.Th>QC Machine Name</Table.Th>
                   <Table.Th>QC Machine ID</Table.Th>
-                  <Table.Th>IP Address</Table.Th>
+                  {/* <Table.Th>IP Address</Table.Th> */}
                   <Table.Th>Application Name</Table.Th>
                   <Table.Th>Application Version</Table.Th>
                   <Table.Th>Machine Added On</Table.Th>
@@ -134,12 +155,12 @@ export const UpdateManagement = () => {
                 {Object.values(storedMachines)?.map((machine) => (
                   <Table.Tr
                     key={machine.machineId}
-                    onClick={() => navigate("/version-control", { state: { machineId: machine.machineId } })}
+                    // onClick={() => navigate("/version-control", { state: { machineId: machine.machineId } })}
                     style={{ cursor: "pointer" }}
                   >
                     <Table.Td>{machine.machineName}</Table.Td>
                     <Table.Td>{machine.machineId}</Table.Td>
-                    <Table.Td>{machine.ipAddress || "N/A"}</Table.Td>
+                    {/* <Table.Td>{machine.ipAddress || "N/A"}</Table.Td> */}
                     <Table.Td>{machine.appName}</Table.Td>
                     <Table.Td>{machine.currentVersion}</Table.Td>
                     <Table.Td>{machine.dateAddedOn}</Table.Td>

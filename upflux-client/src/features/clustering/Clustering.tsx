@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Box, Text, Group, Select, Switch } from "@mantine/core";
-import { LineChart, ScatterChart } from "@mantine/charts"; // Import LineChart
+import { Box, Text, Group, Select, Switch, Paper } from "@mantine/core";
+import { ChartTooltipProps, LineChart, ScatterChart } from "@mantine/charts"; // Import LineChart
 import "@mantine/core/styles.css";
 import "@mantine/charts/styles.css";
 import "@mantine/dates/styles.css";
@@ -13,10 +13,11 @@ import { data } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
 import { IMachine } from "../../api/reponseTypes";
 import { PLOT_COLORS } from "./clusteringConsts";
-
+import BubbleChart from '@weknow/react-bubble-chart-d3';
 interface IPlotData {
   color: string;
   name: string;
+  machineId: string[];
   data: {
     x: number;
     y: number
@@ -168,6 +169,7 @@ export const Clustering: React.FC = () => {
         plotData.push({
           name: clusterId, // You can use ClusterId as the name
           data: data,
+          machineId: machines.map(m => m.machineId),
           color: color
         });
       }
@@ -199,6 +201,29 @@ export const Clustering: React.FC = () => {
     setSelectedDate(formattedDate);
   }, []);
 
+
+  const ChartTooltip = ({ payload }: ChartTooltipProps) => {
+    if (!payload) return null;
+    console.log(payload)
+    return (
+      <Paper px="md" py="sm" withBorder shadow="md" radius="md">
+        {/* {payload.map((item: any) => ( */}
+        <Text fz="sm">
+          {payload["0"]?.payload.name}
+          {payload["0"]?.payload.machineId}
+        </Text>
+        {/* ))} */}
+      </Paper>
+    );
+  }
+
+  const bubbleClick = (label) => {
+    console.log("Custom bubble click func")
+  }
+  const legendClick = (label) => {
+    console.log("Customer legend click func")
+  }
+
   return (
     <Box className="clustering-container">
       {/* Dropdown Section */}
@@ -223,9 +248,10 @@ export const Clustering: React.FC = () => {
           w={800}
           h={600}
           data={mappedClusterPlotData}
+          tooltipProps={{
+            content: ({ payload }) => <ChartTooltip payload={payload} />,
+          }}
           dataKey={{ x: 'x', y: 'y' }}
-          xAxisLabel="Age"
-          yAxisLabel="BMI"
           withLegend
         />
         {/* Calendar */}

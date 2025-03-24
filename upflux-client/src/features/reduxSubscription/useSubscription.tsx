@@ -43,20 +43,8 @@ export const useSubscription = (groupId: string) => {
           connection.on("ReceiveMessage", (uri: string, message) => {
             if (uri === GROUP_TYPES.GENERIC_ALERT) {
               const parsedData: IAlertMessage = JSON.parse(message);
-              const color = parsedData.level === "Information" ? "blue" : "red";
 
-              if (parsedData.source !== "gateway-patrick-1234") {
-
-                notifications.show({
-                  title: parsedData.source,
-                  message: parsedData.message,
-                  position: "top-right",
-                  autoClose: 10000,
-                  color,
-                  classNames: classes,
-                });
-              }
-              dispatch(addAlert(parsedData));
+              sendNotification(parsedData)
             } else if (uri === GROUP_TYPES.LICENSE_ALERT) {
 
             } else if (uri === GROUP_TYPES.UPDATE_ALERT) {
@@ -69,6 +57,15 @@ export const useSubscription = (groupId: string) => {
 
             } else if (uri.includes(GROUP_TYPES.STATUS_ALERT)) {
               const statusAlert: IMachineStatus = JSON.parse(message);
+
+              const parsedData: IAlertMessage = {
+                timestamp: Date.now().toString(),
+                level: statusAlert.IsOnline ? "Information" : "error",
+                message: `QC Machine is now ${statusAlert.IsOnline ? "Online" : "Offline"}`,
+                source: statusAlert.DeviceUuid
+              }
+              sendNotification(parsedData)
+
               dispatch(updateMachineStatus(statusAlert))
 
             } else if (uri.startsWith(GROUP_TYPES.RECOMMENDATION_PLOT)) {
@@ -106,4 +103,23 @@ export const useSubscription = (groupId: string) => {
       };
     }
   }, [groupId, connectionStatus]);
+
+
+  const sendNotification = (parsedData) => {
+
+    const color = parsedData.level === "Information" ? "blue" : "red";
+
+    if (parsedData.source !== "gateway-patrick-1234") {
+
+      notifications.show({
+        title: parsedData.source,
+        message: parsedData.message,
+        position: "top-right",
+        autoClose: 10000,
+        color,
+        classNames: classes,
+      });
+    }
+    dispatch(addAlert(parsedData));
+  }
 };

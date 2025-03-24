@@ -25,21 +25,25 @@ const machineSlice = createSlice({
             }; // Store using UUID as key
         },
         updateMachineStatus: (state, action: PayloadAction<IMachineStatus>) => {
-            const { LastSeen, IsOnline, DeviceUuid } = action.payload
-
-            state.messages[DeviceUuid] = {
-                ...state.messages[DeviceUuid],
-                isOnline: IsOnline,
-                lastSeen: LastSeen as any
+            const { LastSeen, IsOnline, DeviceUuid } = action.payload;
+            if (state.messages[DeviceUuid]) {
+                state.messages[DeviceUuid] = {
+                    ...state.messages[DeviceUuid],
+                    isOnline: IsOnline,
+                    lastSeen: LastSeen as any
+                };
             }
         },
+
         updatePlotValues: (state, action: PayloadAction<IClusterResponse>) => {
-            const { DeviceUuid, X, Y, ClusterId } = action.payload
-            state.messages[DeviceUuid] = {
-                ...state.messages[DeviceUuid],
-                x: X,
-                y: Y,
-                clusterId: ClusterId
+            const { DeviceUuid, X, Y, ClusterId } = action.payload;
+            if (state.messages[DeviceUuid]) {
+                state.messages[DeviceUuid] = {
+                    ...state.messages[DeviceUuid],
+                    x: X,
+                    y: Y,
+                    clusterId: ClusterId as any === "0" ? "Cluster A" : "Cluster B"
+                };
             }
         }
     },

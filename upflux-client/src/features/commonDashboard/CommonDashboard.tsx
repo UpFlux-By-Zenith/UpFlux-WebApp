@@ -19,10 +19,10 @@ export const CommonDashboard = () => {
         <Tabs color="#2f3bff" className='common-tabs' defaultValue="main-management" >
             <Tabs.List>
                 <Tabs.Tab value="main-management">Dashboard</Tabs.Tab>
-                <Tabs.Tab value="version">Version Control</Tabs.Tab>
+                <Tabs.Tab value="version">Performance Monitor</Tabs.Tab>
                 <Tabs.Tab value="ai">AI Scheduling</Tabs.Tab>
+                <Tabs.Tab value="license">License Management</Tabs.Tab>
                 {userRole === ROLES.ADMIN && <>
-                    <Tabs.Tab value="license">License Management</Tabs.Tab>
                     <Tabs.Tab value="engineer">Engineer Management</Tabs.Tab>
                     <Tabs.Tab value="package">Package Management</Tabs.Tab>
                 </>

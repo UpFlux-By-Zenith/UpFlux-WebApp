@@ -102,18 +102,14 @@ public class PackageManagementController : ControllerBase
                 UseShellExecute = false
             };
 
-            var process = new Process { StartInfo = processStartInfo };
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
-
-            if (!string.IsNullOrEmpty(error)) _logger.LogError($"gpg error: {error}");
-
-            if (process.ExitCode != 0)
+            using (var process = Process.Start(processStartInfo))
             {
-                _logger.LogError($"File signing failed with exit code {process.ExitCode}");
-                return StatusCode(500, $"Error signing file: {error}");
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                _logger.LogInformation($"GPG Output: {output}");
+                _logger.LogError($"GPG Error: {error}");
             }
 
             // Add version record to database

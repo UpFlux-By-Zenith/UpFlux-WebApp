@@ -276,6 +276,7 @@ namespace UpFlux_WebService
         {
             using var scope = _serviceScopeFactory.CreateScope();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
 
             foreach (var aggregatedData in mon.AggregatedData)
             {
@@ -285,12 +286,32 @@ namespace UpFlux_WebService
 
                 try
                 {
+                    // Check if the device exists in the database
+                    var existingMachine = await machineRepository.GetByIdAsync(aggregatedData.Uuid);
+
+                    if (existingMachine == null)
+                    {
+                        _logger.LogInformation("Device with UUID {Uuid} not found. Adding to database.",
+                            aggregatedData.Uuid);
+                        await machineRepository.AddAsync(new Machine
+                        {
+                            machineName = aggregatedData.Uuid,
+                            dateAddedOn = DateTime.UtcNow,
+                            ipAddress = "NA",
+                            MachineId = aggregatedData.Uuid
+                        });
+                        _logger.LogInformation("Device with UUID {Uuid} added successfully.", aggregatedData.Uuid);
+
+                        await machineRepository.SaveChangesAsync();
+                    }
+
+                    // Send notification
                     await notificationService.SendMessageToUriAsync(aggregatedData.Uuid, aggregatedData.ToString());
                     _logger.LogInformation("Successfully sent data for MachineId {Uuid}.", aggregatedData.Uuid);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to send data for MachineId {Uuid}.", aggregatedData.Uuid);
+                    _logger.LogError(ex, "Failed to process data for MachineId {Uuid}.", aggregatedData.Uuid);
                 }
             }
         }
@@ -1075,7 +1096,7 @@ namespace UpFlux_WebService
             string userEmail
         )
         {
-            if (!_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
+            if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
             {
                 _logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
                 return;

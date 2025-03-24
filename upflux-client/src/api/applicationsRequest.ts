@@ -1,5 +1,6 @@
 import { IMachineLicense } from '../features/adminDashboard/ManageMachines';
-import { IEngineers } from '../features/adminDashboard/ViewEngineers';
+import { IEngineer } from '../features/adminDashboard/ViewEngineers';
+import { IMachineStatus } from '../features/reduxSubscription/subscriptionConsts';
 import { ADMIN_REQUEST_API, DATA_REQUEST_API, LICENCE_APIS, PACKAGE_DEPOYMENT, ROLLBACK } from './apiConsts';
 
 interface MachineDetailsResponse {
@@ -24,6 +25,38 @@ export interface IStoredVersionsResponse {
   machineId: string;
   versionName: string;
   installedAt: string;
+}
+
+export const getMachineStatus = async () => {
+  // Retrieve the token from session storage
+  const authToken = sessionStorage.getItem('authToken');
+
+  if (!authToken) {
+    console.error('No authentication token found in session storage.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(DATA_REQUEST_API.GET_MACHINES_STATUS, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Include Bearer token
+      },
+    });
+
+    if (response.ok) {
+      const data: IMachineStatus[] = await response.json();
+      return data;
+    } else {
+      const errorData = await response.json();
+      console.error('Error fetching machine details:', errorData);
+      return errorData.message || 'Failed to fetch machine details.';
+    }
+  } catch (error) {
+    console.error('Error during fetch request:', error);
+    return 'An error occurred while fetching machine details.';
+  }
 }
 
 export const getMachineStoredVersions = async () => {
@@ -262,7 +295,7 @@ export const getAllEngineers = async () => {
       },
     });
     if (response.ok) {
-      const data: IEngineers[] = await response.json();
+      const data: IEngineer[] = await response.json();
       return data;
     }
   } catch (error) {

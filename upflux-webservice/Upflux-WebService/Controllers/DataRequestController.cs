@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Upflux_WebService.Core.Models;
 using Upflux_WebService.Data;
+using Upflux_WebService.Services;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
@@ -22,16 +23,38 @@ public class DataRequestController : ControllerBase
     private readonly string _gatewayId;
     private readonly IControlChannelService _controlChannelService;
     private readonly ApplicationDbContext _context;
+    private readonly IAuthService _authService;
 
     #endregion
 
     public DataRequestController(IEntityQueryService entityQueryService, IConfiguration configuration,
-        IControlChannelService controlChannelService, ApplicationDbContext context)
+        IControlChannelService controlChannelService, ApplicationDbContext context, IAuthService authService)
     {
         _context = context;
         _entityQueryService = entityQueryService;
         _gatewayId = configuration["GatewayId"]!;
         _controlChannelService = controlChannelService;
+        _authService = authService;
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [HttpGet("machines/status")]
+    public IActionResult GetDeviceStatus()
+    {
+        try
+        {
+            var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            if (_authService.CheckIfUserIsRevoked(email)) return Unauthorized();
+
+            var machineIds = GetClaimValue("MachineIds");
+            var machines = machineIds.Split(',').ToList();
+            return Ok(_context.Machine_Status.Where(m => machines.Contains(m.MachineId)).ToList());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching applications: {ex.Message}");
+            return StatusCode(500, new { Error = "An internal error occurred." });
+        }
     }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
@@ -40,6 +63,9 @@ public class DataRequestController : ControllerBase
     {
         try
         {
+            var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            if (_authService.CheckIfUserIsRevoked(email)) return Unauthorized();
+            _controlChannelService.SendVersionDataRequestAsync("gateway-patrick-1234");
             return Ok(_context.MachineStoredVersions.ToList());
         }
         catch (Exception ex)
@@ -55,6 +81,8 @@ public class DataRequestController : ControllerBase
     {
         try
         {
+            var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            if (_authService.CheckIfUserIsRevoked(email)) return Unauthorized();
             // Fetch applications and join with their corresponding versions
             var applications = _context.Application_Versions.ToList();
 
@@ -82,7 +110,7 @@ public class DataRequestController : ControllerBase
         {
             var engineerEmail = GetClaimValue(ClaimTypes.Email);
             var machineIds = GetClaimValue("MachineIds");
-
+            if (_authService.CheckIfUserIsRevoked(engineerEmail)) return Unauthorized();
             var role = GetClaimValue(ClaimTypes.Role);
 
             // C# Query to fetch all Machines with UserName for Admin

@@ -168,12 +168,14 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { Error = "Invalid admin token." });
 
             var engineerToken =
-                _authService.GenerateEngineerToken(adminEmail, request.EngineerEmail, request.MachineIds);
+                _authService.GenerateEngineerToken(adminEmail, request.EngineerEmail, request.MachineIds,
+                    request.EngineerName);
             return Ok(new { EngineerToken = engineerToken });
         }
         catch (Exception ex)
         {
             return BadRequest(new { Error = ex.Message });
+            
         }
     }
 

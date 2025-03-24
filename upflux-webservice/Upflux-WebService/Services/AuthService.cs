@@ -179,7 +179,24 @@ public class AuthService : IAuthService
         return jwtToken.Claims.ToDictionary(c => c.Type, c => c.Value);
     }
 
+    /// <inherit/>
+    public bool CheckIfUserIsRevoked(string email)
+    {
+        // Find the user by email
+        var user = _context.Users.FirstOrDefault(u => u.Email == email);
+
+        if (user == null)
+            // User does not exist
+            return false;
+
+        // Check if the user is in the revoked list
+        var isRevoked = _context.Revokes.Any(r => r.UserId == user.UserId);
+
+        return isRevoked;
+    }
+
     #endregion
+
 
     #region private methods
 

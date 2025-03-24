@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Upflux_WebService.Core.Models;
 
-[Table("revoked_tokens")]
+[Table("Revoked_tokens")]
 public class Revokes
 {
     [Key] [Column("revoke_id")] public int RevokeId { get; set; }
