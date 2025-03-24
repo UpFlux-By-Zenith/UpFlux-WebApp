@@ -66,7 +66,7 @@ export const AdminLogin = () => {
 
       login(ROLES.ADMIN, response.token);
       navigate("/admin-dashboard");
-      
+
       }
 
     } catch (error: any) {
@@ -75,7 +75,7 @@ export const AdminLogin = () => {
       } else if (error.request) {
         setErrorMessage("Network error. Please check your connection and try again.");
       } else {
-        setErrorMessage("An unexpected error occurred. Please try again later.");
+        setErrorMessage("An unexpected error occurred.");
       }
     } finally {
       setLoading(false);
