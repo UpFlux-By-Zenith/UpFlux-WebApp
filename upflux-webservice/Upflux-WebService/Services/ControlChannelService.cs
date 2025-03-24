@@ -734,9 +734,20 @@ namespace UpFlux_WebService
                         {
                             var applicationVerion = await applicationVersionRepository.GetByIdAsync(dv.Current.Version);
                             if (applicationVerion != null)
+                            {
                                 machine.currentVersion = applicationVerion.VersionName;
+                            }
                             else
+                            {
+                                await applicationVersionRepository.AddAsync(new ApplicationVersion()
+                                {
+                                    VersionName = dv.Current.Version,
+                                    Date = DateTime.UtcNow,
+                                    UploadedBy = "E120023"
+                                });
+                                await applicationVersionRepository.SaveChangesAsync();
                                 machine.currentVersion = dv.Current.Version;
+                            }
 
                             machineRepository.Update(machine);
                             await machineRepository.SaveChangesAsync();
@@ -794,6 +805,20 @@ namespace UpFlux_WebService
                         if (versionsToAdd.Any())
                             foreach (var version in versionsToAdd)
                             {
+                                var applicationVerion =
+                                    await applicationVersionRepository.GetByIdAsync(version.Version);
+
+                                if (applicationVerion == null)
+                                {
+                                    await applicationVersionRepository.AddAsync(new ApplicationVersion()
+                                    {
+                                        VersionName = version.Version,
+                                        Date = DateTime.UtcNow,
+                                        UploadedBy = "E120023"
+                                    });
+                                    await applicationVersionRepository.SaveChangesAsync();
+                                }
+
                                 var newVersion = new MachineStoredVersion()
                                 {
                                     MachineId = dv.DeviceUuid,
