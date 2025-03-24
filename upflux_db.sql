@@ -13,10 +13,10 @@ CREATE TABLE Users (
 	last_login TIMESTAMP
 );
 
--- Create Application_Versions Table
 CREATE TABLE Application_Versions (
-    version_name VARCHAR(50) NOT NULL PRIMARY KEY,
-    date TIMESTAMP NOT NULL,
+    version_name VARCHAR(255) NOT NULL PRIMARY KEY,
+    uploaded_by VARCHAR(255) NOT NULL,
+    date DATETIME NOT NULL
 );
 
 -- Create Machines Table
@@ -24,13 +24,11 @@ CREATE TABLE Machines (
     machine_id VARCHAR(255) PRIMARY KEY,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(15) NOT NULL ,
-    machine_name varchar(255) NOT NULL,
-    app_name VARCHAR(100) DEFAULT 'Monitoring Service',
-    version_name VARCHAR(50) DEFAULT NULL,
-    last_updated_by VARCHAR(50) DEFAULT NULL,
-    FOREIGN KEY (version_name) REFERENCES Application_Versions(version_name),
-    FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
-
+    machine_name VARCHAR(255) NOT NULL,
+	app_name VARCHAR(255) DEFAULT 'Monitoring Service',
+	current_version VARCHAR(255) NOT NULL,
+	last_updated_by VARCHAR(255) NOT NULL,
+	FOREIGN KEY (last_updated_by) REFERENCES Users(user_id)
 );
 
 -- Create Admin_Details Table 
@@ -40,6 +38,7 @@ CREATE TABLE Admin_Details (
     password_hash VARCHAR(255) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
+
 
 -- Create Licences Table
 CREATE TABLE Licences (
@@ -96,22 +95,39 @@ CREATE TABLE Action_Logs (
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
+/*
 -- Create Applications Table
--- CREATE TABLE Applications (
---     app_id INT AUTO_INCREMENT PRIMARY KEY,
--- 	machine_id VARCHAR(255) NOT NULL,
---     app_name VARCHAR(255) NOT NULL,
---     added_by VARCHAR(50) NOT NULL,
---     current_version VARCHAR(50) NOT NULL,
---     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
---     FOREIGN KEY (added_by) REFERENCES Users(user_id),
---     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
--- );
+CREATE TABLE Applications (
+    app_id INT AUTO_INCREMENT PRIMARY KEY,
+	machine_id VARCHAR(255) NOT NULL,
+    app_name VARCHAR(255) NOT NULL,
+    added_by VARCHAR(50) NOT NULL,
+    current_version VARCHAR(50) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (added_by) REFERENCES Users(user_id),
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
+);
+*/
+
+/*
+-- Create Application_Versions Table
+CREATE TABLE Application_Versions (
+    version_id INT AUTO_INCREMENT PRIMARY KEY, 
+    version_name VARCHAR(50) NOT NULL,  
+    machine_id VARCHAR(255) NOT NULL,
+    uploaded_by VARCHAR(50), 
+    installed_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    storage_type ENUM('cloud', 'machine') NOT NULL, 
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    UNIQUE (version_name, machine_id, storage_type) 
+);
+*/
 
 CREATE TABLE Generated_Machine_Ids (
-    Id INT AUTO_INCREMENT PRIMARY KEY,
-    machine_id VARCHAR(36) NOT NULL UNIQUE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    Id VARCHAR(36) PRIMARY KEY, 
+    machine_id VARCHAR(255) NOT NULL,  
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 );
 
 CREATE TABLE Machine_Status (
@@ -122,26 +138,21 @@ CREATE TABLE Machine_Status (
 );
 
 CREATE TABLE Revoked_tokens (
-    revoke_id INT NOT NULL AUTO_INCREMENT,
+    revoke_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(50),
     revoked_by VARCHAR(50) NOT NULL,
     revoked_at DATETIME NOT NULL,
     reason MEDIUMTEXT,
-    PRIMARY KEY (revoke_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (revoked_by) REFERENCES Users(user_id)
 );
 
 CREATE TABLE Machine_Stored_Versions (
-    id INT NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     machine_id VARCHAR(255) NOT NULL,
-    installed_date DATE DEFAULT NULL,
-    user_id VARCHAR(50) DEFAULT NULL,
-    version_name VARCHAR(50) DEFAULT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY (machine_id) REFERENCES `Machines` (`machine_id`),
-    FOREIGN KEY (user_id) REFERENCES `Users` (`user_id`),
-    FOREIGN KEY (version_name) REFERENCES `Application_Versions` (`version_name`)
+    version_name VARCHAR(255),
+    installed_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE
 );
 
 -- Temporary table for tracking user id in a session
@@ -155,10 +166,10 @@ CREATE TEMPORARY TABLE User_Context (
 SHOW TABLES;
 
 -- Insert into Machines
-INSERT INTO Machines (machine_id, ip_address, machine_name) VALUES
-('MCH123ABC', '192.168.0.1', 'M456'),
-('MCH456DEF', '192.168.0.2', 'M789'),
-('MCH789GHI', '192.168.0.3', 'M321');
+INSERT INTO Machines (machine_id, ip_address, machine_name, app_name) VALUES
+('MCH123ABC', '192.168.0.1', 'M456', 'UpFlux-Monitoring-Service'),
+('MCH456DEF', '192.168.0.2', 'M789', 'UpFlux-Monitoring-Service'),
+('MCH789GHI', '192.168.0.3', 'M321', 'UpFlux-Monitoring-Service');
 
 -- Insert into Users
 INSERT INTO Users (user_id, name, email, role, last_login) VALUES
@@ -202,23 +213,31 @@ INSERT INTO Action_Logs (user_id, action_type, entity_name, time_performed) VALU
 ('E456', 'UPDATE', 'Package', '2024-01-16 10:15:00'),
 ('E789', 'DELETE', 'Licence', '2024-01-17 11:30:00');
 
+/*
 -- Insert into Applications
 INSERT INTO Applications (machine_id, app_name, added_by, current_version) VALUES
 ('MCH123ABC', 'AppOne', 'E123', 'v1.0'),
 ('MCH456DEF', 'AppTwo', 'E456', 'v1.1'),
 ('MCH789GHI', 'AppThree', 'E789', 'v1.2');
+*/
 
 -- Insert into Application_Versions
-INSERT INTO Application_Versions (machine_id, version_name,  date) VALUES
-('MCH123ABC', 'v1.0.1', '2024-01-15 09:00:00'),
-('MCH123ABC', 'v1.1.1', '2024-01-16 10:30:00'),
-('MCH123ABC', 'v1.2.1', '2024-01-17 11:45:00');
+INSERT INTO Application_Versions (machine_id, version_name, uploaded_by, installed_date, storage_type) VALUES
+('MCH123ABC', 'v1.0.1', 'E123', '2024-01-15 09:00:00', 'cloud'),
+('MCH123ABC', 'v1.1.1', 'E123', '2024-01-16 10:30:00', 'machine'),
+('MCH123ABC', 'v1.2.1', 'E456', '2024-01-17 11:45:00', 'cloud');
 
 -- Insert into Generated_Machine_Ids
-INSERT INTO Generated_Machine_Ids (machine_id) VALUES
-('123e4567-e89b-12d3-a456-426614174000'),
-('987f6543-e21b-34c2-b789-526613274111'),
-('456a1234-b56c-45f1-c321-626612374222');
+INSERT INTO Generated_Machine_Ids (generated_uuid, machine_id) VALUES
+('123e4567-e89b-12d3-a456-426614174000', 'MCH123ABC'),
+('987f6543-e21b-34c2-b789-526613274111', 'MCH456DEF'),
+('456a1234-b56c-45f1-c321-626612374222', 'MCH789GHI');
+
+INSERT INTO Machine_Status (machine_id, isOnline, lastSeen) VALUES
+('MCH123ABC', TRUE, '2024-01-15 09:00:00'),
+('MCH456DEF', FALSE, '2024-01-16 10:30:00'),
+('MCH789GHI', TRUE, '2024-01-17 11:45:00');
+
 
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
@@ -257,7 +276,6 @@ ORDER BY
 SELECT 
     ul.update_id,
     m.machine_id,
-    m.machine_status,
     p.version_number,
     p.package_signature,
     ul.update_status,
@@ -516,6 +534,58 @@ BEGIN
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
 END //
+DELIMITER ;
+
+/* Attribute-Based Access Control */
+DELIMITER //
+
+CREATE PROCEDURE CheckMachineAccess(
+    IN p_user_id VARCHAR(50),
+    IN p_machine_id VARCHAR(255),
+    OUT p_access_granted BOOLEAN
+)
+BEGIN
+    DECLARE v_user_role ENUM('Admin', 'Engineer');
+    DECLARE v_credential_valid BOOLEAN;
+    DECLARE v_within_working_hours BOOLEAN;
+
+    -- Get user's role (RBAC check)
+    SELECT role INTO v_user_role FROM Users WHERE user_id = p_user_id;
+
+    -- Check if credential is valid 
+    SELECT EXISTS (
+        SELECT 1 
+        FROM Credentials c
+        WHERE 
+            c.user_id = p_user_id 
+            AND c.machine_id = p_machine_id 
+            AND c.expires_at > NOW()
+            -- Check if Credential has been blacklisted since it was created
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM Revoked_Tokens rt
+                WHERE 
+                    rt.user_id = p_user_id 
+                    AND rt.revoked_at > c.access_granted_at
+            )
+    ) INTO v_credential_valid;
+
+    -- Check that it's within working hours (8 AM to 6 PM)
+    SET v_within_working_hours = (CURTIME() BETWEEN '08:00:00' AND '18:00:00');
+
+    -- Apply ABAC policy based on role
+    CASE 
+        WHEN v_user_role = 'Admin' THEN
+            -- Admins need valid credentials but no time restriction
+            SET p_access_granted = v_credential_valid;
+        WHEN v_user_role = 'Engineer' THEN
+            -- Engineers need valid credentials AND working hours
+            SET p_access_granted = v_credential_valid AND v_within_working_hours;
+        ELSE
+            SET p_access_granted = FALSE;
+    END CASE;
+END //
+
 DELIMITER ;
 
 -- Testing Stored Procedure
@@ -823,6 +893,7 @@ JOIN Packages p ON ul.package_id = p.package_id
 WHERE ul.update_status = 'Completed'
 GROUP BY ul.machine_id, p.version_number;
 
+/*
 -- View the list of apps and versions on each machine
 CREATE VIEW Application_Status AS
 SELECT 
@@ -830,6 +901,7 @@ SELECT
     a.app_name, 
     a.current_version
 FROM Applications a;
+*/
 
 -- View all machines with currently expired licences
 CREATE VIEW Expired_Licences AS
@@ -864,16 +936,17 @@ WHERE
 -- View relevant application data for an engineer
 CREATE VIEW Application_Details AS
 SELECT 
-    a.app_name,
-    a.current_version,
+    m.app_name,
+    av.version AS current_version,
     u1.name AS added_by,
     av.date AS last_updated,
     u2.name AS updated_by
-FROM Applications a
+FROM Machines m
 LEFT JOIN (
-    SELECT av1.app_id, av1.updated_by, av1.date
+    SELECT av1.machine_id, av1.version, av1.updated_by, av1.date
     FROM Application_Versions av1
-    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.app_id = av2.app_id)
-) av ON a.app_id = av.app_id
-LEFT JOIN Users u1 ON a.added_by = u1.user_id
+    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.machine_id = av2.machine_id)
+) av ON m.machine_id = av.machine_id
+LEFT JOIN Users u1 ON m.added_by = u1.user_id
 LEFT JOIN Users u2 ON av.updated_by = u2.user_id;
+
