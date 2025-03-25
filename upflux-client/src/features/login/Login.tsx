@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Container, Box, Image, Button, Text, Notification } from '@mantine/core';
+import { Container, Box, Image, Button, Text, Notification, Radio, TextInput } from '@mantine/core';
 import logo from "../../assets/logos/logo-light-large.png";
 import './login.css';
 import { engineerLoginSubmit } from '../../api/loginRequests';
 import { ROLES, useAuth } from '../../common/authProvider/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { AdminLogin } from '../adminLogin/AdminLogin';
 
 interface LoginFormState {
   tokenFile: File | null | string;
@@ -18,8 +19,11 @@ export const LoginComponent: React.FC = () => {
 
   const { login, isAuthenticated } = useAuth();
 
+  const [isLoginEngineer, setIsLoginEngineer] = useState(true)
+
+
   if (isAuthenticated) {
-    navigate('/update-management');
+    navigate('/dashboard');
   }
 
   const handleInputChange = (field: keyof LoginFormState) => (
@@ -72,7 +76,6 @@ export const LoginComponent: React.FC = () => {
             login(ROLES.ENGINEER, result.token);
 
             if (result) {
-              console.log('Login successful!');
               navigate('/update-management');
             } else {
               setErrorMessage('Login failed.');
@@ -108,9 +111,9 @@ export const LoginComponent: React.FC = () => {
               </Text>
             )}
           </Box>
-
           <Box className="input-field-box">
-            <Box className="file-input-box">
+            <Radio label="Engineer Login" onChange={(event) => setIsLoginEngineer(event.currentTarget.checked)} checked={isLoginEngineer} />
+            {isLoginEngineer && <Box className="file-input-box">
               <label htmlFor="tokenFile" className="file-label">
                 Token File
               </label>
@@ -122,11 +125,17 @@ export const LoginComponent: React.FC = () => {
                 className="file-input"
               />
             </Box>
+            }
+            <Radio label="Admin Login" onChange={(event) => setIsLoginEngineer(!event.currentTarget.checked)} checked={!isLoginEngineer} />
+            {!isLoginEngineer &&
+              <AdminLogin />
+            }
           </Box>
-          <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>
-          <Box className="admin-login-switch">
-            <a href="/admin-login" className="admin-login-link">Administrator login</a>
-          </Box>
+
+
+
+          {isLoginEngineer && <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>}
+
         </Box>
       </Container>
     </>

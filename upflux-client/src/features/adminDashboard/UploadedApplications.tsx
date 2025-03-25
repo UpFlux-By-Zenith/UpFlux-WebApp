@@ -1,5 +1,7 @@
 import { Table, Stack, Text } from "@mantine/core";
-
+import { useEffect, useState } from "react";
+import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
+import "./admin-dashboard.css";
 const applications = [
     {
         name: "upflux-monitoring-service",
@@ -8,6 +10,16 @@ const applications = [
 ];
 
 export const UploadedApplications = () => {
+
+    const [availableApps, setAvailableApps] = useState<IPackagesOnCloud[]>([])
+
+    useEffect(() => {
+
+        getAvailablePackages().then(res => {
+            setAvailableApps(res as IPackagesOnCloud[])
+        })
+
+    }, [])
     return (
         <Stack align="center" className="form-stack">
             <Text className="form-title">Uploaded Applications</Text>
@@ -19,7 +31,7 @@ export const UploadedApplications = () => {
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                    {applications.map((app) => (
+                    {availableApps.map((app) => (
                         <Table.Tr key={app.name}>
                             <Table.Td>{app.name}</Table.Td>
                             <Table.Td>{app.versions.join(", ")}</Table.Td>

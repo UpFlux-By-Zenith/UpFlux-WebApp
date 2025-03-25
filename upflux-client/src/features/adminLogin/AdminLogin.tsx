@@ -20,7 +20,7 @@ export const AdminLogin = () => {
 
 
   if (isAuthenticated) {
-    navigate('/admin-dashboard');
+    navigate('/dashboard');
   }
   const handleInputChange = (field: keyof AdminLoginFormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormState({ ...formState, [field]: event.target.value });
@@ -64,30 +64,24 @@ export const AdminLogin = () => {
 
 
   return (
-    <Container className="login-container">
-      <Box className="main-card">
-        <Image src={logo} alt="UpFlux Logo" className="upflux-logo" />
-        {errorMessage && <Text className="error-message">{errorMessage}</Text>}
-        <Box className="input-field-box">
-          <TextInput
-            placeholder="E-mail"
-            value={formState.email}
-            onChange={handleInputChange('email')}
-            className="input-card"
-          />
-          <TextInput
-            placeholder="Password"
-            type="password"
-            value={formState.password}
-            onChange={handleInputChange('password')}
-            className="input-card"
-          />
-        </Box>
-        <Button className="admin-login-button" onClick={handleSubmit}>Log in</Button>
-        <Box className="forgot-password">
-          <a href="/forgot-password" className="forgot-password-link">Forgotten your Password?</a>
-        </Box>
+    <>
+      <TextInput
+        placeholder="E-mail"
+        value={formState.email}
+        onChange={handleInputChange('email')}
+        className="input-card"
+      />
+      <TextInput
+        placeholder="Password"
+        type="password"
+        value={formState.password}
+        onChange={handleInputChange('password')}
+        className="input-card"
+      />
+      <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>
+      <Box className="forgot-password">
+        <a href="/forgot-password" className="forgot-password-link">Forgotten your Password?</a>
       </Box>
-    </Container>
+    </>
   );
 };

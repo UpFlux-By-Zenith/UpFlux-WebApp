@@ -1,12 +1,18 @@
-﻿using Grpc.Core;
+﻿using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using System.Collections.Concurrent;
-using UpFlux_WebService.Protos;
-using Upflux_WebService.Repository.Interfaces;
+using System.Text.RegularExpressions;
 using Upflux_WebService.Core.Models;
-using Google.Protobuf.WellKnownTypes;
-using Newtonsoft.Json;
+using Upflux_WebService.Repository.Interfaces;
 using Upflux_WebService.Services.Interfaces;
+using UpFlux_WebService.Protos;
+using Upflux_WebService.Repository;
 using static Upflux_WebService.Services.EntityQueryService;
+using System.Text.Json;
+using System.Diagnostics.Metrics;
+using static Google.Protobuf.Reflection.FieldOptions.Types;
+using System.ComponentModel.Design;
+using Upflux_WebService.Services.Enums;
 
 
 namespace UpFlux_WebService
@@ -21,7 +27,6 @@ namespace UpFlux_WebService
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly string _logDirectoryPath = Path.Combine(Directory.GetCurrentDirectory(), "logs");
 
-        // A dictionary of "GatewayID" => the active IServerStreamWriter
         private readonly ConcurrentDictionary<string, IServerStreamWriter<ControlMessage>> _connectedGateways = new();
         private readonly ConcurrentDictionary<string, CommandMetadata> _commandIdToMetadataMap = new();
         private readonly ConcurrentDictionary<string, UpdateMetadata> _updateMetadataMap = new();
@@ -106,6 +111,12 @@ namespace UpFlux_WebService
                 case ControlMessage.PayloadOneofCase.VersionDataResponse:
                     await HandleVersionDataResponse(gatewayId, msg.VersionDataResponse);
                     break;
+                case ControlMessage.PayloadOneofCase.AiRecommendations:
+                    await HandleAiRecommendations(gatewayId, msg.AiRecommendations);
+                    break;
+                case ControlMessage.PayloadOneofCase.DeviceStatus:
+                    await HandleDeviceStatus(gatewayId, msg.DeviceStatus);
+                    break;
                 default:
                     _logger.LogWarning("Received unknown message from [{0}] => {1}", gatewayId, msg.PayloadCase);
                     break;
@@ -118,11 +129,26 @@ namespace UpFlux_WebService
                 "Handling license request for Gateway ID: {GatewayId}, IsRenewal: {IsRenewal}, Device UUID: {DeviceUuid}",
                 gatewayId, req.IsRenewal, req.DeviceUuid);
 
+            using var scope = _serviceScopeFactory.CreateScope();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+            var generatedMachineIdRepository =
+                scope.ServiceProvider.GetRequiredService<IGeneratedMachineIdRepository>();
+
             try
             {
-                if (!req.IsRenewal)
+                var generatedId = await generatedMachineIdRepository.GetByMachineId(req.DeviceUuid);
+                if (generatedId is null)
+                {
+                    _logger.LogWarning(
+                        $"An unrecognized device is trying to communicate using the machine id: {req.DeviceUuid}");
+                    return;
+                }
+
+                var machine = await machineRepository.GetByIdAsync(req.DeviceUuid);
+
+                if (machine is null)
                     await AddUnregisteredDevice(gatewayId, req.DeviceUuid);
-                else
+                else if (machine is not null)
                     await ProcessRenewalRequest(gatewayId, req.DeviceUuid);
             }
             catch (Exception ex)
@@ -250,6 +276,7 @@ namespace UpFlux_WebService
         {
             using var scope = _serviceScopeFactory.CreateScope();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
 
             foreach (var aggregatedData in mon.AggregatedData)
             {
@@ -259,12 +286,32 @@ namespace UpFlux_WebService
 
                 try
                 {
+                    // Check if the device exists in the database
+                    var existingMachine = await machineRepository.GetByIdAsync(aggregatedData.Uuid);
+
+                    if (existingMachine == null)
+                    {
+                        _logger.LogInformation("Device with UUID {Uuid} not found. Adding to database.",
+                            aggregatedData.Uuid);
+                        await machineRepository.AddAsync(new Machine
+                        {
+                            machineName = aggregatedData.Uuid,
+                            dateAddedOn = DateTime.UtcNow,
+                            ipAddress = "NA",
+                            MachineId = aggregatedData.Uuid
+                        });
+                        _logger.LogInformation("Device with UUID {Uuid} added successfully.", aggregatedData.Uuid);
+
+                        await machineRepository.SaveChangesAsync();
+                    }
+
+                    // Send notification
                     await notificationService.SendMessageToUriAsync(aggregatedData.Uuid, aggregatedData.ToString());
                     _logger.LogInformation("Successfully sent data for MachineId {Uuid}.", aggregatedData.Uuid);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to send data for MachineId {Uuid}.", aggregatedData.Uuid);
+                    _logger.LogError(ex, "Failed to process data for MachineId {Uuid}.", aggregatedData.Uuid);
                 }
             }
         }
@@ -277,7 +324,15 @@ namespace UpFlux_WebService
             // notification
             using var scope = _serviceScopeFactory.CreateScope();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-            await notificationService.SendMessageToUriAsync($"alert", alert.ToString());
+
+            // This handles alerts that affects device packages
+            if (alert.Message.StartsWith("Update to version ") && alert.Message.Contains(" installed successfully"))
+            {
+                await SendVersionDataRequestAsync("gateway-patrick-1234");
+                await notificationService.SendMessageToUriAsync($"Alert/Update", alert.ToString());
+            }
+
+            await notificationService.SendMessageToUriAsync($"Alert", alert.ToString());
 
             // Send an alertResponse back
             if (_connectedGateways.TryGetValue(gatewayId, out var writer))
@@ -306,8 +361,10 @@ namespace UpFlux_WebService
                     metadata.Parameters);
 
                 foreach (var machineId in metadata.MachineIds)
-                    if (metadata.CommandType == CommandType.Rollback)
-                        await ProcessMachineRollback(machineId, metadata.Parameters, req);
+                    if (metadata.CommandType == ControlChannelCommandType.Rollback)
+                        await ProcessMachineRollbackResponse(machineId, metadata, req);
+                    else if (metadata.CommandType == ControlChannelCommandType.ScheduledUpdate)
+                        await ProcessScheduledUpdateResponse(machineId, metadata, req);
 
                 _commandIdToMetadataMap.TryRemove(req.CommandId, out _);
 
@@ -321,88 +378,148 @@ namespace UpFlux_WebService
             }
         }
 
-        /// <summary>
-        /// update application database if rollback is succesful
-        /// </summary>
-        private async Task ProcessMachineRollback(string machineId, string parameters, CommandResponse req)
+        ///
+        private async Task ProcessScheduledUpdateResponse(
+            string machineId,
+            CommandMetadata metadata,
+            CommandResponse req)
         {
-            // need to keep track the user who initiated rollback (since it affects application table) - not done
-            // might want to add engineer email parameter at SendUpdatePackage (used by controller), update interface, and update controller
-
             var alert = new AlertMessage();
             using var scope = _serviceScopeFactory.CreateScope();
-            var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
 
             try
             {
-                var application = await applicationRepository.GetByMachineId(machineId);
-                if (application == null)
-                {
-                    alert.Message = $"Failed to process rollback for MachineId: {machineId}. No application found.";
-                    _logger.LogWarning("No application found for MachineId: {0}. Skipping processing.", machineId);
-                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
-
-
-                    return;
-                }
-
                 if (req.Success)
                 {
-                    _logger.LogInformation(
-                        "Processing successful CommandResponse for MachineId: {0}, CommandId: {1}, Parameters: {2}",
-                        machineId, req.CommandId, parameters);
+                    var machine = await machineRepository.GetByIdAsync(machineId);
+                    machine.lastUpdatedBy = metadata.UserId;
 
-                    // update
-                    application.CurrentVersion = parameters;
+                    machineRepository.Update(machine);
+                    await machineRepository.SaveChangesAsync();
 
-                    applicationRepository.Update(application);
-                    await applicationRepository.SaveChangesAsync();
-
-                    // send succes notification
-                    var successMessage = $"MachineId: {machineId} successfully rolled back to version: {parameters}.";
+                    var successMessage =
+                        $"Scheduled update request for MachineId: {machineId}, to version: {metadata} successfully sent.";
                     alert.Message = successMessage;
-                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+                    await notificationService.SendMessageToUriAsync("Alert/ScheduledUpdate", alert.ToString());
 
                     _logger.LogInformation(
-                        "Successfully processed rollback for MachineId: {0}, CommandId: {1}. Updated to version: {2}",
-                        machineId, req.CommandId, parameters);
-                }
-                else
-                {
-                    // failure
-                    _logger.LogWarning("Rollback command failed for MachineId: {0}, CommandId: {1}.", machineId,
-                        req.CommandId);
-                    var failureMessage = $"Rollback failed for MachineId: {machineId}. CommandId: {req.CommandId}.";
-                    alert.Message = failureMessage;
-                    await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+                        "Successfully sent rollback request for MachineId: {0}, CommandId: {1}. Updated to version: {2}",
+                        machineId, req.CommandId, metadata);
                 }
             }
             catch (Exception ex)
             {
-                // notifcation for error?
-                _logger.LogError(ex, "Error while processing rollback for MachineId: {0}, CommandId: {1}.", machineId,
+                _logger.LogError(ex, "Error while sending scheduled update for MachineId: {0}, CommandId: {1}.",
+                    machineId,
                     req.CommandId);
                 alert.Message =
-                    $"An error occurred while processing rollback for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}";
-                await notificationService.SendMessageToUriAsync("alert", alert.ToString());
+                    $"An error occurred while processing scheduled update for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}";
+                await notificationService.SendMessageToUriAsync("Alert/ScheduledUpdate", alert.ToString());
             }
         }
 
         /// <summary>
-        /// update application database if update is succesful
+        /// handles case where rollback request is successfully sent to a device (important: sent but not finished)
         /// </summary>
+        private async Task ProcessMachineRollbackResponse(
+            string machineId,
+            CommandMetadata metadata,
+            CommandResponse req)
+        {
+            var alert = new AlertMessage();
+            using var scope = _serviceScopeFactory.CreateScope();
+            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+
+            try
+            {
+                // in case of partial success
+                var (succeededDevices, failedDevices) = string.IsNullOrWhiteSpace(req.Details)
+                    ? (new List<string>(), new List<string>())
+                    : ParseDeviceDetails(req.Details);
+
+                var isSuccess = req.Success || succeededDevices.Contains(machineId);
+
+                if (isSuccess)
+                {
+                    var machine = await machineRepository.GetByIdAsync(machineId);
+                    machine.lastUpdatedBy = metadata.UserId;
+
+                    machineRepository.Update(machine);
+                    await machineRepository.SaveChangesAsync();
+
+                    var successMessage =
+                        $"Rollback request for MachineId: {machineId}, to version: {metadata} successfully sent.";
+                    alert.Message = successMessage;
+                    await notificationService.SendMessageToUriAsync("Alert/Rollback", alert.ToString());
+
+                    _logger.LogInformation(
+                        "Successfully sent rollback request for MachineId: {0}, CommandId: {1}. Updated to version: {2}",
+                        machineId, req.CommandId, metadata);
+                }
+                else
+                {
+                    await HandleFailedRollback(machineId, req, notificationService, alert);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while processing rollback for MachineId: {0}, CommandId: {1}.", machineId,
+                    req.CommandId);
+                alert.Message =
+                    $"An error occurred while processing rollback for MachineId: {machineId}. CommandId: {req.CommandId}. Error: {ex.Message}";
+                await notificationService.SendMessageToUriAsync("Alert/Rollback", alert.ToString());
+            }
+        }
+
+        private async Task HandleFailedRollback(string machineId, CommandResponse req,
+            INotificationService notificationService, AlertMessage alert)
+        {
+            _logger.LogWarning("Rollback command failed for MachineId: {0}, CommandId: {1}.", machineId, req.CommandId);
+
+            var failureMessage = $"Rollback failed for MachineId: {machineId}. CommandId: {req.CommandId}.";
+            alert.Message = failureMessage;
+            await notificationService.SendMessageToUriAsync("Alert/Rollback", alert.ToString());
+        }
+
+        private (List<string> succeeded, List<string> failed) ParseDeviceDetails(string details)
+        {
+            var succeeded = new List<string>();
+            var failed = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(details)) return (succeeded, failed);
+
+            var successMatch =
+                Regex.Match(details, @"succeeded on\s*(.*?)(?:,\s*failed on|$)", RegexOptions.IgnoreCase);
+            if (successMatch.Success && !string.IsNullOrWhiteSpace(successMatch.Groups[1].Value))
+                succeeded = successMatch.Groups[1].Value
+                    .Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(d => d.Trim())
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .ToList();
+
+            var failedMatch = Regex.Match(details, @"failed on\s*(.*)", RegexOptions.IgnoreCase);
+            if (failedMatch.Success && !string.IsNullOrWhiteSpace(failedMatch.Groups[1].Value))
+                failed = failedMatch.Groups[1].Value
+                    .TrimEnd('.')
+                    .Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(d => d.Trim())
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .ToList();
+
+            return (succeeded, failed);
+        }
+
         private async Task HandleUpdateAcknowledged(string gatewayId, UpdateAck req)
         {
-            // need to keep track of the id of user who initiated the update (since it affects application table) - not done
-            // might want to add engineer email parameter at SendUpdatePackage (used by controller), update interface, and update controller
-
             _logger.LogInformation("Gateway [{0}] acknowledged update: {1}, success={2}",
                 gatewayId, req.FileName, req.Success);
 
             using var scope = _serviceScopeFactory.CreateScope();
-            var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
 
             if (!_updateMetadataMap.TryGetValue(req.FileName, out var metadata))
             {
@@ -415,46 +532,29 @@ namespace UpFlux_WebService
                 _logger.LogInformation("Processing UpdateAck for GatewayId: {0}, FileName: {1}, Success: {2}",
                     gatewayId, req.FileName, req.Success);
 
+                var (succeededDevices, failedDevices) = req.Success
+                    ? (metadata.TargetDevices.ToList(), new List<string>())
+                    : ExtractUpdatedDevices(req.Details);
+
                 foreach (var deviceUuid in metadata.TargetDevices)
-                {
-                    var application = await applicationRepository.GetByMachineId(deviceUuid);
-
-                    if (application == null)
+                    if (succeededDevices.Contains(deviceUuid))
                     {
-                        _logger.LogWarning("No application found for DeviceUuid: {0}. Skipping update.", deviceUuid);
+                        var machine = await machineRepository.GetByIdAsync(deviceUuid);
+                        machine.lastUpdatedBy = metadata.UserId;
 
-                        await notificationService.SendMessageToUriAsync("Alert/Update",
-                            $"Update failed for DeviceUuid: {deviceUuid}. Application not found.");
-                        continue;
-                    }
-
-                    if (req.Success)
-                    {
-                        // update
-                        application.CurrentVersion = metadata.Version;
-                        application.AppName = metadata.AppName;
-
-                        applicationRepository.Update(application);
-                        await applicationRepository.SaveChangesAsync();
+                        machineRepository.Update(machine);
+                        await machineRepository.SaveChangesAsync();
 
                         _logger.LogInformation(
-                            "Successfully updated application for DeviceUuid: {0} to version: {1}, AppName: {2}",
-                            deviceUuid, metadata.Version, metadata.AppName);
+                            $"The Package: {metadata.AppName}, Version: {metadata.Version}, has been sent to the device: {deviceUuid}");
 
-                        // notification
                         await notificationService.SendMessageToUriAsync("Alert/Update",
-                            $"DeviceUuid: {deviceUuid} successfully updated to version: {metadata.Version}, AppName: {metadata.AppName}.");
+                            $"The Package: {metadata.AppName}, Version: {metadata.Version}, has been sent to the device: {deviceUuid}");
                     }
                     else
                     {
-                        _logger.LogWarning("Update failed for DeviceUuid: {0}. FileName: {1}", deviceUuid,
-                            req.FileName);
-
-                        //notification
-                        await notificationService.SendMessageToUriAsync("Alert/Update",
-                            $"Update failed for DeviceUuid: {deviceUuid}. FileName: {req.FileName}, AppName: {metadata.AppName}.");
+                        await LogAndNotifyFailure(notificationService, deviceUuid, req.FileName, metadata.AppName);
                     }
-                }
 
                 _updateMetadataMap.TryRemove(req.FileName, out _);
             }
@@ -465,6 +565,117 @@ namespace UpFlux_WebService
 
                 await notificationService.SendMessageToUriAsync("Alert/Update",
                     $"An error occurred while processing update for GatewayId: {gatewayId}, FileName: {req.FileName}. Error: {ex.Message}");
+            }
+        }
+
+        //private async Task UpdateCurrentVersionAndNotify(IMachineRepository repository,
+        //	INotificationService notificationService, UpdateMetadata metadata,
+        //	string deviceUuid)
+        //{
+        //	var machine = await repository.GetByIdAsync(deviceUuid);
+
+        //	machine.currentVersion = metadata.Version;
+        //	machine.appName = "Montoring Service";
+        //	machine.lastUpdatedBy = metadata.UserId;
+
+        //	repository.Update(machine);
+        //	await repository.SaveChangesAsync();
+
+        //	//await SendVersionDataRequestAsync("gateway-patrick-1234");
+
+        //	_logger.LogInformation(
+        //		"Successfully updated application for DeviceUuid: {0} to version: {1}, AppName: {2}",
+        //		deviceUuid, metadata.Version, metadata.AppName);
+
+        //	await notificationService.SendMessageToUriAsync("Alert/Update",
+        //		$"DeviceUuid: {deviceUuid} successfully updated to version: {metadata.Version}, AppName: {metadata.AppName}.");
+        //}
+
+        private async Task LogAndNotifyFailure(INotificationService notificationService, string deviceUuid,
+            string fileName, string appName)
+        {
+            _logger.LogWarning("Update failed for DeviceUuid: {0}. FileName: {1}", deviceUuid, fileName);
+
+            await notificationService.SendMessageToUriAsync("Alert/Update",
+                $"Update failed for DeviceUuid: {deviceUuid}. FileName: {fileName}, AppName: {appName}.");
+        }
+
+        private (List<string> succeeded, List<string> failed) ExtractUpdatedDevices(string detailMsg)
+        {
+            var succeededDevices = new List<string>();
+            var failedDevices = new List<string>();
+
+            string succeededPart = string.Empty, failedPart = string.Empty;
+
+            if (detailMsg.Contains("Succeeded on:"))
+            {
+                var start = detailMsg.IndexOf("Succeeded on:") + "Succeeded on:".Length;
+                var end = detailMsg.Contains("Failed on:") ? detailMsg.IndexOf("Failed on:") : detailMsg.Length;
+                succeededPart = detailMsg.Substring(start, end - start).Trim().TrimEnd(';');
+            }
+
+            if (detailMsg.Contains("Failed on:"))
+            {
+                var start = detailMsg.IndexOf("Failed on:") + "Failed on:".Length;
+                failedPart = detailMsg.Substring(start).Trim().TrimEnd('.');
+            }
+
+            if (!string.IsNullOrWhiteSpace(succeededPart))
+                succeededDevices = succeededPart.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            if (!string.IsNullOrWhiteSpace(failedPart))
+                failedDevices = failedPart.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            return (succeededDevices, failedDevices);
+        }
+
+        private async Task HandleDeviceStatus(string gatewayId, DeviceStatus status)
+        {
+            _logger.LogInformation(
+                "DeviceStatus from Gateway [{0}]: device={1}, isOnline={2}, changedAt={3}",
+                gatewayId, status.DeviceUuid, status.IsOnline, status.LastSeen);
+
+            var jsonStatus = JsonSerializer.Serialize(status);
+
+            using var scope = _serviceScopeFactory.CreateScope();
+            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            var machineStatusRepository = scope.ServiceProvider.GetRequiredService<IMachineStatusRepository>();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+
+            var machine = await machineRepository.GetByIdAsync(status.DeviceUuid);
+            var existingStatus = await machineStatusRepository.GetByIdAsync(status.DeviceUuid);
+            if (machine is not null && existingStatus is null)
+            {
+                await notificationService.SendMessageToUriAsync($"Status/{status.DeviceUuid}", jsonStatus);
+
+                MachineStatus machineStatus = new()
+                {
+                    MachineId = status.DeviceUuid,
+                    IsOnline = status.IsOnline,
+                    LastSeen = status.LastSeen.ToDateTime()
+                };
+
+                await machineStatusRepository.AddAsync(machineStatus);
+                await machineStatusRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"Device Status Updated for {status.DeviceUuid}");
+            }
+            else if (machine is not null && existingStatus is not null)
+            {
+                await notificationService.SendMessageToUriAsync($"Status/{status.DeviceUuid}", jsonStatus);
+
+                existingStatus.IsOnline = status.IsOnline;
+                existingStatus.LastSeen = status.LastSeen.ToDateTime();
+
+                machineStatusRepository.Update(existingStatus);
+                await machineStatusRepository.SaveChangesAsync();
+
+                _logger.LogInformation($"Device Status Updated for {status.DeviceUuid}");
+            }
+            else
+            {
+                _logger.LogInformation(
+                    $"Invalid Device Status Detected: {status}");
             }
         }
 
@@ -484,96 +695,182 @@ namespace UpFlux_WebService
             }
             else
             {
+                if (resp.DeviceVersionsList == null || !resp.DeviceVersionsList.Any())
+                {
+                    _logger.LogWarning("Gateway [{0}] reported no devices in VersionDataResponse.", gatewayId);
+                    return;
+                }
+
                 _logger.LogInformation("VersionDataResponse from [{0}]: {1}", gatewayId, resp.Message);
 
                 using var scope = _serviceScopeFactory.CreateScope();
-                var applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
-                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                var applicationVersionRepository =
+                    scope.ServiceProvider.GetRequiredService<IApplicationVersionRepository>();
+                var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+                var machineStoredVersions =
+                    scope.ServiceProvider.GetRequiredService<IMachineStoredVersionsRepository>();
 
                 foreach (var dv in resp.DeviceVersionsList)
                 {
-                    _logger.LogInformation(" Device={0}", dv.DeviceUuid);
-
-                    var application = await applicationRepository.GetByMachineId(dv.DeviceUuid);
-                    if (application is null)
+                    var machineExists = await machineRepository.GetByIdAsync(dv.DeviceUuid);
+                    if (machineExists is null)
                     {
-                        // or add it to application database?
-                        _logger.LogInformation(
-                            $"machine: [{dv.DeviceUuid}] have an applicatiuon running that is not in the database");
+                        _logger.LogError(
+                            "Foreign Key Violation: Machine UUID [{0}] does not exist in Machines table. Skipping insert.",
+                            dv.DeviceUuid);
                         continue;
                     }
 
-                    if (dv.Current != null)
+                    _logger.LogInformation(" Device={0}", dv.DeviceUuid);
+
+                    // if there are no Current Version for a machine (current running service) in the database, add the "current" of the gRPC version data info (if it is not null)
+                    // if theres is an Application for the UUID, update it if it is a different version
+                    var machine = await machineRepository.GetByIdAsync(dv.DeviceUuid);
+                    if (machine != null)
                     {
-                        if (application.CurrentVersion != dv.Current.Version)
+                        // this situation where the application table does not have an existing application should not happen
+                        // this means that the application is not uploaded through the front end
+                        if (dv.Current is not null)
                         {
-                            application.CurrentVersion = dv.Current.Version;
-                            applicationRepository.Update(application);
-                            await applicationRepository.SaveChangesAsync();
+                            var applicationVerion = await applicationVersionRepository.GetByIdAsync(dv.Current.Version);
+                            if (applicationVerion != null)
+                            {
+                                machine.currentVersion = applicationVerion.VersionName;
+                            }
+                            else
+                            {
+                                await applicationVersionRepository.AddAsync(new ApplicationVersion()
+                                {
+                                    VersionName = dv.Current.Version,
+                                    Date = DateTime.UtcNow,
+                                    UploadedBy = "E120023"
+                                });
+                                await applicationVersionRepository.SaveChangesAsync();
+                                machine.currentVersion = dv.Current.Version;
+                            }
+
+                            machineRepository.Update(machine);
+                            await machineRepository.SaveChangesAsync();
                         }
 
-                        var installed = dv.Current.InstalledAt.ToDateTime();
-                        _logger.LogInformation("  CURRENT => Version={0}, InstalledAt={1}", dv.Current.Version,
-                            installed);
-                    }
-                    else
-                    {
-                        _logger.LogInformation("  CURRENT => (none)");
+                        _logger.LogInformation(
+                            $"machine: [{dv.DeviceUuid}] have an application running that is not in the cloud database");
                     }
 
+                    // if there are available versions in the message find in database a version with the same machineid and version name combination
+                    // get all versions in database with machineid. cross check with version data response
+                    // if the versions in the database contains a version that is not in the machine delete from database and add from the version data response
+                    // TLDR: this make sure database is exactly the same as the version data received
                     if (dv.Available.Count > 0)
                     {
-                        List<string> versions = new();
                         _logger.LogInformation("  AVAILABLE:");
-                        foreach (var av in dv.Available) versions.Add(av.Version);
-                        // var newVersion = new ApplicationVersion
-                        // {
-                        //     AppId = application.AppId,
-                        //     VersionName = av.Version,
-                        //     UpdatedBy = "E11111", // Adjust this based on actual updater
-                        //     Date = av.InstalledAt.ToDateTime(),
-                        //     DeviceUuid = dv.DeviceUuid
-                        // };
-                        //
-                        // await notificationService.SendMessageToUriAsync("versions",
-                        //     JsonConvert.SerializeObject(newVersion));
-                        // var existingVersion = application.Versions.FirstOrDefault(v => v.VersionName == av.Version);
-                        // if (existingVersion == null)
-                        // {
-                        //     var newVersion = new ApplicationVersion
-                        //     {
-                        //         AppId = application.AppId,
-                        //         VersionName = av.Version,
-                        //         UpdatedBy = "E11111", // Adjust this based on actual updater
-                        //         Date = av.InstalledAt.ToDateTime()
-                        //     };
-                        //     
-                        //     application.Versions.Add(newVersion);
-                        //     _logger.LogInformation("Added new available version: {0} for machine {1}", av.Version,
-                        //         dv.DeviceUuid);
-                        // }
-                        // else
-                        // {
-                        //     _logger.LogInformation("Version {0} already exists for machine {1}", av.Version,
-                        //         dv.DeviceUuid);
-                        // }
-                        var newVersion = new ApplicationVersions
-                        {
-                            AppId = application.AppId,
-                            VersionNames = versions,
-                            UpdatedBy = "E11111", // Adjust this based on actual updater
-                            DeviceUuid = dv.DeviceUuid
-                        };
 
-                        await notificationService.SendMessageToUriAsync("versions",
-                            JsonConvert.SerializeObject(newVersion));
-                        await applicationRepository.SaveChangesAsync();
+                        foreach (var av in dv.Available)
+                            _logger.LogInformation($"Version: {av.Version}, Release Date: {av.InstalledAt}");
+
+                        // Get all versions from the database for this machine and the one from incoming data
+                        var availableVersions =
+                            machineStoredVersions.GetMachineStoredVersions(dv.DeviceUuid);
+                        var incomingVersionNames = dv.Available
+                            .Select(av => av.Version)
+                            .ToHashSet();
+
+                        // Find versions in the database that are not in the incoming data (to delete)
+                        var versionsToDelete = availableVersions
+                            .Where(v => !incomingVersionNames.Contains(v.VersionName))
+                            .ToList();
+
+                        // Delete versions that are no longer on the machine
+                        if (versionsToDelete.Any())
+                            foreach (var version in versionsToDelete)
+                            {
+                                _logger.LogInformation("Deleting outdated version {0} from database for Machine [{1}]",
+                                    version.VersionName, dv.DeviceUuid);
+
+                                machineStoredVersions.Remove(version);
+                            }
+                        else
+                            _logger.LogInformation(
+                                $"No database deletes required for application version for device: {dv.DeviceUuid}");
+
+                        // Find versions from incoming data that are not in the database (to add)
+                        var existingVersionNames = availableVersions
+                            .Select(v => v.VersionName).ToHashSet();
+
+                        var versionsToAdd = dv.Available
+                            .Where(av => !existingVersionNames.Contains(av.Version))
+                            .ToHashSet();
+
+                        // Add new versions that are missing in the database
+                        if (versionsToAdd.Any())
+                            foreach (var version in versionsToAdd)
+                            {
+                                var applicationVerion =
+                                    await applicationVersionRepository.GetByIdAsync(version.Version);
+
+                                if (applicationVerion == null)
+                                {
+                                    await applicationVersionRepository.AddAsync(new ApplicationVersion()
+                                    {
+                                        VersionName = version.Version,
+                                        Date = DateTime.UtcNow,
+                                        UploadedBy = "E120023"
+                                    });
+                                    await applicationVersionRepository.SaveChangesAsync();
+                                }
+
+                                var newVersion = new MachineStoredVersion()
+                                {
+                                    MachineId = dv.DeviceUuid,
+                                    VersionName = version.Version,
+                                    InstalledAt = version.InstalledAt.ToDateTime()
+                                };
+
+                                _logger.LogInformation($"Adding new version {version.Version} to database");
+                                await machineStoredVersions.AddAsync(newVersion);
+                            }
+                        else
+                            _logger.LogInformation(
+                                $"No database ammends required for application version for device {dv.DeviceUuid}");
+
+                        await applicationVersionRepository.SaveChangesAsync();
                     }
                     else
                     {
                         _logger.LogInformation("  AVAILABLE => (none)");
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Receives AI Recommendations and sent it through singnalR to the web application
+        /// </summary>
+        /// <param name="gatewayId"></param>
+        /// <param name="aiRec"></param>
+        private async Task HandleAiRecommendations(string gatewayId, AIRecommendations aiRec)
+        {
+            _logger.LogInformation("AI Recommendations from [{0}]:", gatewayId);
+
+            using var scope = _serviceScopeFactory.CreateScope();
+            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+            foreach (var cluster in aiRec.Clusters)
+            {
+                _logger.LogInformation(" Cluster={0}, updated={1}", cluster.ClusterId, cluster.UpdateTime.ToDateTime());
+                _logger.LogInformation("  Devices: {0}", string.Join(", ", cluster.DeviceUuids));
+
+                await notificationService.SendMessageToUriAsync($"Recommendations/Cluster",
+                    JsonSerializer.Serialize(cluster));
+            }
+
+            foreach (var plot in aiRec.PlotData)
+            {
+                _logger.LogInformation(" Plot: dev={0}, x={1}, y={2}, cluster={3}",
+                    plot.DeviceUuid, plot.X, plot.Y, plot.ClusterId);
+
+                await notificationService.SendMessageToUriAsync($"Recommendations/Plot/{plot.DeviceUuid}",
+                    JsonSerializer.Serialize(plot));
             }
         }
 
@@ -624,12 +921,32 @@ namespace UpFlux_WebService
         /// <summary>
         /// Sends a command request (e.g. ROLLBACK) to a connected gateway.
         /// </summary>
-        public async Task SendCommandToGatewayAsync(string gatewayId,
+        public async Task SendCommandToGatewayAsync(
+            string gatewayId,
             string commandId,
             CommandType cmdType,
             string parameters,
-            params string[] targetDevices)
+            string userEmail,
+            params string[] targetDevices
+        )
         {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var machineRepository = scope.ServiceProvider.GetRequiredService<IMachineRepository>();
+
+            var user = await userRepository.GetUserByEmail(userEmail);
+            if (user is null)
+            {
+                _logger.LogWarning("Update package upload failed. Invalid user email");
+                return;
+            }
+
+            foreach (var device in targetDevices)
+            {
+                var machine = machineRepository.GetByIdAsync(device);
+                if (machine is null) return;
+            }
+
             if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
             {
                 _logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
@@ -654,11 +971,15 @@ namespace UpFlux_WebService
             {
                 await writer.WriteAsync(msg);
 
+                // MetadataMap Helps with asynchronous handling, it does not send anything to the gateway
                 _commandIdToMetadataMap[commandId] = new CommandMetadata
                 {
                     MachineIds = targetDevices.ToList(),
                     Parameters = parameters,
-                    CommandType = cmdType
+                    CommandType =
+                        ControlChannelCommandType
+                            .Rollback, //current only rollback is available (visit in the future when there are multiple command types)
+                    UserId = user.UserId
                 };
 
                 _logger.LogInformation("CommandRequest sent to [{0}]: id={1}, type={2}, deviceCount={3}",
@@ -698,9 +1019,26 @@ namespace UpFlux_WebService
         /// <summary>
         /// Sends an update package to the gateway, which should forward/install it on the specified devices.
         /// </summary>
-        public async Task SendUpdatePackageAsync(string gatewayId, string fileName, byte[] packageData,
-            string[] targetDevices, string appName, string version)
+        public async Task SendUpdatePackageAsync(
+            string gatewayId,
+            string fileName,
+            byte[] packageData,
+            byte[] signatureData,
+            string[] targetDevices,
+            string appName,
+            string version,
+            string userEmail)
         {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+
+            var user = await userRepository.GetUserByEmail(userEmail);
+            if (user is null)
+            {
+                _logger.LogWarning("Update package upload failed. Invalid user email");
+                return;
+            }
+
             if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
             {
                 _logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
@@ -710,7 +1048,8 @@ namespace UpFlux_WebService
             var update = new UpdatePackage
             {
                 FileName = fileName,
-                PackageData = Google.Protobuf.ByteString.CopyFrom(packageData)
+                PackageData = Google.Protobuf.ByteString.CopyFrom(packageData),
+                SignatureData = Google.Protobuf.ByteString.CopyFrom(signatureData)
             };
             update.TargetDevices.AddRange(targetDevices);
 
@@ -725,7 +1064,8 @@ namespace UpFlux_WebService
                 TargetDevices = targetDevices.ToList(),
                 AppName = appName,
                 Version = version,
-                FileName = fileName
+                FileName = fileName,
+                UserId = user.UserId
             };
 
             try
@@ -742,6 +1082,7 @@ namespace UpFlux_WebService
             }
         }
 
+
         /// <summary>
         /// Sends a request for version data; the gateway should respond with a VersionDataResponse.
         /// </summary>
@@ -755,12 +1096,79 @@ namespace UpFlux_WebService
 
             var msg = new ControlMessage
             {
-                SenderId = "CloudSim",
+                SenderId = "Cloud",
                 VersionDataRequest = new VersionDataRequest()
             };
             await writer.WriteAsync(msg);
 
             _logger.LogInformation("VersionDataRequest sent to gateway [{0}].", gatewayId);
+        }
+
+        /// <summary>
+        /// Sends a ScheduledUpdate to the gateway, which should install the package on the specified devices.
+        /// </summary>
+        /// <param name="gatewayId">The gateway to send the update to</param>
+        /// <param name="scheduleId">The unique ID for this scheduled update</param>
+        /// <param name="deviceUuids">The devices to target</param>
+        /// <param name="fileName">The name of the update package</param>
+        /// <param name="packageData">The binary data of the update package</param>
+        /// <param name="startTimeUtc">The start time for the update</param>
+        /// <returns>Returns the task for the async operation</returns>
+        public async Task SendScheduledUpdateAsync(
+            string gatewayId,
+            string scheduleId,
+            string[] deviceUuids,
+            string fileName,
+            byte[] packageData,
+            byte[] signatureData,
+            DateTime startTimeUtc,
+            string userEmail
+        )
+        {
+            if (!_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
+            {
+                _logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
+                return;
+            }
+
+            using var scope = _serviceScopeFactory.CreateScope();
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+
+            var user = await userRepository.GetUserByEmail(userEmail);
+            if (user is null)
+            {
+                _logger.LogWarning("Update package upload failed. Invalid user email");
+                return;
+            }
+
+            // build ScheduledUpdate
+            ScheduledUpdate su = new()
+            {
+                ScheduleId = scheduleId,
+                FileName = fileName,
+                PackageData = Google.Protobuf.ByteString.CopyFrom(packageData),
+                SignatureData = Google.Protobuf.ByteString.CopyFrom(signatureData),
+                StartTime = Timestamp.FromDateTime(startTimeUtc.ToUniversalTime())
+            };
+            su.DeviceUuids.AddRange(deviceUuids);
+
+            ControlMessage msg = new()
+            {
+                SenderId = "Cloud",
+                ScheduledUpdate = su
+            };
+
+            // metadata mapping helps with asynchronous handling
+            _commandIdToMetadataMap[scheduleId] = new CommandMetadata
+            {
+                MachineIds = deviceUuids.ToList(),
+                CommandType = ControlChannelCommandType.ScheduledUpdate,
+                UserId = user.UserId
+            };
+
+            await writer.WriteAsync(msg);
+            _logger.LogInformation("ScheduledUpdate {0} sent to gateway [{1}], devices={2}, start={3}",
+                scheduleId, gatewayId, string.Join(",", deviceUuids), startTimeUtc.ToString("o"));
         }
     }
 
@@ -772,16 +1180,25 @@ namespace UpFlux_WebService
 public class CommandMetadata
 {
     public List<string> MachineIds { get; set; } = new();
+
     public string Parameters { get; set; } = string.Empty;
-    public CommandType CommandType { get; set; }
+
+    public ControlChannelCommandType CommandType { get; set; }
+
+    public string UserId { get; set; } = string.Empty;
 }
 
 public class UpdateMetadata
 {
     public List<string> TargetDevices { get; set; } = new();
+
     public string AppName { get; set; } = string.Empty;
+
     public string Version { get; set; } = string.Empty;
+
     public string FileName { get; set; } = string.Empty;
+
+    public string UserId { get; set; } = string.Empty;
 }
 
 #endregion

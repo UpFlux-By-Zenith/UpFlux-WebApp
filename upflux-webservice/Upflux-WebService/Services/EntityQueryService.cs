@@ -31,32 +31,31 @@ public class EntityQueryService : IEntityQueryService
         _logger = logger;
     }
 
+    // TODO: API Cleanup
     /// <summary>
     /// Retrieves a list of applications along with their versions.
     /// </summary>
     /// <returns>A list of applications with their versions.</returns>
-    public async Task<List<Application>> GetApplicationsWithVersionsAsync()
-    {
-        _logger.LogInformation("Fetching applications with versions.");
+    //public async Task<List<Application>> GetApplicationsWithVersionsAsync()
+    //{
+    //    _logger.LogInformation("Fetching applications with versions.");
 
-        try
-        {
-            var applicationsWithVersions = await _context.Applications
-                .Include(a => a.Versions)
-                .ToListAsync();
+    //    try
+    //    {
+    //        var applicationsWithVersions = await _context.Applications
+    //            .Include(a => a.Versions)
+    //            .ToListAsync();
 
-            _logger.LogInformation("Successfully fetched {Count} applications with versions.",
-                applicationsWithVersions.Count);
-            return applicationsWithVersions;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while fetching applications with versions.");
-            throw;
-        }
-    }
-
-
+    //        _logger.LogInformation("Successfully fetched {Count} applications with versions.",
+    //            applicationsWithVersions.Count);
+    //        return applicationsWithVersions;
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error occurred while fetching applications with versions.");
+    //        throw;
+    //    }
+    //}
     public async Task<DbErrorEnum> CheckAdminLogin(string email, string password)
     {
         // Find the user base entry by email (since email is in UserBases table)
@@ -149,7 +148,7 @@ public class EntityQueryService : IEntityQueryService
         var userId = GenerateUserId(DbGenerateId.ENGINEER);
 
         // Create a new UserBase object
-        var newUser = new Users
+        var newUser = new User
         {
             UserId = userId,
             Email = email,
@@ -293,7 +292,7 @@ public class EntityQueryService : IEntityQueryService
         return appendId + newId;
     }
 
-    public async Task<List<Users>> GetAllEngineers()
+    public async Task<List<User>> GetAllEngineers()
     {
         return await _context.Users
             .Where(u => u.Role == UserRole.Engineer) // Filters only Engineers
@@ -325,27 +324,6 @@ public class EntityQueryService : IEntityQueryService
                 }
             )
             .ToListAsync();
-    }
-
-    public async Task<List<Machine>> GetListOfMachinesWithApplications()
-    {
-        var machinesWithApplications = await _context.Machines
-            .Include(m => m.Applications) // Including related Applications
-            .ThenInclude(a => a.Versions) // Including related Application Versions
-            .ToListAsync();
-
-        return machinesWithApplications;
-    }
-
-    public async Task<List<Machine>> GetListOfMachinesWithApplications(List<string> machineIds)
-    {
-        var machinesWithLicencesAndApplications = await _context.Machines
-            .Where(m => machineIds.Contains(m.MachineId)) // Filtering by provided machine IDs
-            .Include(m => m.Applications) // Including related Applications
-            .ThenInclude(a => a.Versions) // Including related Application Versions
-            .ToListAsync();
-
-        return machinesWithLicencesAndApplications;
     }
 
     #endregion
@@ -382,13 +360,6 @@ public class EntityQueryService : IEntityQueryService
     public Task<List<Machine>> GetListOfMachines()
     {
         return _context.Machines.ToListAsync();
-    }
-
-    public Task<List<Machine>> GetListOfMachines(List<string> machineIds)
-    {
-        return _context.Machines
-            .Where(m => machineIds.Contains(m.MachineId)) // Assuming MachineId is the property you're filtering by
-            .ToListAsync();
     }
 
     #endregion

@@ -1,7 +1,9 @@
 using System.Text;
 using System.Reflection;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -84,12 +86,16 @@ public class Program
             .AddScoped<IGeneratedMachineIdService, GeneratedMachineIdService>()
             .AddScoped<IGeneratedMachineIdRepository, GeneratedMachineIdRepository>()
             .AddScoped<IApplicationRepository, ApplicationRepository>()
+            .AddScoped<IApplicationVersionRepository, ApplicationVersionRepository>()
             .AddScoped<ILicenceRepository, LicenceRepository>()
             .AddScoped<IMachineRepository, MachineRepository>()
             .AddScoped<IEntityQueryService, EntityQueryService>()
             .AddScoped<INotificationService, NotificationService>()
             .AddScoped<ILogFileService, LogFileService>()
-            .AddSingleton<ControlChannelService>()
+            .AddScoped<IUserRepository, UserRepository>()
+            .AddScoped<IMachineStoredVersionsRepository, MachineStoredVersionsRepository>()
+			.AddScoped<IMachineStatusRepository, MachineStatusRepository>()
+			.AddSingleton<ControlChannelService>()
             .AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 
         // Load JWT settings from configuration
@@ -173,6 +179,17 @@ public class Program
             options.AddPolicy("AdminOrEngineer", policy => policy.RequireRole("Admin", "Engineer"));
         });
 
+        // Add Rate Limiting
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.AddFixedWindowLimiter("AdminLoginLimit", limiterOptions =>
+            {
+                limiterOptions.PermitLimit = 5; // Allow 5 requests
+                limiterOptions.Window = TimeSpan.FromMinutes(1); // Within 1 minute
+                limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                limiterOptions.QueueLimit = 2; // Allow 2 extra requests in queue
+            });
+        });
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseMySql(
@@ -198,7 +215,8 @@ public class Program
         // Use CORS
         app.UseCors("AllowSpecificOrigins");
 
-
+        // Apply Rate Limiting Middleware
+        app.UseRateLimiter();
         //Enforce HTTPS redirection
         app.UseHttpsRedirection();
 

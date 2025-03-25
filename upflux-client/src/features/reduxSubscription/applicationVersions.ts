@@ -8,6 +8,7 @@ export interface IApplications {
     Date: string,
     Application: string,
     DeviceUuid: string;
+    CurrentVersion: string
 }
 
 interface AlertState {

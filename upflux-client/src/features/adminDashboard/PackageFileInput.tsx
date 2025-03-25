@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button, FileInput, Stack, Text } from "@mantine/core";
-
+import { notifications } from "@mantine/notifications";
+import "./admin-dashboard.css";
 export const PackageFileInput = () => {
   const [file, setFile] = useState<File | null>(null);
 
@@ -31,8 +32,16 @@ export const PackageFileInput = () => {
           body: formData,
         });
 
+        if (response.ok) {
+          setFile(null);
+          notifications.show({
+            title: "Cloud Repository",
+            position: "top-right",
+            autoClose: 10000,
+            message: "Package has been signed & stored"
+          })
+        }
         const data = await response.json();
-        console.log("Upload response:", data);
       } catch (error) {
         console.error("Error during package upload:", error);
       }
@@ -45,8 +54,10 @@ export const PackageFileInput = () => {
     <Stack align="center" className="form-stack logs">
       <Text className="form-title">Get Signed Update Package</Text>
       <FileInput
+        style={{ width: "200px" }}
         className={"file-input"}
         clearable
+        value={file}
         label="Upload files"
         placeholder="Upload files"
         onChange={handleFileChange}

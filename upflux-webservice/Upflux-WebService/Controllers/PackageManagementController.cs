@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using Upflux_WebService.Core.Models;
+using Upflux_WebService.Data;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
@@ -11,7 +15,8 @@ namespace Upflux_WebService.Controllers;
 public class PackageManagementController : ControllerBase
 {
     //private readonly string _uploadPath = "/tmp/uploads"; // Base upload directory
-    //private readonly string _uploadedPackagesPath = "/tmp/uploaded-packages"; // Packages storage directory
+    //private readonly string _uploadedPackagesPath = "/tmp/uploaded-
+    //"; // Packages storage directory
     //private readonly string _signedFilesPath = "/tmp/signed"; // Path to save signed files
 
     // Path.GetTempPath()
@@ -23,6 +28,7 @@ public class PackageManagementController : ControllerBase
     private readonly string _gatewayId;
     private readonly IControlChannelService _controlChannelService;
     private readonly ILogger<PackageManagementController> _logger;
+    private readonly ApplicationDbContext _context;
 
     /// <summary>
     /// Constructor`
@@ -31,8 +37,9 @@ public class PackageManagementController : ControllerBase
     /// <param name="configuration"></param>
     /// <param name="controlChannelService"></param>
     public PackageManagementController(ILogger<PackageManagementController> logger, IConfiguration configuration,
-        IControlChannelService controlChannelService)
+        IControlChannelService controlChannelService, ApplicationDbContext context)
     {
+        _context = context;
         _logger = logger;
         _gatewayId = configuration["GatewayId"]!;
         _controlChannelService = controlChannelService;
@@ -53,6 +60,21 @@ public class PackageManagementController : ControllerBase
     public async Task<IActionResult> SignFile(IFormFile file)
     {
         if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+        var adminEmail = GetClaimValue(ClaimTypes.Email);
+
+        if (string.IsNullOrEmpty(adminEmail)) return Unauthorized("Admin email not found in token.");
+
+        // Find UserID from Users table using admin email
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+        if (user == null) return NotFound("Admin user not found.");
+
+        // Find AdminID from Admin_Details table using UserID
+        var adminDetails = await _context.Admin_Details.FirstOrDefaultAsync(a => a.UserId == user.UserId);
+        if (adminDetails == null) return Unauthorized("Admin ID not found.");
+
+        var userId = adminDetails.UserId;
+
 
         var packageName = Path.GetFileNameWithoutExtension(file.FileName).Split('_')[0];
         var packageDirectory = Path.Combine(_uploadedPackagesPath, packageName);
@@ -80,19 +102,26 @@ public class PackageManagementController : ControllerBase
                 UseShellExecute = false
             };
 
-            var process = new Process { StartInfo = processStartInfo };
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
-
-            if (!string.IsNullOrEmpty(error)) _logger.LogError($"gpg error: {error}");
-
-            if (process.ExitCode != 0)
+            using (var process = Process.Start(processStartInfo))
             {
-                _logger.LogError($"File signing failed with exit code {process.ExitCode}");
-                return StatusCode(500, $"Error signing file: {error}");
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                _logger.LogInformation($"GPG Output: {output}");
+                _logger.LogError($"GPG Error: {error}");
             }
+
+            // Add version record to database
+            var newVersion = new ApplicationVersion
+            {
+                UploadedBy = userId, // Store Admin ID
+                VersionName = file.FileName.Split('_')[1],
+                Date = DateTime.UtcNow
+            };
+
+            await _context.ApplicationVersions.AddAsync(newVersion);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation($"File signed successfully: {signedFilePath}");
             return Ok("File signed successfully.");
@@ -168,23 +197,108 @@ public class PackageManagementController : ControllerBase
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpPost("packages/upload")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
     {
         if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
             return BadRequest("Package name and version are required.");
 
+        var engineerEmail = GetClaimValue(ClaimTypes.Email);
+        var machineIds = GetClaimValue("MachineIds");
+
+        //Ensure claims exist
+        if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+            return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+
         var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
         if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
 
-        var packageFile = Directory.GetFiles(packageDirectory).FirstOrDefault(f => f.Contains(request.Version));
-        if (packageFile == null) return NotFound("Package version not found.");
+        // Look for a .deb file matching the package version
+        var packageFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
+
+        // Look for a .sig file matching the package version
+        var signatureFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
+
+        if (packageFile == null)
+            return NotFound("Matching .deb package version not found.");
+
+        if (signatureFile == null)
+            return NotFound("Matching .sig version signature not found.");
 
         try
         {
             var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
-            await _controlChannelService.SendUpdatePackageAsync(_gatewayId, Path.GetFileName(packageFile), packageData,
-                request.TargetDevices, request.Name, request.Version);
+            var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
+
+            await _controlChannelService.SendUpdatePackageAsync(
+                _gatewayId,
+                Path.GetFileName(packageFile),
+                packageData,
+                signatureData,
+                request.TargetDevices,
+                request.Name,
+                request.Version,
+                engineerEmail
+            );
+
+
+            return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error sending package: {ex.Message}");
+            return StatusCode(500, $"Error sending package: {ex.Message}");
+        }
+    }
+
+    [HttpPost("packages/schedule-update")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    public async Task<IActionResult> UploadScheduledPackageToGateway([FromBody] ScheduledUpdateRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
+            return BadRequest("Package name and version are required.");
+
+        var engineerEmail = GetClaimValue(ClaimTypes.Email);
+        var machineIds = GetClaimValue("MachineIds");
+
+        //Ensure claims exist
+        if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+            return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+
+        var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
+        if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
+
+        // Look for a .deb file matching the package version
+        var packageFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
+
+        // Look for a .sig file matching the package version
+        var signatureFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
+
+        if (packageFile == null)
+            return NotFound("Matching .deb package version not found.");
+
+        if (signatureFile == null)
+            return NotFound("Matching .sig version signature not found.");
+
+        try
+        {
+            var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
+            var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
+            var scheduleId = Guid.NewGuid().ToString("N");
+
+            await _controlChannelService.SendScheduledUpdateAsync(
+                _gatewayId,
+                scheduleId,
+                request.TargetDevices,
+                Path.GetFileName(packageFile),
+                packageData, signatureData,
+                request.startTimeUtc,
+                engineerEmail
+            );
 
             return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
         }
@@ -207,4 +321,21 @@ public class PackageManagementController : ControllerBase
         public string Version { get; set; } // Package version
         public string[] TargetDevices { get; set; } // Target devices
     }
+
+    public class ScheduledUpdateRequest
+    {
+        public string Name { get; set; } // Package name
+        public string Version { get; set; } // Package version
+        public string[] TargetDevices { get; set; } // Target devices
+        public DateTime startTimeUtc { get; set; }
+    }
+
+    #region helper methods
+
+    private string? GetClaimValue(string claimType)
+    {
+        return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+    }
+
+    #endregion
 }

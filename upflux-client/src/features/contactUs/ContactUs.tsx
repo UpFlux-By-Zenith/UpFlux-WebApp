@@ -28,7 +28,6 @@ export const ContactUs = () => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
     setFormData({ name: '', email: '', message: '' });
   };
 

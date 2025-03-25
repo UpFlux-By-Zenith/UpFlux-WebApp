@@ -16,6 +16,9 @@ public class Machine
 
     [Required] [Column("ip_address")] public string ipAddress { get; set; }
 
-    // Navigation property for related Applications
-    public ICollection<Application> Applications { get; set; }
+    [Column("app_name")] public string? appName { get; set; } = "Monitoring Service"; 
+
+    [Column("version_name")] public string? currentVersion { get; set; }
+
+	[Column("last_updated_by")] public string? lastUpdatedBy{ get; set; }
 }

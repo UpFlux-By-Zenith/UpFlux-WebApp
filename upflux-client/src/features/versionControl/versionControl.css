@@ -4,17 +4,14 @@
     margin-left: auto;
     background-color: #0052cc;
   }
-  
+
   .machine-id-box {
     display: inline-block;
-    background-color: #f9f9f9;
-    padding: 10px 20px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     font-size: 16px;
     font-weight: 600;
-    margin-top: 40px;
+    margin-top: 15px;
+    margin-bottom: 15px;
   }
 
   .version-table {
@@ -23,38 +20,41 @@
     margin-top: 20px;
     table-layout: fixed;
   }
-  
+
   .version-table th,
   .version-table td {
     padding: 15px;
-    text-align: left; 
+    text-align: left;
     border-bottom: 1px solid #ddd;
   }
-  
+
   .version-table th {
     background-color: #f5f5f5;
     font-weight: bold;
   }
-  
+
   .version-table td {
     word-wrap: break-word;
   }
-  
+
   .version-table tr:hover {
     background-color: #f9f9f9;
   }
-  
+
   .header {
     margin-top: 10px;
   }
 
   .version-control-content {
-    flex: 1; /* Allows this component to take up available space */
-    display: flex;
-    flex-direction: column;
-    min-height: 70vh;
+    padding-top: 20px;
+    min-height: 75vh;
   }
 
-  .metrics-container{
-    margin-left: 70px;
+  .metrics-container {
+    margin-top: 20px;
+  }
+
+  .metrics-labels {
+    margin-top: -10px !important;
+    margin-bottom: 10px;
   }

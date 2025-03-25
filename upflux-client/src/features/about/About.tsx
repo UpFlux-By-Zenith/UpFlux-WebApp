@@ -7,11 +7,11 @@ import schedulingimg from "../../assets/images/scheduling.jpg";
 
 export const About = () => {
   return (
-    <section id="about" className="about section light-background">
+    <section className="about-section" id="about">
       <Container size="lg" className="container">
         <div className="about-content">
           <div className="about-text">
-            <Title order={3}>About Us</Title>
+            <Title order={3}>UpFlux Features</Title>
             <Title order={2} style={{ marginBottom: '1rem' }}>
               Streamlining Software Updates in Paper Mills with UpFlux
             </Title>

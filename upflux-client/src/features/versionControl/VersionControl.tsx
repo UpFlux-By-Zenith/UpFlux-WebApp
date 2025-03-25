@@ -10,24 +10,100 @@ import {
   Modal,
   RingProgress,
   SimpleGrid,
+  Tabs,
+  Indicator
 } from "@mantine/core";
+import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import "./versionControl.css";
-import { getMachineDetails } from "../../api/applicationsRequest";
+import ReactSpeedometer, { Transition } from "react-d3-speedometer";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
 import { IApplications } from "../reduxSubscription/applicationVersions";
 
 export const VersionControl: React.FC = () => {
+  //Machine list from redux 
+  const storedMachines = useSelector((root: RootState) => root.machines.messages)
+  const cpuColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000",
+    "#FF0000", // Red 
+  ];
+
+  const tempColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000",
+    "#FF0000", // Red 
+  ];
+
+  const memoryColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00",
+    "#FFFF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000", // Red 
+  ];
+
+  const diskColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000",
+    "#FF0000", // Red 
+  ];
+
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
   const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
   const machineMetrics = useSelector(
     (state: RootState) => state.metrics.metrics
   );
-  // Retrieve machine ID from the route state
-  const location = useLocation();
-  const machineId = location.state?.machineId || "Unknown Machine";
+
+  const [selectedMachineName, setSelectedMachineName] = useState("")
+  const [selectedMachineId, setSelectedMachineId] = useState("")
+
+  const findMachineIdByName = (name) => {
+    return Object.entries(storedMachines).find(([, machine]) => machine.machineName === name)?.[0] || "";
+  };
+
+  useEffect(() => {
+    setSelectedMachineId(findMachineIdByName(selectedMachineName))
+  }, [selectedMachineName])
+
 
   // State for app versions and loading status
   const [appVersions, setAppVersions] = useState<
@@ -43,26 +119,25 @@ export const VersionControl: React.FC = () => {
     return `${days}d ${hours}h ${minutes}m`;
   };
 
-
   // Mocked machine metrics data
   const metrics = [
     {
       label: "CPU",
-      value: parseInt(machineMetrics[machineId]?.metrics.cpuUsage.toFixed()) || 0,
+      value: parseInt(machineMetrics[selectedMachineId]?.metrics.cpuUsage.toFixed()) || 0,
     },
     {
       label: "CPU Temp",
       value: parseInt(
-        machineMetrics[machineId]?.metrics.cpuTemperature.toFixed()
+        machineMetrics[selectedMachineId]?.metrics.cpuTemperature.toFixed()
       ) || 0,
     },
     {
       label: "Memory Usage",
-      value: parseInt(machineMetrics[machineId]?.metrics.memoryUsage.toFixed()) || 0,
+      value: parseInt(machineMetrics[selectedMachineId]?.metrics.memoryUsage.toFixed()) || 0,
     },
     {
       label: "Disk Usage",
-      value: parseInt(machineMetrics[machineId]?.metrics.diskUsage.toFixed()) || 0,
+      value: parseInt(machineMetrics[selectedMachineId]?.metrics.diskUsage.toFixed()) || 0,
     },
   ];
 
@@ -73,130 +148,99 @@ export const VersionControl: React.FC = () => {
     return "red";
   };
 
-  // Fetch data from API
-  useEffect(() => {
-    const fetchMachineDetails = async () => {
-      try {
-        const data = await getMachineDetails();
-        if (data && typeof data !== "string" && data.applications) {
-          // Filter applications for the current machineId
-          const filteredApps = data.applications
-            .filter((app) => app.machineId === machineId)
-            .map((app) => ({
-              appName: app.appName,
-              appVersion: app.currentVersion,
-              lastUpdate: app.versions?.[0]?.date || "N/A",
-            }));
-
-          setAppVersions(filteredApps);
-        } else {
-          console.error("Failed to fetch or parse machine details.");
-        }
-      } catch (error) {
-        console.error("Error fetching machine details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMachineDetails();
-  }, [machineId]);
-
   return (
     <Stack className="version-control-content">
-      {/* Header */}
-      <Box className="header">
-        <Text size="xl" fw={700}>
-          Version Control
-        </Text>
-      </Box>
 
       <Box className="content-wrapper">
         <Box className="machine-id-box">
-          {/* Display the machine ID */}
-          <Text>{`Machine ${machineId}`}</Text>
-        </Box>
+          {selectedMachineName && (
+            <Indicator
+              inline
+              color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
+              label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
+              size={16}
+            >
+              <Select
+                data={Object.values(storedMachines).map(m => m.machineName)}
+                value={selectedMachineName}
+                onChange={(value) => setSelectedMachineName(value)}
+                placeholder="Select Machine"
+              />
+            </Indicator>
+          )}
 
-        {/* Overview Section */}
-        <Group className="overview-section">
-          {/* Action Buttons */}
-          {/* <Button
-            className="softwareDropdown"
-            onClick={() => setModalOpened(true)}
-          >
-            Configure App Version
-          </Button> */}
-        </Group>
+          {!selectedMachineName && (
+            <Select
+              data={Object.values(storedMachines).map(m => m.machineName)}
+              value={selectedMachineName}
+              onChange={(value) => setSelectedMachineName(value)}
+              placeholder="Select Machine"
+            />
+          )}
+        </Box>
 
         {/* Machine Metrics Section */}
         <Box className="metrics-container">
           <SimpleGrid cols={4}>
             {metrics.map((metric, index) => (
-              <RingProgress
-                key={index}
-                roundCaps
-                size={150}
-                thickness={10}
-                sections={[
-                  { value: metric.value, color: getColor(metric.value) },
-                ]}
-                transitionDuration={250}
-                label={
-                  <Box
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100%",
-                    }}
-                  >
-                    <Text size="sm" fw="bold">
-                      {metric.value}%
-                    </Text>
-                    <Text size="xs" mt="xs" fw="bold">
-                      {metric.label}
-                    </Text>
-                  </Box>
-                }
-              />
+              <Box key={index} style={{ textAlign: "center" }}>
+                <ReactSpeedometer
+                  key={index}
+                  minValue={0}
+                  maxValue={100}
+                  segments={cpuColors.length}
+                  segmentColors={
+                    index % 4 === 0
+                      ? cpuColors
+                      : index % 4 === 1
+                        ? tempColors
+                        : index % 4 === 2
+                          ? memoryColors
+                          : diskColors
+                  }
+                  value={metric.value}
+                  needleColor="black"
+                  width={250}
+                  height={150}
+                  ringWidth={30}
+                  maxSegmentLabels={4}
+                />
+                <Text className="metrics-labels" size="sm" fw="bold" mt="sm">
+                  {metric.label}
+                </Text>
+              </Box>
             ))}
           </SimpleGrid>
           <center>
             <h2 style={{ textAlign: "center" }}>
-              System Uptime: {formatUptime(machineMetrics[machineId]?.metrics.systemUptime || 0)}
+              System Uptime: {formatUptime(machineMetrics[selectedMachineId]?.metrics.systemUptime || 0)}
             </h2>
           </center>
         </Box>
 
         {/* Table Section */}
         <Box>
-          {isLoading ? (
-            <Text>Loading app versions...</Text>
-          ) : (
-            <Table className="version-table" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>App Name</Table.Th>
-                  <Table.Th>Version</Table.Th>
-                  <Table.Th>Added By</Table.Th>
-                  <Table.Th>Last Updated</Table.Th>
-                  <Table.Th>Updated By</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {applications[machineId].VersionNames.map((appVersion, index) => (
-                  <Table.Tr key={index}>
-                    <Table.Td>UpFlux-Monitoring-Service</Table.Td>
-                    <Table.Td>{appVersion}</Table.Td>
-                    <Table.Td>Jane Smith</Table.Td>
-                    <Table.Td>Jan 10 2024</Table.Td>
-                    <Table.Td>Alice Cole</Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          )}
+          <Table className="version-table" highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>App Name</Table.Th>
+                <Table.Th>Version</Table.Th>
+                <Table.Th>Added By</Table.Th>
+                <Table.Th>Last Updated</Table.Th>
+                <Table.Th>Updated By</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              <Table.Tr >
+                <Table.Td>{storedMachines[selectedMachineId]?.appName}</Table.Td>
+                <Table.Td>{storedMachines[selectedMachineId]?.currentVersion}</Table.Td>
+                <Table.Td>{storedMachines[selectedMachineId]?.dateAddedOn}</Table.Td>
+                <Table.Td>{storedMachines[selectedMachineId]?.dateAddedOn}</Table.Td>
+                <Table.Td>{storedMachines[selectedMachineId]?.lastUpdatedBy}</Table.Td>
+              </Table.Tr>
+            </Table.Tbody>
+          </Table>
+
         </Box>
       </Box>
 

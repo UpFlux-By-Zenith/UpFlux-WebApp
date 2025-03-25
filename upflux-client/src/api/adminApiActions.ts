@@ -1,7 +1,36 @@
-import { AUTH_API, LICENCE_APIS } from './apiConsts';
+import { ADMIN_REQUEST_API, AUTH_API, LICENCE_APIS } from './apiConsts';
 import { AdminLoginPayload, EngineerTokenPayload, LoginResponse } from './apiTypes';
 
+export const revokeEngineer = async (engineerId: string, reason: string) => {
+  try {
 
+    // Retrieve the token from session storage
+    const authToken = sessionStorage.getItem('authToken');
+
+    if (!authToken) {
+      console.error('No authentication token found in session storage.');
+      return null;
+    }
+    // Make the API request with the Bearer token
+    const response = await fetch(ADMIN_REQUEST_API.REVOKE_ENGINEER, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`, // Add the Bearer token
+      },
+      body: JSON.stringify({ engineerId, reason }),
+    });
+
+    if (response.ok) {
+      return response.json()
+    } else {
+      const errorData = await response.json();
+      console.error('Error fetching engineer token:', errorData);
+    }
+  } catch (error) {
+    console.error('Error during engineer token request:', error);
+  }
+}
 
 export const adminLogin = async (payload: AdminLoginPayload) => {
   try {
@@ -38,7 +67,6 @@ export const getEngineerToken = async (payload: EngineerTokenPayload, adminAuthT
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Token retrieved:', data);
 
       // Convert JSON response to a Blob
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -51,7 +79,6 @@ export const getEngineerToken = async (payload: EngineerTokenPayload, adminAuthT
       link.click();
       document.body.removeChild(link);
 
-      console.log('JSON response downloaded as file.');
     } else {
       const errorData = await response.json();
       console.error('Error fetching engineer token:', errorData);
@@ -66,7 +93,6 @@ export const createMachineLicense = async (machineId: string) => {
 
     // Retrieve the token from session storage
     const authToken = sessionStorage.getItem('authToken');
-    console.log('authToken:', authToken);
 
     if (!authToken) {
       console.error('No authentication token found in session storage.');

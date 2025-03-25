@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Upflux_WebService.Core.Models;
@@ -26,48 +27,133 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a list of all admins.
+    /// Retrieves a list of all users from the database.
     /// </summary>
-    /// <returns>A list of admins.</returns>
-    /// <response code="200">Returns the list of admins.</response>
-    /// <response code="401">Unauthorized - Access restricted to Admin role.</response>
-    [HttpGet("list")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAllAdmins()
+    /// <returns>A list of users if found, otherwise a 404 Not Found response.</returns>
+    [HttpGet("users")] // Defines the HTTP GET endpoint at "/users".
+    public ActionResult<IEnumerable<User>> GetUsers()
     {
-        var admins = _context.Admin_Details.ToList();
-        return Ok(admins);
+        // Fetch all users from the database
+        var users = _context.Users.ToList();
+
+        // If no users are found, return a 404 Not Found response
+        if (users == null || !users.Any()) return NotFound("No users found.");
+
+        // Return the list of users with a 200 OK response
+        return Ok(users);
     }
 
     /// <summary>
-    /// Gets details of a specific admin by ID.
+    /// Revokes an engineer's token, preventing further access.
     /// </summary>
-    /// <param name="id">The ID of the admin.</param>
-    /// <returns>The admin details.</returns>
-    /// <response code="200">Returns the admin details.</response>
-    /// <response code="404">Admin not found.</response>
-    /// <response code="401">Unauthorized - Access restricted to Admin role.</response>
-    [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAdminById(Guid id)
+    /// <param name="engineerId">The ID of the engineer whose token is being revoked.</param>
+    /// <param name="reason">Optional reason for revocation.</param>
+    /// <returns>Returns an HTTP response indicating success or failure.</returns>
+    [HttpPost("revoke-engineer")]
+    public IActionResult RevokeEngineerToken([FromBody] RevokeEngineerRequest request)
     {
-        var admin = await _context.Admin_Details.FindAsync(id);
-        if (admin == null)
-            return NotFound(new { Message = "Admin not found." });
-        return Ok(admin);
+        try
+        {
+            // Get the admin's email from the claims
+            var adminEmail = GetClaimValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(adminEmail))
+                return Unauthorized("Admin email not found in claims.");
+
+            // Validate required parameters
+            if (string.IsNullOrEmpty(request.engineerId))
+                return BadRequest("Engineer ID is required.");
+
+            // Check if the admin engineer exists
+            var engineer = _context.Users.FirstOrDefault(u => u.Email == adminEmail);
+            if (engineer == null)
+                return NotFound("Engineer not found.");
+
+            var admin = _context.Admin_Details.FirstOrDefault(a => a.UserId == engineer.UserId);
+            var adminUser = _context.Users.FirstOrDefault(u => u.UserId == admin.UserId && u.Email == adminEmail);
+
+            if (admin == null || adminUser == null)
+                return NotFound("Admin not found or unauthorized.");
+
+            // Create a new revocation entry
+            var revocation = new Revokes
+            {
+                UserId = request.engineerId,
+                RevokedBy = admin.AdminId,
+                RevokedAt = DateTime.UtcNow,
+                Reason = request.reason
+            };
+
+            // Add and save the revocation
+            _context.Revokes.Add(revocation);
+            _context.SaveChanges();
+
+            Console.WriteLine($"Token revoked: Engineer {request.engineerId} by Admin {admin.AdminId}");
+
+            return Ok(new { message = "Engineer token revoked successfully." });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error revoking token: {ex.Message}");
+            return StatusCode(500, "An error occurred while revoking the token.");
+        }
     }
 
-    [HttpGet("engineers")]
-    public async Task<IActionResult> GetEngineers()
+    /// <summary>
+    /// Removes an engineer's token revocation, restoring access.
+    /// </summary>
+    /// <param name="engineerId">The ID of the engineer whose revocation is being removed.</param>
+    /// <param name="adminId">The ID of the admin performing the removal.</param>
+    /// <returns>Returns an HTTP response indicating success or failure.</returns>
+    [HttpDelete("reinstate-engineer")]
+    public IActionResult ReinstateEngineerToken(string engineerId)
     {
-        var engineers = await _entityQuery.GetAllEngineers();
-        if (engineers == null)
-            return NoContent();
-        return Ok(engineers);
+        try
+        {
+            // Get the admin's email from the claims
+            var adminEmail = GetClaimValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(adminEmail))
+                return Unauthorized("Admin email not found in claims.");
+
+            // Validate required parameters
+            if (string.IsNullOrEmpty(engineerId))
+                return BadRequest("Engineer ID is required.");
+
+            // Check if the admin engineer exists
+            var engineer = _context.Users.FirstOrDefault(u => u.Email == adminEmail);
+            if (engineer == null)
+                return NotFound("Engineer not found.");
+
+            var admin = _context.Admin_Details.FirstOrDefault(a => a.UserId == engineer.UserId);
+            var adminUser = _context.Users.FirstOrDefault(u => u.UserId == admin.UserId && u.Email == adminEmail);
+
+            if (admin == null || adminUser == null)
+                return NotFound("Admin not found or unauthorized.");
+
+            // Check if the engineer's token is revoked
+            var revokedToken = _context.Revokes.FirstOrDefault(r => r.UserId == engineerId);
+            if (revokedToken == null)
+                return NotFound("This engineer's token is not revoked.");
+
+            // Remove the revocation entry
+            _context.Revokes.Remove(revokedToken);
+            _context.SaveChanges();
+
+            // Logging (for debugging purposes)
+            Console.WriteLine($"Revocation removed: Engineer {engineerId} by Admin {admin.AdminId}");
+
+            // Return success response
+            return Ok(new { message = "Engineer token revocation removed successfully." });
+        }
+        catch (Exception ex)
+        {
+            // Log the error message
+            Console.WriteLine($"Error reinstating token: {ex.Message}");
+
+            // Return a 500 Internal Server Error response
+            return StatusCode(500, "An error occurred while reinstating the token.");
+        }
     }
+
 
     [HttpGet("machinesWithLicenses")]
     public async Task<IActionResult> GetAllMachinesWithLicenses()
@@ -76,10 +162,20 @@ public class AdminController : ControllerBase
         return Ok(machinesWithLicense);
     }
 
-    [HttpGet("machines/applications")]
-    public async Task<IActionResult> GetAllMachinesWithApplications()
+
+    #region private methods
+
+    // Helper method to get claim value
+    private string? GetClaimValue(string claimType)
     {
-        var machinesWithApplications = await _entityQuery.GetListOfMachinesWithApplications();
-        return Ok(machinesWithApplications);
+        return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
     }
+
+    #endregion
+}
+
+public class RevokeEngineerRequest
+{
+    public string engineerId;
+    public string? reason = null;
 }

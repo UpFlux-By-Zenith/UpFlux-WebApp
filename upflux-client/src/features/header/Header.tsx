@@ -17,7 +17,7 @@ export const Header = () => {
           </Text>
           <Button 
             component="a" 
-            href="#about" 
+            href="#learnMore" 
             className="learn-more-btn"
             variant="filled" 
             color="blue"

@@ -46,6 +46,15 @@ message ControlMessage {
     // Alerts
     AlertMessage alertMessage = 70;
     AlertResponseMessage alertResponse = 71;
+
+    // AI Clustering and Scheduling
+    AIRecommendations aiRecommendations = 80;
+
+    // Scheduling Updates
+    ScheduledUpdate scheduledUpdate = 90;
+
+    // Device Status
+    DeviceStatus deviceStatus = 100;
   }
 }
 
@@ -61,24 +70,6 @@ message LicenseResponse {
   bool approved = 2;
   string license = 3;
   google.protobuf.Timestamp expirationDate = 4;
-}
-
-message AddUnregisteredDeviceRequest {
-	string deviceUuid = 1;
-}
-
-message AddUnregisteredDeviceResponse {
-	bool isSuccesful = 1;
-	string message = 2;
-}
-
-message LicenceValidationRequest {
-	string licenseContent = 1;
-}
-
-message LicenceValidationResponse {
-	bool isValid = 1;
-	string message = 2;
 }
 
 // ==================== COMMANDS ====================
@@ -155,7 +146,8 @@ message SensorData {
 message UpdatePackage {
   string fileName = 1;           // .deb package name
   bytes packageData = 2;         // The raw .deb 
-  repeated string targetDevices = 3;
+  bytes signatureData = 3;      // The signature of the .deb
+  repeated string targetDevices = 4;
 }
 
 message UpdateAck {
@@ -198,4 +190,41 @@ message AlertMessage {
 message AlertResponseMessage {
   bool success = 1;
   string message = 2;
+}
+
+// ===================== AI CLUSTERING AND SCHEDULING =====================
+message AIRecommendations {
+  repeated AIScheduledCluster clusters = 1;
+  repeated AIPlotPoint plotData = 2;
+}
+
+message AIScheduledCluster {
+  string clusterId = 1;
+  repeated string deviceUuids = 2;
+  google.protobuf.Timestamp updateTime = 3;
+}
+
+message AIPlotPoint {
+  string deviceUuid = 1;
+  double x = 2;
+  double y = 3;
+  string clusterId = 4;
+}
+
+// ===================== SCHEDULING UPDATES =====================
+message ScheduledUpdate {
+  string scheduleId = 1;         
+  repeated string deviceUuids = 2;  
+  string clusterId = 3;          
+  string fileName = 4;           
+  bytes packageData = 5;        
+  bytes signatureData = 6;
+  google.protobuf.Timestamp startTime = 7; 
+}
+
+// ====================== DEVICE STATUS =====================
+message DeviceStatus {
+  string deviceUuid = 1;
+  bool isOnline = 2;
+  google.protobuf.Timestamp lastSeen = 3;
 }

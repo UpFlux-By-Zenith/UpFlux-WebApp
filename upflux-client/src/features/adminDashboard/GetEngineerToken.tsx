@@ -1,5 +1,5 @@
 // src/features/EngineerToken/GetEngineerToken.tsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   TextInput,
   Button,
@@ -11,7 +11,8 @@ import {
 } from "@mantine/core";
 import { useAuth } from "../../common/authProvider/AuthProvider";
 import { getEngineerToken } from "../../api/adminApiActions";
-import { getAllMachineDetails } from "../../api/applicationsRequest";
+import { useSelector } from "react-redux";
+import { RootState } from "../reduxSubscription/store";
 
 interface IMachineDetails {
   machineId: number;
@@ -28,6 +29,8 @@ export const GetEngineerToken: React.FC = () => {
   const [token, setToken] = useState("");
   const [multiSelectOptions, setMultiSelectOptions] = useState([]);
   const { authToken } = useAuth();
+  //Machine list from redux 
+  const storedMachines = useSelector((root: RootState) => root.machines.messages)
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,18 +47,19 @@ export const GetEngineerToken: React.FC = () => {
   };
 
   useEffect(() => {
-    getAllMachineDetails().then((res: IMachineDetails[]) => {
-      console.log(res);
-      const multiSelectOptions = res.map((val) => {
-        return { value: val.machineId, label: val.machineId };
-      });
-      setMultiSelectOptions(multiSelectOptions);
+    const multiSelectOptions = Object.keys(storedMachines).map((val) => {
+      return { value: val, label: val };
     });
-  }, []);
+    setMultiSelectOptions(multiSelectOptions);
+  }, [storedMachines]);
+
+  const handleChange = useCallback((va) => {
+    setMachineIds([...va]); // Ensure state is properly updated
+  }, [setMachineIds]);
 
   return (
     // <Box className="get-engineer-token-container">
-    <Stack align="center" className="form-stack">
+    <Stack align="center" className="form-stack" >
       <Text className="form-title">Create Engineer Token</Text>
 
       <TextInput
@@ -73,22 +77,15 @@ export const GetEngineerToken: React.FC = () => {
         onChange={(e) => setEngineerName(e.target.value)}
         className="input-field"
       />
+      <div style={{ width: "600px" }}>
 
-      {/* <TextInput
-        label="Machine IDs (comma-separated)"
-        placeholder="e.g., Machine1, Machine2"
-        value={machineIds}
-        onChange={(e) => setMachineIds(e.target.value)}
-        className="input-field"
-      /> */}
-
-      <MultiSelect
-        width={300}
-        onChange={(va) => setMachineIds(va)}
-        data={multiSelectOptions}
-        label="Machine IDs"
-        placeholder="Select machines to give access to"
-      />
+        <MultiSelect
+          onChange={handleChange}
+          data={multiSelectOptions}
+          label="Machine IDs"
+          placeholder="Select machines to give access to"
+        />
+      </div>
 
       <Button color="rgba(0, 3, 255, 1)" onClick={handleSubmit} className="submit-button">
         Create Token
