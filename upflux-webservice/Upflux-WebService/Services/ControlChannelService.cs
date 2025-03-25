@@ -1023,6 +1023,7 @@ namespace UpFlux_WebService
             string gatewayId,
             string fileName,
             byte[] packageData,
+            byte[] signatureData,
             string[] targetDevices,
             string appName,
             string version,
@@ -1047,7 +1048,8 @@ namespace UpFlux_WebService
             var update = new UpdatePackage
             {
                 FileName = fileName,
-                PackageData = Google.Protobuf.ByteString.CopyFrom(packageData)
+                PackageData = Google.Protobuf.ByteString.CopyFrom(packageData),
+                SignatureData = Google.Protobuf.ByteString.CopyFrom(signatureData)
             };
             update.TargetDevices.AddRange(targetDevices);
 
@@ -1079,6 +1081,7 @@ namespace UpFlux_WebService
                 _logger.LogError(ex, "Failed to send UpdatePackage [{0}] to Gateway [{1}].", fileName, gatewayId);
             }
         }
+
 
         /// <summary>
         /// Sends a request for version data; the gateway should respond with a VersionDataResponse.
@@ -1117,11 +1120,12 @@ namespace UpFlux_WebService
             string[] deviceUuids,
             string fileName,
             byte[] packageData,
+            byte[] signatureData,
             DateTime startTimeUtc,
             string userEmail
         )
         {
-            if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
+            if (!_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
             {
                 _logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
                 return;
@@ -1143,11 +1147,12 @@ namespace UpFlux_WebService
                 ScheduleId = scheduleId,
                 FileName = fileName,
                 PackageData = Google.Protobuf.ByteString.CopyFrom(packageData),
+                SignatureData = Google.Protobuf.ByteString.CopyFrom(signatureData),
                 StartTime = Timestamp.FromDateTime(startTimeUtc.ToUniversalTime())
             };
             su.DeviceUuids.AddRange(deviceUuids);
 
-            var msg = new ControlMessage
+            ControlMessage msg = new()
             {
                 SenderId = "Cloud",
                 ScheduledUpdate = su

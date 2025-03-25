@@ -217,14 +217,32 @@ public class PackageManagementController : ControllerBase
         var packageFile = Directory.GetFiles(packageDirectory)
             .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
 
+        // Look for a .sig file matching the package version
+        var signatureFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
+
         if (packageFile == null)
             return NotFound("Matching .deb package version not found.");
+
+        if (signatureFile == null)
+            return NotFound("Matching .sig version signature not found.");
 
         try
         {
             var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
-            await _controlChannelService.SendUpdatePackageAsync(_gatewayId, Path.GetFileName(packageFile), packageData,
-                request.TargetDevices, request.Name, request.Version, engineerEmail);
+            var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
+
+            await _controlChannelService.SendUpdatePackageAsync(
+                _gatewayId,
+                Path.GetFileName(packageFile),
+                packageData,
+                signatureData,
+                request.TargetDevices,
+                request.Name,
+                request.Version,
+                engineerEmail
+            );
+
 
             return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
         }
@@ -256,15 +274,31 @@ public class PackageManagementController : ControllerBase
         var packageFile = Directory.GetFiles(packageDirectory)
             .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
 
+        // Look for a .sig file matching the package version
+        var signatureFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
+
         if (packageFile == null)
             return NotFound("Matching .deb package version not found.");
+
+        if (signatureFile == null)
+            return NotFound("Matching .sig version signature not found.");
 
         try
         {
             var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
+            var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
             var scheduleId = Guid.NewGuid().ToString("N");
-            await _controlChannelService.SendScheduledUpdateAsync(_gatewayId, scheduleId, request.TargetDevices,
-                Path.GetFileName(packageFile), packageData, request.startTimeUtc, engineerEmail);
+
+            await _controlChannelService.SendScheduledUpdateAsync(
+                _gatewayId,
+                scheduleId,
+                request.TargetDevices,
+                Path.GetFileName(packageFile),
+                packageData, signatureData,
+                request.startTimeUtc,
+                engineerEmail
+            );
 
             return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
         }

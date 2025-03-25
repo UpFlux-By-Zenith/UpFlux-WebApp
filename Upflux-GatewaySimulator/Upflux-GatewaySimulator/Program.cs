@@ -601,6 +601,7 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
         Console.WriteLine(
             $"Received UpdatePackage: FileName={updatePackage.FileName}, Size={updatePackage.PackageData.Length} bytes");
 
+<<<<<<< HEAD
         // Traverse to the root directory of the project
         var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
 
@@ -611,6 +612,23 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
         // Ensure directories exist
         Directory.CreateDirectory(currentDirectory);
         Directory.CreateDirectory(availableDirectory);
+=======
+		Console.WriteLine(
+			$"Received Signature: Size={updatePackage.SignatureData.Length} bytes");
+
+		// Traverse to the root directory of the project
+		var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+
+		// Define directories
+		var currentDirectory = Path.Combine(rootDirectory, "Current");
+		var availableDirectory = Path.Combine(rootDirectory, "Available");
+		var signatureDirectory = Path.Combine(rootDirectory, "Signature");
+
+		// Ensure directories exist
+		Directory.CreateDirectory(currentDirectory);
+		Directory.CreateDirectory(availableDirectory);
+		Directory.CreateDirectory(signatureDirectory);
+>>>>>>> 64744805510a9e48e122842e6b1d5035a7e5d243
 
         // Get any existing file in "Current" (since only one should exist)
         var existingFiles = Directory.GetFiles(currentDirectory);
@@ -641,9 +659,13 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
         await File.WriteAllBytesAsync(newFilePath, updatePackage.PackageData.ToByteArray());
         Console.WriteLine($"UpdatePackage saved to: {newFilePath}");
 
+        var signatureFilePath = Path.Combine(signatureDirectory, updatePackage.FileName + ".sig");
+        await File.WriteAllBytesAsync(signatureFilePath, updatePackage.SignatureData.ToByteArray());
+        Console.WriteLine($"Signature saved to: {signatureFilePath}");
+
         // Simulate success/failure for target devices
-        List<string> succeededDevices = new();
-        List<string> failedDevices = new();
+        List<string> succeededDevices = new List<string>();
+        List<string> failedDevices = new List<string>();
         var targetDevices = updatePackage.TargetDevices;
 
         switch (updateSuccessResponse)
@@ -785,13 +807,19 @@ async Task HandleScheduledUpdate(ScheduledUpdate scheduledUpdate)
 
         // Define the directory for scheduled updates
         var scheduledUpdateDirectory = Path.Combine(rootDirectory, "ScheduledUpdates");
+        var scheduledUpdateSignatureDirectory = Path.Combine(rootDirectory, "ScheduledUpdateSignature");
 
         // Ensure the directory exists
         Directory.CreateDirectory(scheduledUpdateDirectory);
+        Directory.CreateDirectory(scheduledUpdateSignatureDirectory);
 
         // Save package data to disk
         var savePath = Path.Combine(scheduledUpdateDirectory, scheduledUpdate.FileName);
         await File.WriteAllBytesAsync(savePath, scheduledUpdate.PackageData.ToByteArray());
+
+        // save signature
+        string saveSignaturePath = Path.Combine(scheduledUpdateSignatureDirectory, scheduledUpdate.FileName + ".sig");
+        await File.WriteAllBytesAsync(saveSignaturePath, scheduledUpdate.SignatureData.ToByteArray());
 
         Console.WriteLine($"✅ Package saved at {savePath}");
 
