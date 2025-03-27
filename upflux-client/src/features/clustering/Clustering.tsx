@@ -1,249 +1,110 @@
-import React, { useState, useEffect } from "react";
-import { Box, Text, Group, Select, Switch, Paper } from "@mantine/core";
-import { ChartTooltipProps, LineChart, ScatterChart } from "@mantine/charts"; // Import LineChart
+import React, { useState, useEffect, useMemo } from "react";
+import { Box, Text, Group, Select, Paper, Button, ActionIcon } from "@mantine/core";
+import { ChartTooltipProps, ScatterChart } from "@mantine/charts";
 import "@mantine/core/styles.css";
 import "@mantine/charts/styles.css";
 import "@mantine/dates/styles.css";
 
-import { Calendar } from "@mantine/dates";
-import dayjs from "dayjs"; // Import dayjs to compare and format dates
+import { DateTimePicker } from "@mantine/dates";
 import "./clustering.css";
 import { useSelector } from "react-redux";
-import { data } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
 import { IMachine } from "../../api/reponseTypes";
 import { PLOT_COLORS } from "./clusteringConsts";
-import BubbleChart from '@weknow/react-bubble-chart-d3';
+import { IconArrowBigDownLinesFilled } from "@tabler/icons-react";
+
 interface IPlotData {
   color: string;
   name: string;
   machineId: string[];
   data: {
     x: number;
-    y: number
-  }[]
+    y: number;
+  }[];
 }
 
 export const Clustering: React.FC = () => {
-  // Updated data with 24-hour time format and 'value' instead of 'Apples'
-  const dataPoints = {
-    "Dec 10, 2024": [
-      { time: "00:00", value: 0 },
-      { time: "03:00", value: 0 },
-      { time: "06:00", value: 80 },
-      { time: "09:00", value: null },
-      { time: "12:00", value: null },
-      { time: "15:00", value: 40 },
-      { time: "18:00", value: 110 },
-      { time: "21:00", value: null },
-    ],
-    "Dec 9, 2024": [
-      { time: "00:00", value: 120 },
-      { time: "03:00", value: 65 },
-      { time: "06:00", value: 90 },
-      { time: "09:00", value: 40 },
-      { time: "12:00", value: 75 },
-      { time: "15:00", value: 50 },
-      { time: "18:00", value: 130 },
-      { time: "21:00", value: null },
-    ],
-    "Dec 6, 2024": [
-      { time: "00:00", value: 0 },
-      { time: "03:00", value: 0 },
-      { time: "06:00", value: 0 },
-      { time: "09:00", value: 40 },
-      { time: "12:00", value: 60 },
-      { time: "15:00", value: 90 },
-      { time: "18:00", value: 0 },
-      { time: "21:00", value: null },
-    ],
-  };
-  const data = [
-    {
-      color: 'blue.5',
-      name: 'Group 1',
-      data: [
-        { age: 25, BMI: 20 },
-        { age: 30, BMI: 22 },
-        { age: 35, BMI: 18 },
-        { age: 40, BMI: 25 },
-        { age: 45, BMI: 30 },
-        { age: 28, BMI: 15 },
-        { age: 22, BMI: 12 },
-        { age: 50, BMI: 28 },
-        { age: 32, BMI: 19 },
-        { age: 48, BMI: 31 },
-        { age: 26, BMI: 24 },
-        { age: 38, BMI: 27 },
-        { age: 42, BMI: 29 },
-        { age: 29, BMI: 16 },
-        { age: 34, BMI: 23 },
-        { age: 44, BMI: 33 },
-        { age: 23, BMI: 14 },
-        { age: 37, BMI: 26 },
-        { age: 49, BMI: 34 },
-        { age: 27, BMI: 17 },
-        { age: 41, BMI: 32 },
-        { age: 31, BMI: 21 },
-        { age: 46, BMI: 35 },
-        { age: 24, BMI: 13 },
-        { age: 33, BMI: 22 },
-        { age: 39, BMI: 28 },
-        { age: 47, BMI: 30 },
-        { age: 36, BMI: 25 },
-        { age: 43, BMI: 29 },
-        { age: 21, BMI: 11 },
-      ],
-    },
-    {
-      color: 'red.5',
-      name: 'Group 2',
-      data: [
-        { age: 26, BMI: 21 },
-        { age: 31, BMI: 24 },
-        { age: 37, BMI: 19 },
-        { age: 42, BMI: 27 },
-        { age: 29, BMI: 32 },
-        { age: 35, BMI: 18 },
-        { age: 40, BMI: 23 },
-        { age: 45, BMI: 30 },
-        { age: 27, BMI: 15 },
-        { age: 33, BMI: 20 },
-        { age: 38, BMI: 25 },
-        { age: 43, BMI: 29 },
-        { age: 30, BMI: 16 },
-        { age: 36, BMI: 22 },
-        { age: 41, BMI: 28 },
-        { age: 46, BMI: 33 },
-        { age: 28, BMI: 17 },
-        { age: 34, BMI: 22 },
-        { age: 39, BMI: 26 },
-        { age: 44, BMI: 31 },
-        { age: 32, BMI: 18 },
-        { age: 38, BMI: 23 },
-        { age: 43, BMI: 28 },
-        { age: 48, BMI: 35 },
-        { age: 25, BMI: 14 },
-        { age: 31, BMI: 20 },
-        { age: 36, BMI: 25 },
-        { age: 41, BMI: 30 },
-        { age: 29, BMI: 16 },
-      ],
-    },
-  ];
+  const storedMachines = useSelector((root: RootState) => root.machines.messages);
+  const clusterRecommendation = useSelector((root: RootState) => root.clusterRecommendation);
 
-  //Machine list from redux 
-  const storedMachines = useSelector((root: RootState) => root.machines.messages)
-
-  const [mappedClusterPlotData, setMappedClusterPlotData] = useState<IPlotData[]>([])
+  const [mappedClusterPlotData, setMappedClusterPlotData] = useState<IPlotData[]>([]);
+  const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
+  const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
 
   useEffect(() => {
     const plotData: IPlotData[] = [];
 
-    // Group machines by ClusterId
     const groupedMachines: Record<string, IMachine[]> = Object.values(storedMachines).reduce(
       (acc, machine) => {
-        if (!acc[machine.clusterId]) {
-          acc[machine.clusterId] = [];
+        if (machine && machine.clusterId) {
+          if (!acc[machine.clusterId]) {
+            acc[machine.clusterId] = [];
+          }
+          acc[machine.clusterId].push(machine);
         }
-        acc[machine.clusterId].push(machine);
         return acc;
       },
       {} as Record<string, IMachine[]>
     );
 
-    // Map grouped machines into plotData format
-    const clusterIds = Object.keys(groupedMachines);
-    clusterIds.forEach((clusterId, index) => {
-      if (groupedMachines.hasOwnProperty(clusterId)) {
-        const machines = groupedMachines[clusterId];
-        const data: { x: number, y: number }[] = machines.map(machine => ({
-          x: machine.x,
-          y: machine.y
-        }));
+    Object.entries(groupedMachines).forEach(([clusterId, machines], index) => {
+      const validMachines = machines.filter(m => m.x !== undefined && m.y !== undefined);
 
-        // Cycle through colors based on the cluster index
-        const color = PLOT_COLORS[index % PLOT_COLORS.length]; // Cycle through colors if there are more clusters than colors
-
-
+      if (validMachines.length > 0) {
         plotData.push({
-          name: clusterId, // You can use ClusterId as the name
-          data: data,
-          machineId: machines.map(m => m.machineId),
-          color: color
+          name: clusterId,
+          data: validMachines.map(machine => ({
+            x: machine.x!,
+            y: machine.y!
+          })),
+          machineId: validMachines.map(m => m.machineId),
+          color: PLOT_COLORS[index % PLOT_COLORS.length]
         });
       }
-    })
+    });
 
-
-    setMappedClusterPlotData(plotData)
+    setMappedClusterPlotData(plotData);
   }, [storedMachines]);
 
-  // State to store the selected date
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-
-  // Function to format the date to match the format used in dataPoints (e.g., 'Mar 22')
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-  };
-
-  // Function to handle date selection and update chart data
-  const handleSelect = (date: Date) => {
-    const formattedDate = formatDate(date);
-    setSelectedDate(formattedDate); // Update the selected date in state
-  };
-
+  const [recommendedTime, setRecommendedTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    // Set the calendar to the current date initially
-    const today = new Date();
-    const formattedDate = formatDate(today);
-    setSelectedDate(formattedDate);
-  }, []);
+    if (!selectedCluster) {
+      setRecommendedTime(null);
+      return;
+    }
 
+    const recommendation = clusterRecommendation.find((rec) => rec.ClusterId === selectedCluster);
+
+    if (!recommendation) {
+      setRecommendedTime(null);
+      return;
+    }
+
+    const { Seconds, Nanos } = recommendation.UpdateTime;
+    setRecommendedTime(new Date(Seconds * 1000 + Math.floor(Nanos / 1e6))); // Convert to milliseconds
+  }, [selectedCluster, clusterRecommendation]);
+
+
+  const handleDeploy = () => {
+    console.log("Deploying cluster:", selectedCluster, "at time:", selectedDateTime);
+  };
 
   const ChartTooltip = ({ payload }: ChartTooltipProps) => {
     if (!payload) return null;
-    console.log(payload)
     return (
       <Paper px="md" py="sm" withBorder shadow="md" radius="md">
-        {/* {payload.map((item: any) => ( */}
         <Text fz="sm">
           {payload["0"]?.payload.name}
           {payload["0"]?.payload.machineId}
         </Text>
-        {/* ))} */}
       </Paper>
     );
-  }
-
-  const bubbleClick = (label) => {
-    console.log("Custom bubble click func")
-  }
-  const legendClick = (label) => {
-    console.log("Customer legend click func")
-  }
+  };
 
   return (
     <Box className="clustering-container">
-      {/* Dropdown Section */}
-      <Group align="center" className="dropdown-section">
-        <Select
-          data={["Cluster State", "Cluster Details"]}
-          defaultValue="Cluster State"
-          rightSection={null}
-          className="dropdown"
-        />
-        <Select
-          data={["Update State", "Update Logs"]}
-          defaultValue="Update State"
-          className="dropdown"
-        />
-        <Switch label="Real Time" size="md" className="real-time-switch" />
-      </Group>
-
       <Group align="flex-start" className="main-content">
-        {/* Cluster Visuals */}
         <ScatterChart
           w={800}
           h={600}
@@ -254,17 +115,36 @@ export const Clustering: React.FC = () => {
           dataKey={{ x: 'x', y: 'y' }}
           withLegend
         />
-        {/* Calendar */}
-        <Box className="calendar-wrapper">
-          {/* Calendar with custom styles */}
-          <Calendar
-            className="calendar"
-            highlightToday
-            getDayProps={(date) => ({
-              selected: dayjs(date).isSame(selectedDate, 'date'), // Compare selected date using dayjs
-              onClick: () => handleSelect(date), // Capture the date selection
-            })}
+
+        <Box className="calendar-wrapper" title="Schedule Update" mt="md" style={{ display: 'flex', flexDirection: 'column' }}>
+          <Select
+            label="Select Cluster"
+            placeholder="Choose a cluster"
+            data={mappedClusterPlotData.map((plot) => ({ value: plot.name, label: plot.name }))}
+            value={selectedCluster}
+            onChange={(value) => setSelectedCluster(value)}
+
           />
+
+          {recommendedTime && (
+            <Group mt="xs">
+              <Text c="blue">
+                Suggested Update Time: {recommendedTime.toLocaleString()}
+              </Text>
+
+              <ActionIcon color="rgba(0, 3, 255, 1)" aria-label="Settings" onClick={() => setSelectedDateTime(recommendedTime)}>
+                <IconArrowBigDownLinesFilled style={{ width: "70%", height: "70%" }} stroke={1.5} />
+              </ActionIcon>
+            </Group>
+          )}
+
+          <DateTimePicker
+            label="Select Date & Time"
+            value={selectedDateTime}
+            onChange={setSelectedDateTime}
+          />
+
+          <Button color="rgba(0, 3, 255, 1)" onClick={handleDeploy}>Deploy</Button>
         </Box>
       </Group>
     </Box>

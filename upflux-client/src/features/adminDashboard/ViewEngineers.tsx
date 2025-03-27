@@ -5,6 +5,7 @@ import { formatTimestamp } from "../../common/appUtils";
 import "./admin-dashboard.css";
 import { IconCopyXFilled } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
+import { ROLES, useAuth } from "../../common/authProvider/AuthProvider";
 export interface IEngineer {
     userId: string,
     name: string,
@@ -16,25 +17,26 @@ export interface IEngineer {
 export const ViewEngineers = () => {
     const [rows, setRows] = useState<JSX.Element[]>([]);
     const [selectedEngineer, setSelectedEngineer] = useState<IEngineer>();
-
+    const { userRole } = useAuth()
     useEffect(() => {
-        getAllEngineers().then((res: IEngineer[]) => {
-            const mappedRows = res.map((engineer) => (
-                <Table.Tr key={engineer.userId}>
-                    <Table.Td>{engineer.userId}</Table.Td>
-                    <Table.Td>{engineer.name}</Table.Td>
-                    <Table.Td>{engineer.email}</Table.Td>
-                    <Table.Td>{formatTimestamp(engineer.lastLogin)}</Table.Td>
-                    <Table.Td>{engineer.role === 1 ? "Engineer" : "Admin"}</Table.Td>
-                    <Table.Td>
-                        <ActionIcon onClick={() => handleRevokeModal(engineer)} disabled={engineer.role === 0} variant="filled" style={{ marginLeft: "25px", alignContent: "center" }} color="red">
-                            <IconCopyXFilled />
-                        </ActionIcon>
-                    </Table.Td>
-                </Table.Tr>
-            ));
-            setRows(mappedRows);
-        });
+        if (userRole === ROLES.ADMIN)
+            getAllEngineers().then((res: IEngineer[]) => {
+                const mappedRows = res.map((engineer) => (
+                    <Table.Tr key={engineer.userId}>
+                        <Table.Td>{engineer.userId}</Table.Td>
+                        <Table.Td>{engineer.name}</Table.Td>
+                        <Table.Td>{engineer.email}</Table.Td>
+                        <Table.Td>{formatTimestamp(engineer.lastLogin)}</Table.Td>
+                        <Table.Td>{engineer.role === 1 ? "Engineer" : "Admin"}</Table.Td>
+                        <Table.Td>
+                            <ActionIcon onClick={() => handleRevokeModal(engineer)} disabled={engineer.role === 0} variant="filled" style={{ marginLeft: "25px", alignContent: "center" }} color="red">
+                                <IconCopyXFilled />
+                            </ActionIcon>
+                        </Table.Td>
+                    </Table.Tr>
+                ));
+                setRows(mappedRows);
+            });
     }, []);
 
     const [opened, { open, close }] = useDisclosure(false);

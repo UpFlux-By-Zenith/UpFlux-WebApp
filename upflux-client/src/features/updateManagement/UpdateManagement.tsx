@@ -12,7 +12,7 @@ import { ConfigureRollback } from "./ConfigureRollback";
 import { useDispatch, useSelector } from "react-redux";
 import { updateMachine, updateMachineStatus } from "../reduxSubscription/machinesSlice";
 import { RootState } from "../reduxSubscription/store";
-import { getMachineStatus } from "../../api/applicationsRequest";
+import { getMachineStatus, getMachineStoredVersions } from "../../api/applicationsRequest";
 import { IMachineStatus } from "../reduxSubscription/subscriptionConsts";
 
 export const UpdateManagement = () => {
@@ -34,10 +34,9 @@ export const UpdateManagement = () => {
   //Fetch accessible machines on component load
   useEffect(() => {
 
-
-
     const fetchMachines = async () => {
       const result = await getAccessibleMachines();
+      const res = await getMachineStoredVersions();
 
       if (typeof result === "object" && result?.accessibleMachines?.result) {
         setMachines(result.accessibleMachines.result as IMachine[]);

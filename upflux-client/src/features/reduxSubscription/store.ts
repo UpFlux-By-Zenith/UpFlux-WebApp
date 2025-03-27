@@ -4,6 +4,7 @@ import alertReducer from "./alertSlice";
 import connectionReducer from "./connectionSlice";
 import applicationReducer from "./applicationVersions";
 import machineReducer from "./machinesSlice";
+import clusterRecommendationReducer, { updateClusterRecommendation } from "./clusterRecommendationSlice";
 
 
 const store = configureStore({
@@ -12,7 +13,8 @@ const store = configureStore({
     alerts: alertReducer,
     machines: machineReducer,
     connectionStatus: connectionReducer,
-    applications: applicationReducer
+    applications: applicationReducer,
+    clusterRecommendation: clusterRecommendationReducer
   },
 });
 
