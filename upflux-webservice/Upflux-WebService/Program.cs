@@ -46,6 +46,7 @@ public class Program
             options.AddPolicy("AllowAllWithCredentials", policy =>
             {
                 policy.SetIsOriginAllowed(origin => true) // Allow any origin dynamically
+
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
