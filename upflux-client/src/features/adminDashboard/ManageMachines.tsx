@@ -5,6 +5,7 @@ import { generateMachineId, getMachinesWithLicense } from "../../api/application
 import { formatTimestamp } from "../../common/appUtils";
 import { createMachineLicense } from "../../api/adminApiActions";
 import "./admin-dashboard.css";
+import { ROLES, useAuth } from "../../common/authProvider/AuthProvider";
 export interface IMachineLicense {
     machineId: string;
     machineName: string;
@@ -19,7 +20,7 @@ export const ManageMachines: React.FC = () => {
     const [generatedId, setGeneratedId] = useState("Click to Generate");
     const [machines, setMachines] = useState<IMachineLicense[]>([]);
     const [refresh, setRefresh] = useState(0);
-
+    const { userRole } = useAuth()
     const handleRefresh = () => {
         setRefresh(prev => prev + 1); // Changing state triggers a re-render
     };
@@ -29,9 +30,10 @@ export const ManageMachines: React.FC = () => {
     };
 
     useEffect(() => {
-        getMachinesWithLicense().then((res: IMachineLicense[]) => {
-            setMachines(res);
-        });
+        if (userRole === ROLES.ADMIN)
+            getMachinesWithLicense().then((res: IMachineLicense[]) => {
+                setMachines(res);
+            });
     }, []);
 
     const handleCreateLicense = (machineId: string) => {

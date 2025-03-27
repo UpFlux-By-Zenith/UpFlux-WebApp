@@ -446,7 +446,6 @@ namespace UpFlux_WebService
                 {
                     var machine = await machineRepository.GetByIdAsync(machineId);
                     machine.lastUpdatedBy = metadata.UserId;
-
                     machineRepository.Update(machine);
                     await machineRepository.SaveChangesAsync();
 
@@ -860,7 +859,7 @@ namespace UpFlux_WebService
                 _logger.LogInformation(" Cluster={0}, updated={1}", cluster.ClusterId, cluster.UpdateTime.ToDateTime());
                 _logger.LogInformation("  Devices: {0}", string.Join(", ", cluster.DeviceUuids));
 
-                await notificationService.SendMessageToUriAsync($"Recommendations/Cluster",
+                await notificationService.SendMessageToUriAsync("Recommendations/Cluster",
                     JsonSerializer.Serialize(cluster));
             }
 
@@ -1125,7 +1124,7 @@ namespace UpFlux_WebService
             string userEmail
         )
         {
-            if (!_connectedGateways.TryGetValue(gatewayId, out IServerStreamWriter<ControlMessage>? writer))
+            if (!_connectedGateways.TryGetValue(gatewayId, out var writer))
             {
                 _logger.LogWarning("Gateway [{0}] is not connected.", gatewayId);
                 return;

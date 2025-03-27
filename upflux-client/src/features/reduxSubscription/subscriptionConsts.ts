@@ -4,7 +4,7 @@ export const GROUP_TYPES = {
     UPDATE_ALERT: "Alert/Update",
     SCHEDULED_UPDATE_ALERT: "Alert/ScheduledUpdate",
     ROLLBACK_ALERT: "Alert/Rollback",
-    RECOMMENDATION_ALERT: "Recommendation/Cluster",
+    RECOMMENDATION_ALERT: "Recommendations/Cluster",
     STATUS_ALERT: `Status/`,
     RECOMMENDATION_PLOT: `Recommendations/Plot/`
 }

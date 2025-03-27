@@ -91,12 +91,16 @@ public class PackageManagementController : ControllerBase
                 await file.CopyToAsync(stream);
             }
 
-            _logger.LogInformation($"Signing file {file.FileName} using GPG");
+            var gpgPassphrase = "UpFlux123";
+            var gpgKeyId = "3ADAF9875CB265A5C41016D2B1902804CC7BF808";
+
+            Console.WriteLine($"GPG_KEY_ID: {gpgKeyId}");
+
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = "gpg",
                 Arguments =
-                    $"--batch --pinentry-mode=loopback --passphrase \"admin\" --yes --armor --output \"{signedFilePath}\" --detach-sign --default-key \"87405E96DD54A18C1CAA0726F4F7BB6424ED59BF\" \"{filePath}\"",
+                    $"--homedir \\\"/home/pi/.gnupg\\\" --batch --pinentry-mode=loopback --passphrase \"{gpgPassphrase}\" --yes --armor --output \"{signedFilePath}\" --detach-sign -u \"{gpgKeyId}\" \"{filePath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false
@@ -133,42 +137,63 @@ public class PackageManagementController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Sends available list of application and its versions to be deployed
-    /// </summary>
-    /// <returns></returns>
-    [HttpGet("packages")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public IActionResult GetPackages()
+   /// <summary>
+/// Sends available list of application and its versions to be deployed
+/// </summary>
+/// <returns></returns>
+[HttpGet("packages")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+public IActionResult GetPackages()
+{
+    try
     {
-        try
-        {
-            if (!Directory.Exists(_uploadedPackagesPath))
-                return Ok(new List<object>());
+        if (!Directory.Exists(_uploadedPackagesPath))
+            return Ok(new List<object>());
 
-            var packages = Directory.GetDirectories(_uploadedPackagesPath)
-                .Select(pkgDir => new
+        // Log the base directory being checked
+        _logger.LogInformation($"Checking directory: {_uploadedPackagesPath}");
+
+        var packages = Directory.GetDirectories(_uploadedPackagesPath)
+            .Select(pkgDir =>
+            {
+                // Log each package directory being read
+                _logger.LogInformation($"Reading package directory: {pkgDir}");
+                
+                var versionFiles = Directory.GetFiles(pkgDir)
+                    .Where(file => !file.EndsWith(".sig")) // Exclude .sig files
+                    .Select(file =>
+                    {
+                        // Log each file being read
+                        _logger.LogInformation($"Reading file: {file}");
+                        
+                        return Path.GetFileName(file); // Extract file name
+                    })
+                    .Select(fileName =>
+                    {
+                        // Extract version from file name (assumes format "package_name_version.extension")
+                        var version = fileName.Split('_')[1];
+                        _logger.LogInformation($"Extracted version: {version} from file: {fileName}");
+                        return version;
+                    })
+                    .ToList();
+
+                return new
                 {
                     Name = Path.GetFileName(pkgDir),
-                    Versions = Directory.GetFiles(pkgDir)
-                        .Where(file => !file.EndsWith(".sig")) // Exclude .sig files
-                        .Select(file => Path.GetFileName(file)) // Extract file names
-                        .Select(fileName =>
-                        {
-                            // Extract version from file name (assumes format "package_name_version.extension")
-                            var version = fileName.Split('_')[1];
-                            return version;
-                        }).ToList()
-                }).ToList();
+                    Versions = versionFiles
+                };
+            })
+            .ToList();
 
-            return Ok(packages);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error retrieving packages: {ex.Message}");
-            return StatusCode(500, $"Error retrieving packages: {ex.Message}");
-        }
+        return Ok(packages);
     }
+    catch (Exception ex)
+    {
+        _logger.LogError($"Error retrieving packages: {ex.Message}");
+        return StatusCode(500, $"Error retrieving packages: {ex.Message}");
+    }
+}
+
 
     /// <summary>
     /// Mocks the process of upload the package to a machine
@@ -254,7 +279,7 @@ public class PackageManagementController : ControllerBase
     }
 
     [HttpPost("packages/schedule-update")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     public async Task<IActionResult> UploadScheduledPackageToGateway([FromBody] ScheduledUpdateRequest request)
     {
         if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))

@@ -12,6 +12,7 @@ import { IApplications, updateApps } from "./applicationVersions";
 import { GROUP_TYPES, IClusterResponse, IMachineStatus } from "./subscriptionConsts";
 import { updateMachine, updateMachineStatus, updatePlotValues } from "./machinesSlice";
 import { useAppDispatch } from "./hook";
+import { IClusterRecommendation, updateClusterRecommendation } from "./clusterRecommendationSlice";
 
 const hubUrl = "http://localhost:5000/notificationHub"; // Replace with your SignalR hub URL
 
@@ -19,7 +20,6 @@ export const useSubscription = (groupId: string) => {
   const dispatch = useAppDispatch();
   const connectionStatus = useSelector((root: RootState) => root.connectionStatus.isConnected)
   const isConnectedRef = useRef(false);
-  const machines = useSelector((root: RootState) => root.machines.messages)
 
   useEffect(() => {
     let connection: signalR.HubConnection | null = null;
@@ -50,6 +50,18 @@ export const useSubscription = (groupId: string) => {
             } else if (uri === GROUP_TYPES.UPDATE_ALERT) {
 
             } else if (uri === GROUP_TYPES.RECOMMENDATION_ALERT) {
+              const parsedData: IClusterRecommendation = JSON.parse(message)
+              parsedData.ClusterId = parsedData.ClusterId === "0" ? "Cluster A" : "Cluster B"
+              const notification: IAlertMessage = {
+                timestamp: Date.now().toString(),
+                level: "Information",
+                message: `New AI Recommendation Time is available for Cluster id ${parsedData.ClusterId === "0" ? "Cluster A" : "Cluster B"} `,
+                source: "AI Scheduler"
+              }
+
+              sendNotification(notification)
+
+              dispatch(updateClusterRecommendation(parsedData))
 
             } else if (uri === GROUP_TYPES.ROLLBACK_ALERT) {
 

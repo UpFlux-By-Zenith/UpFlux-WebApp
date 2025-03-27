@@ -44,7 +44,7 @@ public class NotificationService : INotificationService
                 await AddUriToGroupAsync(groupId, "Alert/Update");
                 await AddUriToGroupAsync(groupId, "Alert/ScheduledUpdate");
                 await AddUriToGroupAsync(groupId, "Alert/Rollback");
-                await AddUriToGroupAsync(groupId, "Recommendation/Cluster");
+                await AddUriToGroupAsync(groupId, "Recommendations/Cluster");
                 foreach (var machineId in machineIds)
                 {
                     await AddUriToGroupAsync(groupId, machineId);

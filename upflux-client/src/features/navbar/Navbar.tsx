@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Container, Image, Menu, Text, Group, Avatar } from "@mantine/core";
 import { Link } from "react-router-dom";
-import logo from "../../assets/logos/logo-no-name.png";
+import logo from "../../assets/logos/logo-light-large.png";
 import "./navbar.css";
 import { useAuth } from "../../common/authProvider/AuthProvider";
 
@@ -18,9 +18,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomePage }) => {
     <Container fluid className="navbar">
       <div className="navbar-logo">
         {onHomePage ? (
-          <Image src={logo} alt="Logo" className="logo" />
+          <>
+            <Image src={logo} alt="Logo" className="logo" />
+          </>
         ) : (
-          <Link to="/update-management">
+          <Link to="/dashboard">
             <Image src={logo} alt="Logo" className="nav-logo" />
           </Link>
         )}
@@ -36,15 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomePage }) => {
         ) : (
           <>
             <li className="profile">
-              {/* Profile Menu */}
-              <Menu width={80} trigger="hover">
-                <Menu.Target>
-                  <Link to="/account-settings">Profile</Link>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item component={Link} onClick={logout} to="/">Logout</Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
+              <Link onClick={logout} to="/login">Logout</Link>
             </li>
           </>
         )}
