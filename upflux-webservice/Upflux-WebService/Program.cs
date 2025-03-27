@@ -211,8 +211,8 @@ public class Program
         }
 
         // Use CORS
-        app.UseCors("AllowSpecificOrigins");
-
+        // app.UseCors("AllowSpecificOrigins");
+        app.UseCors("AllowAllWithCredentials"); // Must be before authentication & authorization
         // Apply Rate Limiting Middleware
         app.UseRateLimiter();
         //Enforce HTTPS redirection
