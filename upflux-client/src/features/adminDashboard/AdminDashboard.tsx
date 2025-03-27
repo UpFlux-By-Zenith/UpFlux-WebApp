@@ -38,7 +38,6 @@ export const AdminDashboard = () => {
 
           {/* Other Components Below */}
           <Grid.Col span={12}>
-            <GetEngineerToken />
           </Grid.Col>
           <Grid.Col span={12}>
             <UploadedApplications />

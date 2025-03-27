@@ -43,14 +43,16 @@ public class Program
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAnyOrigin", policy =>
+            options.AddPolicy("AllowAllWithCredentials", policy =>
             {
-                policy.WithOrigins("*") // Allow all origins
+                policy.SetIsOriginAllowed(origin => true) // Allow any origin dynamically
+
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials(); // Necessary for SignalR negotiation
+                    .AllowCredentials();
             });
         });
+
 
         // Increase the max request body size (in bytes)
         builder.Services.Configure<IISServerOptions>(options =>
@@ -91,8 +93,8 @@ public class Program
             .AddScoped<ILogFileService, LogFileService>()
             .AddScoped<IUserRepository, UserRepository>()
             .AddScoped<IMachineStoredVersionsRepository, MachineStoredVersionsRepository>()
-			.AddScoped<IMachineStatusRepository, MachineStatusRepository>()
-			.AddSingleton<ControlChannelService>()
+            .AddScoped<IMachineStatusRepository, MachineStatusRepository>()
+            .AddSingleton<ControlChannelService>()
             .AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 
         // Load JWT settings from configuration

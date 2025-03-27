@@ -45,7 +45,7 @@ export const ManageMachines: React.FC = () => {
     return (
 
         <Stack align="center" className="form-stack">
-            <Text className="form-title">Manage Machines</Text>
+            <Text className="form-title">Licenses</Text>
             <div style={{ display: "flex", alignItems: "center" }}>
                 <TextInput
                     label="Generate Machine ID"
