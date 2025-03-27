@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Box, Image, Button, Text, Notification, Radio, TextInput } from '@mantine/core';
+import { Container, Box, Image, Button, Text, Radio, TextInput, Loader } from '@mantine/core';
 import logo from "../../assets/logos/logo-light-large.png";
 import './login.css';
 import { engineerLoginSubmit } from '../../api/loginRequests';
@@ -15,6 +15,7 @@ export const LoginComponent: React.FC = () => {
   const navigate = useNavigate();
   const [formState, setFormState] = useState<LoginFormState>({ tokenFile: null });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   const { login, isAuthenticated } = useAuth();
@@ -31,11 +32,17 @@ export const LoginComponent: React.FC = () => {
   ) => {
     if (field === 'tokenFile') {
       const file = event.target.files?.[0] || null;
-      if (file && file.type !== 'application/json') {
-        setErrorMessage('Please upload a valid JSON file.');
-      } else {
-        setFormState({ ...formState, [field]: file });
-        setErrorMessage(null);
+      if (file) {
+        if (file.type !== 'application/json') {
+          setErrorMessage('Please upload a valid JSON file.');
+          setFormState({ tokenFile: null });
+        } else if (file.size > 2 * 1024 * 1024) { 
+          setErrorMessage('Please upload a file smaller than 2MB.');
+          setFormState({ tokenFile: null });
+        } else {
+          setFormState({ tokenFile: file });
+          setErrorMessage(null);
+        }
       }
     }
   };
@@ -53,6 +60,7 @@ export const LoginComponent: React.FC = () => {
     if (validateForm() && formState.tokenFile) {
       const reader = new FileReader();
 
+      setLoading(true);
       reader.onload = async () => {
         try {
           // Parse the JSON content from the file
@@ -87,6 +95,9 @@ export const LoginComponent: React.FC = () => {
         } catch (error) {
           console.error('Invalid JSON file:', error);
           setErrorMessage('The uploaded file is not a valid JSON file.');
+        }
+        finally{
+          setLoading(false);
         }
       };
 
@@ -134,7 +145,11 @@ export const LoginComponent: React.FC = () => {
 
 
 
-          {isLoginEngineer && <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} onClick={handleSubmit}>Log in</Button>}
+          {isLoginEngineer && <Button className="login-button" style={{ backgroundColor: '#2F3BFF', color: '#fff' }} 
+          onClick={handleSubmit}
+          disabled={loading}>
+           {loading ? <Loader size="sm" color="white" /> : "Log in"}
+           </Button>}
 
         </Box>
       </Container>
