@@ -2,19 +2,14 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
-  Group,
   Stack,
   Table,
   Text,
   Select,
   Modal,
-  RingProgress,
   SimpleGrid,
-  Tabs,
   Indicator
 } from "@mantine/core";
-import { Link, useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
 import "./versionControl.css";
 import ReactSpeedometer, { Transition } from "react-d3-speedometer";
 import { useSelector } from "react-redux";
@@ -122,21 +117,21 @@ export const VersionControl: React.FC = () => {
   // Mocked machine metrics data
   const metrics = [
     {
-      label: "CPU",
+      label: "CPU (%)",
       value: parseInt(machineMetrics[selectedMachineId]?.metrics.cpuUsage.toFixed()) || 0,
     },
     {
-      label: "CPU Temp",
+      label: "CPU Temp (°C)",
       value: parseInt(
         machineMetrics[selectedMachineId]?.metrics.cpuTemperature.toFixed()
       ) || 0,
     },
     {
-      label: "Memory Usage",
+      label: "Memory Usage (%)",
       value: parseInt(machineMetrics[selectedMachineId]?.metrics.memoryUsage.toFixed()) || 0,
     },
     {
-      label: "Disk Usage",
+      label: "Disk Usage (%)",
       value: parseInt(machineMetrics[selectedMachineId]?.metrics.diskUsage.toFixed()) || 0,
     },
   ];
