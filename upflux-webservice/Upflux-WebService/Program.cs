@@ -43,12 +43,9 @@ public class Program
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowSpecificOrigins", policy =>
+            options.AddPolicy("AllowAnyOrigin", policy =>
             {
-                policy.WithOrigins("http://localhost:3000",
-                        "http://127.0.0.1:5500", // Add this
-                        "https://localhost:5500" // And this, if you're using HTTPS
-                    ) // Replace with your client URL(s)
+                policy.WithOrigins("*") // Allow all origins
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials(); // Necessary for SignalR negotiation
