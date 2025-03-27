@@ -43,9 +43,12 @@ public class Program
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAnyOrigin", policy =>
+            options.AddPolicy("AllowSpecificOrigins", policy =>
             {
-                policy.WithOrigins("*") // Allow all origins
+                policy.WithOrigins("http://localhost:3000",
+                        "http://127.0.0.1:5500", // Add this
+                        "https://localhost:5500" // And this, if you're using HTTPS
+                    ) // Replace with your client URL(s)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials(); // Necessary for SignalR negotiation
@@ -91,8 +94,8 @@ public class Program
             .AddScoped<ILogFileService, LogFileService>()
             .AddScoped<IUserRepository, UserRepository>()
             .AddScoped<IMachineStoredVersionsRepository, MachineStoredVersionsRepository>()
-			.AddScoped<IMachineStatusRepository, MachineStatusRepository>()
-			.AddSingleton<ControlChannelService>()
+            .AddScoped<IMachineStatusRepository, MachineStatusRepository>()
+            .AddSingleton<ControlChannelService>()
             .AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 
         // Load JWT settings from configuration

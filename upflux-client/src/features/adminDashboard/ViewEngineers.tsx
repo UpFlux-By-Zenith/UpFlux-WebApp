@@ -6,6 +6,7 @@ import "./admin-dashboard.css";
 import { IconCopyXFilled } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { ROLES, useAuth } from "../../common/authProvider/AuthProvider";
+import { GetEngineerToken } from "./GetEngineerToken";
 export interface IEngineer {
     userId: string,
     name: string,
@@ -40,6 +41,8 @@ export const ViewEngineers = () => {
     }, []);
 
     const [opened, { open, close }] = useDisclosure(false);
+    const [createTokenOpened, { open: openCreateToken, close: closeCreateToken }] = useDisclosure(false);
+
 
     const handleRevokeModal = (engineer: IEngineer) => {
         open()
@@ -49,6 +52,7 @@ export const ViewEngineers = () => {
     return (
         <Stack align="center" className="form-stack">
             <Text className="form-title">View Engineers</Text>
+            <GetEngineerToken opened={createTokenOpened} close={closeCreateToken} />
             <Modal opened={opened} onClose={close} title="Confirmation" centered>
                 <Text>Are you sure to Revoke {selectedEngineer?.name} account?</Text>
                 <Input
@@ -71,6 +75,7 @@ export const ViewEngineers = () => {
                 </Button>
             </Modal>
             <Table>
+                <Button variant="filled" color="rgba(0, 3, 255, 1)" style={{ float: "right" }} onClick={openCreateToken}>Create Token</Button>
                 <Table>
                     <Table.Thead>
                         <Table.Tr>

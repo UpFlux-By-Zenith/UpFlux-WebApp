@@ -39,7 +39,7 @@ export const CommonDashboard = () => {
             </Tabs.Panel>
             <Tabs.Panel value="logs" pb="xs"><DownloadLogs /></Tabs.Panel>
             <Tabs.Panel value="account" pb="xs"><AccountSettings /></Tabs.Panel>
-            <Tabs.Panel value="engineer" pb="xs"><GetEngineerToken /><ViewEngineers /></Tabs.Panel>
+            <Tabs.Panel value="engineer" pb="xs"><ViewEngineers /></Tabs.Panel>
             <Tabs.Panel value="license" pb="xs"><ManageMachines /></Tabs.Panel>
 
         </Tabs>
