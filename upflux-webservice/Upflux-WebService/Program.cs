@@ -41,12 +41,26 @@ public class Program
         // serilog as default logger
         builder.Host.UseSerilog();
 
+        // builder.Services.AddCors(options =>
+        // {
+        //     options.AddPolicy("AllowSpecificOrigins", policy =>
+        //     {
+        //         policy.WithOrigins("http://localhost:3000",
+        //                 "http://127.0.0.1:5500", // Add this
+        //                 "https://localhost:5500" // And this, if you're using HTTPS
+        //             ) // Replace with your client URL(s)
+        //             .AllowAnyHeader()
+        //             .AllowAnyMethod()
+        //             .AllowCredentials(); // Necessary for SignalR negotiation
+        //     });
+        // });
+        //
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAllWithCredentials", policy =>
+            options.AddPolicy("AllowAllOriginsWithCredentials", policy =>
             {
-                policy.SetIsOriginAllowed(origin => true) // Allow any origin dynamically
-
+                policy
+                    .SetIsOriginAllowed(origin => true) // Accepts any origin
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -170,7 +184,7 @@ public class Program
                 };
             });
 
-// Add role-based authorization policies
+        // Add role-based authorization policies
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
@@ -212,8 +226,8 @@ public class Program
         }
 
         // Use CORS
-        // app.UseCors("AllowSpecificOrigins");
-        app.UseCors("AllowAllWithCredentials"); // Must be before authentication & authorization
+        app.UseCors("AllowAllOriginsWithCredentials");
+
         // Apply Rate Limiting Middleware
         app.UseRateLimiter();
         //Enforce HTTPS redirection

@@ -220,7 +220,6 @@ export const VersionControl: React.FC = () => {
               <Table.Tr>
                 <Table.Th>App Name</Table.Th>
                 <Table.Th>Version</Table.Th>
-                <Table.Th>Added By</Table.Th>
                 <Table.Th>Last Updated</Table.Th>
                 <Table.Th>Updated By</Table.Th>
               </Table.Tr>
@@ -229,7 +228,6 @@ export const VersionControl: React.FC = () => {
               <Table.Tr >
                 <Table.Td>{storedMachines[selectedMachineId]?.appName}</Table.Td>
                 <Table.Td>{storedMachines[selectedMachineId]?.currentVersion}</Table.Td>
-                <Table.Td>{storedMachines[selectedMachineId]?.dateAddedOn}</Table.Td>
                 <Table.Td>{storedMachines[selectedMachineId]?.dateAddedOn}</Table.Td>
                 <Table.Td>{storedMachines[selectedMachineId]?.lastUpdatedBy}</Table.Td>
               </Table.Tr>

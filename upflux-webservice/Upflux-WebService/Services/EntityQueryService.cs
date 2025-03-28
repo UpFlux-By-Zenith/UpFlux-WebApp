@@ -97,7 +97,7 @@ public class EntityQueryService : IEntityQueryService
             return DbErrorEnum.UserNotFound; // Return UserNotFound if email is already taken
         }
 
-        var userId = CreateUser(email, name).Result.Item1;
+        var userId = CreateUser(email, name, UserRole.Admin).Result.Item1;
 
         // Hash the password before storing
         var hashedPassword = HashPassword(password);

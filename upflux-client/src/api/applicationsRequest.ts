@@ -27,6 +27,7 @@ export interface IStoredVersionsResponse {
   installedAt: string;
 }
 
+
 export const getMachineStatus = async () => {
   // Retrieve the token from session storage
   const authToken = sessionStorage.getItem('authToken');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Box, Text, Group, Select, Paper, Button, ActionIcon } from "@mantine/core";
+import { Box, Text, Group, Select, Paper, Button, ActionIcon, Tooltip } from "@mantine/core";
 import { ChartTooltipProps, ScatterChart } from "@mantine/charts";
 import "@mantine/core/styles.css";
 import "@mantine/charts/styles.css";
@@ -11,7 +11,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
 import { IMachine } from "../../api/reponseTypes";
 import { PLOT_COLORS } from "./clusteringConsts";
-import { IconArrowBigDownLinesFilled } from "@tabler/icons-react";
+import { IconAi, IconArrowBigDownLinesFilled, IconBulbFilled } from "@tabler/icons-react";
+import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
 
 interface IPlotData {
   color: string;
@@ -30,6 +31,17 @@ export const Clustering: React.FC = () => {
   const [mappedClusterPlotData, setMappedClusterPlotData] = useState<IPlotData[]>([]);
   const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
   const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
+
+  const [selectedVersion, setSelectionVersion] = useState<string>("")
+  const [availableApps, setAvailableApps] = useState<IPackagesOnCloud[]>([])
+
+  useEffect(() => {
+
+    getAvailablePackages().then(res => {
+      setAvailableApps(res as IPackagesOnCloud[])
+    })
+
+  }, [])
 
   useEffect(() => {
     const plotData: IPlotData[] = [];
@@ -86,9 +98,60 @@ export const Clustering: React.FC = () => {
   }, [selectedCluster, clusterRecommendation]);
 
 
-  const handleDeploy = () => {
-    console.log("Deploying cluster:", selectedCluster, "at time:", selectedDateTime);
+  const handleDeploy = async () => {
+
+    const authToken = sessionStorage.getItem('authToken');
+
+
+    // Check if required fields are selected
+    if (!selectedCluster || !selectedDateTime || !selectedVersion) {
+      console.error("Please select all required fields.");
+      return;
+    }
+
+    const targetDevices = mappedClusterPlotData
+      .find((data) => data.name === selectedCluster)
+      ?.machineId;
+
+    if (!targetDevices || targetDevices.length === 0) {
+      console.error("No devices found for the selected cluster.");
+      return;
+    }
+
+    const requestBody = {
+      name: "upflux-monitoring-service", // Assuming this is static; if dynamic, replace accordingly
+      version: selectedVersion,
+      targetDevices: targetDevices,
+      startTimeUtc: selectedDateTime.toISOString(), // Convert to ISO format
+    };
+
+    try {
+      const response = await fetch("http://localhost:5000/api/PackageManagement/packages/schedule-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`, // Ensure you add the authorization token
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Deployment scheduled successfully:", result);
+
+        setSelectedCluster("")
+        setSelectionVersion("")
+        setSelectedDateTime(null)
+
+      } else {
+        const errorData = await response.json();
+        console.error("Error scheduling update:", errorData);
+      }
+    } catch (error) {
+      console.error("Error during deploy request:", error);
+    }
   };
+
 
   const ChartTooltip = ({ payload }: ChartTooltipProps) => {
     if (!payload) return null;
@@ -115,36 +178,70 @@ export const Clustering: React.FC = () => {
           dataKey={{ x: 'x', y: 'y' }}
           withLegend
         />
+        <Box className="calendar-wrapper" title="Schedule Update" mt="md" style={{ display: 'flex', flexDirection: 'column', gap: "20px" }}>
+          <Text className="form-title">Update Scheduling </Text>
 
-        <Box className="calendar-wrapper" title="Schedule Update" mt="md" style={{ display: 'flex', flexDirection: 'column' }}>
           <Select
-            label="Select Cluster"
+            label="Select Cluster*"
             placeholder="Choose a cluster"
             data={mappedClusterPlotData.map((plot) => ({ value: plot.name, label: plot.name }))}
             value={selectedCluster}
             onChange={(value) => setSelectedCluster(value)}
 
           />
+          <Select
+            label="Select Application*"
+
+            data={[{
+              value: "upflux-monitoring-service",
+              label: "UpFlux-Monitoring-Service",
+            }]}
+            placeholder="Select Application"
+            value="upflux-monitoring-service"
+            disabled
+          />
+          <Select
+            label="Select Version*"
+            data={availableApps[0]?.versions.map((version) => ({
+              value: version,
+              label: version,
+            }))}
+            placeholder="Select Version"
+            onChange={(value) => setSelectionVersion(value)}
+          />
+
 
           {recommendedTime && (
-            <Group mt="xs">
-              <Text c="blue">
-                Suggested Update Time: {recommendedTime.toLocaleString()}
-              </Text>
 
-              <ActionIcon color="rgba(0, 3, 255, 1)" aria-label="Settings" onClick={() => setSelectedDateTime(recommendedTime)}>
-                <IconArrowBigDownLinesFilled style={{ width: "70%", height: "70%" }} stroke={1.5} />
-              </ActionIcon>
+            <Group mt="xs" align="center">
+              <Tooltip label="Suggested by AI" position="top" withArrow>
+                <Paper withBorder p="xs" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {/* Lightbulb Icon */}
+                  <IconBulbFilled size={20} />
+                  <Text c="blue" fz="md" style={{ fontWeight: 500 }}>
+                    Suggested Update Time: {recommendedTime.toLocaleString()}
+                  </Text>
+
+                  <ActionIcon
+                    color="rgba(0, 3, 255, 1)"
+                    aria-label="Settings"
+                    onClick={() => setSelectedDateTime(recommendedTime)}
+                    variant="light"
+                  >
+                    <IconArrowBigDownLinesFilled style={{ width: "70%", height: "70%" }} stroke={1.5} />
+                  </ActionIcon>
+                </Paper>
+              </Tooltip>
             </Group>
           )}
 
           <DateTimePicker
-            label="Select Date & Time"
+            label="Select Date & Time*"
             value={selectedDateTime}
             onChange={setSelectedDateTime}
           />
 
-          <Button color="rgba(0, 3, 255, 1)" onClick={handleDeploy}>Deploy</Button>
+          <Button disabled={!selectedVersion && !selectedDateTime && !selectedCluster} color="rgba(0, 3, 255, 1)" onClick={handleDeploy}>Schedule Update</Button>
         </Box>
       </Group>
     </Box>

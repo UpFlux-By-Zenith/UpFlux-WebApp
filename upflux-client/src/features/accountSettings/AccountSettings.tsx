@@ -1,55 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, Button, Text, Stack, Group, Box } from '@mantine/core';
-import { Link } from 'react-router-dom';
+import { TextInput, Stack, Box } from '@mantine/core';
 import { postAuthToken } from '../../api/parseTokenRequest';
 import './accountSettings.css';
 
 export const AccountSettings: React.FC = () => {
-  // State for user role
-  const [role, setRole] = useState<string | null>(null);
+  // State for user info
+  const [email, setEmail] = useState<string>('');
+  const [role, setRole] = useState<string>('');
+  const [machines, setMachines] = useState<string>('');
 
-  // Fetch and verify the token on component mount
+  // Fetch and parse token
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserInfo = async () => {
       const result = await postAuthToken();
       if (typeof result === 'object' && result) {
-        setRole(result['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']);
+        setEmail(result["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] || '');
+        setRole(result["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || '');
+        setMachines(result["MachineIds"]?.split(',').join(', ') || '');
       } else {
-        console.error('Failed to fetch role:', result);
+        console.error('Failed to fetch user info:', result);
       }
     };
 
-    fetchUserRole();
+    fetchUserInfo();
   }, []);
 
   return (
     <Stack className="password-settings-content">
 
-
-      {/* Instructions and Input Fields */}
       <Box className="grid-container">
         <TextInput
           label="Name"
-          value="Adam Smith"
+          value="Unknown" // If you later get a Name claim, you can replace this
           readOnly
+          disabled
           className="input-field"
         />
         <TextInput
           label="Email"
-          value="adam@upflux.com"
+          value={email}
           readOnly
+          disabled
           className="input-field"
         />
         <TextInput
           label="Role"
-          value="Engineer"
+          value={role}
           readOnly
+          disabled
           className="input-field"
         />
         <TextInput
           label="Accessible Machines"
-          value="Machine 001, Machine 002"
+          value={machines}
           readOnly
+          disabled
           className="input-field"
         />
       </Box>

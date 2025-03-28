@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Button, FileInput, Stack, Text } from "@mantine/core";
+import { Button, FileInput, Modal, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import "./admin-dashboard.css";
-export const PackageFileInput = () => {
+
+export const PackageFileInput = ({ opened, close }) => {
   const [file, setFile] = useState<File | null>(null);
 
   // Handle file selection
@@ -51,18 +52,20 @@ export const PackageFileInput = () => {
   };
 
   return (
-    <Stack align="center" className="form-stack logs">
-      <Text className="form-title">Get Signed Update Package</Text>
-      <FileInput
-        style={{ width: "200px" }}
-        className={"file-input"}
-        clearable
-        value={file}
-        label="Upload files"
-        placeholder="Upload files"
-        onChange={handleFileChange}
-      />
-      <Button color="rgba(0, 3, 255, 1)" onClick={handleSubmit}>Upload Package</Button>
-    </Stack>
+    <Modal opened={opened} onClose={close} centered>
+      <Stack align="center" className="form-stack">
+        <Text className="form-title">Get Signed Update Package</Text>
+        <FileInput
+          style={{ width: "200px" }}
+          className={"file-input"}
+          clearable
+          value={file}
+          label="Upload files"
+          placeholder="Upload files"
+          onChange={handleFileChange}
+        />
+        <Button color="rgba(0, 3, 255, 1)" onClick={handleSubmit}>Upload Package</Button>
+      </Stack>
+    </Modal>
   );
 };
