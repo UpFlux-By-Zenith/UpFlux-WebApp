@@ -25,7 +25,7 @@ export const postAuthToken = async (): Promise<ParseResponse | string | null> =>
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`, // Add the Bearer token
       },
-      body: JSON.stringify({ token: authToken }), // Send the token in the body
+      body: JSON.stringify(authToken)  // Send the token in the body
     });
 
     if (response.ok) {

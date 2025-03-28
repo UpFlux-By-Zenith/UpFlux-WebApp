@@ -5,15 +5,10 @@ import { HomeRoute } from './HomeRoute';
 import Layout from './Layout';
 import { AuthProvider, ROLES } from './common/authProvider/AuthProvider';
 import { PrivateRoutes } from './common/authProvider/PrivateRoutes';
-import { AccountSettings } from './features/accountSettings/AccountSettings';
-import { AdminDashboard } from './features/adminDashboard/AdminDashboard';
 import { AdminLogin } from './features/adminLogin/AdminLogin';
 import { ClusterManagement } from './features/clusterManagement/ClusterManagement';
-import { Clustering } from './features/clustering/Clustering';
 import { ForgotPassword } from './features/forgotPassword/ForgotPassword';
 import { LoginComponent } from './features/login/Login';
-import { PasswordSettingsContent } from './features/passwordSettings/PasswordSettings';
-import { VersionControl } from './features/versionControl/VersionControl';
 
 // Import your SessionTimeout component
 import { Provider } from 'react-redux';

@@ -1,37 +1,33 @@
 import { Button, Select, Stack, Text, Loader } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { getAllMachineDetails } from "../../api/applicationsRequest";
+import { useSelector } from "react-redux";
+import { RootState } from "../reduxSubscription/store";
+import { getAllMachineLogs, getMachineLogs, getWebServiceLogs } from "../../api/adminApiActions";
 
 export const DownloadLogs = () => {
     const [machineId, setMachineId] = useState<string | null>(null);
     const [multiSelectOptions, setMultiSelectOptions] = useState<{ value: string; label: string }[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
 
-    useEffect(() => {
-        const fetchMachineDetails = async () => {
-            try {
-                const res = await getAllMachineDetails();
-                const options = res.map((val) => ({
-                    value: val.machineId,
-                    label: val.machineId,
-                }));
-                setMultiSelectOptions(options);
-            } catch (error) {
-                console.error("Error fetching machine details:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    // Machine list from redux 
+    const storedMachines = useSelector((root: RootState) => root.machines.messages);
 
-        fetchMachineDetails();
-    }, []);
+    useEffect(() => {
+        if (storedMachines) {
+            const options = Object.keys(storedMachines).map((val) => ({
+                value: val,
+                label: val,
+            }));
+            setMultiSelectOptions(options);
+            setLoading(false);  // Assume data is fetched and set loading to false
+        }
+    }, [storedMachines]); // This effect runs only when storedMachines changes
 
     return (
-        <Stack align="center" className="form-stack logs">
+        <Stack align="center" className="form-stack">
             <Text className="form-title">QC Machine Logs</Text>
 
 
-            <Button color="rgba(0, 3, 255, 1)" >Download Web Service Logs</Button>
 
             {loading ? (
                 <Loader size="sm" />
@@ -46,11 +42,13 @@ export const DownloadLogs = () => {
                 />
             )}
 
-            <Button color="rgba(0, 3, 255, 1)" disabled={!machineId}>
+            <Button color="rgba(0, 3, 255, 1)" disabled={!machineId} onClick={() => getMachineLogs([machineId])}>
                 Download Machine Logs
             </Button>
 
-            <Button color="rgba(0, 3, 255, 1)" >Download All Machine Logs</Button>
+            <Button onClick={getAllMachineLogs} color="rgba(0, 3, 255, 1)">Download All Machine Logs</Button>
+
+            <Button onClick={getWebServiceLogs} color="rgba(0, 3, 255, 1)">Download Web Service Logs</Button>
         </Stack>
     );
 };

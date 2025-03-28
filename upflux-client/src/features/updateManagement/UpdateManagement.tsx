@@ -36,7 +36,6 @@ export const UpdateManagement = () => {
 
     const fetchMachines = async () => {
       const result = await getAccessibleMachines();
-      const res = await getMachineStoredVersions();
 
       if (typeof result === "object" && result?.accessibleMachines?.result) {
         setMachines(result.accessibleMachines.result as IMachine[]);
@@ -69,6 +68,24 @@ export const UpdateManagement = () => {
     machines.forEach(m => dispatch(updateMachine(m)))
     fetchMachineStatus()
   }, [machines])
+
+
+  // useEffect to call getMachineStoredVersions every 30 seconds
+  useEffect(() => {
+    // Call the function immediately on component mount
+    getMachineStoredVersions();
+
+    // Set an interval to call the method every 30 seconds
+    const intervalId = setInterval(() => {
+      getMachineStoredVersions();
+    }, 30000); // 30 seconds
+
+    // Cleanup the interval on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
 
   // Calculate machine statuses
   const machineValues = Object.values(storedMachines);

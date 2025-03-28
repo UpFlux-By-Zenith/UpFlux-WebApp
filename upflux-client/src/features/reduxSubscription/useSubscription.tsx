@@ -66,6 +66,17 @@ export const useSubscription = (groupId: string) => {
             } else if (uri === GROUP_TYPES.ROLLBACK_ALERT) {
 
             } else if (uri === GROUP_TYPES.SCHEDULED_UPDATE_ALERT) {
+              //'{ "message": "Scheduled update request for MachineId: c3589340-db6b-11ef-8615-2ccf677985c6, to version: CommandMetadata successfully sent." }'
+              const parsedData = JSON.parse(message)
+
+              const notification: IAlertMessage = {
+                timestamp: Date.now().toString(),
+                level: "Information",
+                message: parsedData.message,
+                source: "AI Scheduler"
+              }
+
+              sendNotification(notification)
 
             } else if (uri.includes(GROUP_TYPES.STATUS_ALERT)) {
               const statusAlert: IMachineStatus = JSON.parse(message);

@@ -43,16 +43,17 @@ public class Program
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAllWithCredentials", policy =>
+            options.AddPolicy("AllowSpecificOrigins", policy =>
             {
-                policy.SetIsOriginAllowed(origin => true) // Allow any origin dynamically
-
+                policy.WithOrigins("http://localhost:3000",
+                        "http://127.0.0.1:5500", // Add this
+                        "https://localhost:5500" // And this, if you're using HTTPS
+                    ) // Replace with your client URL(s)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials();
+                    .AllowCredentials(); // Necessary for SignalR negotiation
             });
         });
-
 
         // Increase the max request body size (in bytes)
         builder.Services.Configure<IISServerOptions>(options =>
@@ -212,8 +213,8 @@ public class Program
         }
 
         // Use CORS
-        // app.UseCors("AllowSpecificOrigins");
-        app.UseCors("AllowAllWithCredentials"); // Must be before authentication & authorization
+        app.UseCors("AllowSpecificOrigins");
+
         // Apply Rate Limiting Middleware
         app.UseRateLimiter();
         //Enforce HTTPS redirection
