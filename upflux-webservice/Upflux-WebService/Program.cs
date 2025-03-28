@@ -184,7 +184,7 @@ public class Program
                 };
             });
 
-// Add role-based authorization policies
+        // Add role-based authorization policies
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
