@@ -100,7 +100,7 @@ public class PackageManagementController : ControllerBase
             {
                 FileName = "gpg",
                 Arguments =
-                    $"--homedir \\\"/home/pi/.gnupg\\\" --batch --pinentry-mode=loopback --passphrase \"{gpgPassphrase}\" --yes --armor --output \"{signedFilePath}\" --detach-sign -u \"{gpgKeyId}\" \"{filePath}\"",
+                    $"--homedir \\\"/home/ubuntu/.gnupg\\\" --batch --pinentry-mode=loopback --passphrase \"{gpgPassphrase}\" --yes --armor --output \"{signedFilePath}\" --detach-sign -u \"{gpgKeyId}\" \"{filePath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false
@@ -137,62 +137,62 @@ public class PackageManagementController : ControllerBase
         }
     }
 
-   /// <summary>
-/// Sends available list of application and its versions to be deployed
-/// </summary>
-/// <returns></returns>
-[HttpGet("packages")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public IActionResult GetPackages()
-{
-    try
+    /// <summary>
+    /// Sends available list of application and its versions to be deployed
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("packages")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult GetPackages()
     {
-        if (!Directory.Exists(_uploadedPackagesPath))
-            return Ok(new List<object>());
+        try
+        {
+            if (!Directory.Exists(_uploadedPackagesPath))
+                return Ok(new List<object>());
 
-        // Log the base directory being checked
-        _logger.LogInformation($"Checking directory: {_uploadedPackagesPath}");
+            // Log the base directory being checked
+            _logger.LogInformation($"Checking directory: {_uploadedPackagesPath}");
 
-        var packages = Directory.GetDirectories(_uploadedPackagesPath)
-            .Select(pkgDir =>
-            {
-                // Log each package directory being read
-                _logger.LogInformation($"Reading package directory: {pkgDir}");
-                
-                var versionFiles = Directory.GetFiles(pkgDir)
-                    .Where(file => !file.EndsWith(".sig")) // Exclude .sig files
-                    .Select(file =>
-                    {
-                        // Log each file being read
-                        _logger.LogInformation($"Reading file: {file}");
-                        
-                        return Path.GetFileName(file); // Extract file name
-                    })
-                    .Select(fileName =>
-                    {
-                        // Extract version from file name (assumes format "package_name_version.extension")
-                        var version = fileName.Split('_')[1];
-                        _logger.LogInformation($"Extracted version: {version} from file: {fileName}");
-                        return version;
-                    })
-                    .ToList();
-
-                return new
+            var packages = Directory.GetDirectories(_uploadedPackagesPath)
+                .Select(pkgDir =>
                 {
-                    Name = Path.GetFileName(pkgDir),
-                    Versions = versionFiles
-                };
-            })
-            .ToList();
+                    // Log each package directory being read
+                    _logger.LogInformation($"Reading package directory: {pkgDir}");
 
-        return Ok(packages);
+                    var versionFiles = Directory.GetFiles(pkgDir)
+                        .Where(file => !file.EndsWith(".sig")) // Exclude .sig files
+                        .Select(file =>
+                        {
+                            // Log each file being read
+                            _logger.LogInformation($"Reading file: {file}");
+
+                            return Path.GetFileName(file); // Extract file name
+                        })
+                        .Select(fileName =>
+                        {
+                            // Extract version from file name (assumes format "package_name_version.extension")
+                            var version = fileName.Split('_')[1];
+                            _logger.LogInformation($"Extracted version: {version} from file: {fileName}");
+                            return version;
+                        })
+                        .ToList();
+
+                    return new
+                    {
+                        Name = Path.GetFileName(pkgDir),
+                        Versions = versionFiles
+                    };
+                })
+                .ToList();
+
+            return Ok(packages);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error retrieving packages: {ex.Message}");
+            return StatusCode(500, $"Error retrieving packages: {ex.Message}");
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError($"Error retrieving packages: {ex.Message}");
-        return StatusCode(500, $"Error retrieving packages: {ex.Message}");
-    }
-}
 
 
     /// <summary>
