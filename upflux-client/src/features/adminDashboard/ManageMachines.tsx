@@ -75,7 +75,7 @@ export const ManageMachines: React.FC = () => {
                         <Table.Th>Machine Ids</Table.Th>
                         <Table.Th>Machine Name</Table.Th>
                         <Table.Th>Added On</Table.Th>
-                        <Table.Th>IP Address</Table.Th>
+                        {/* <Table.Th>IP Address</Table.Th> */}
                         <Table.Th>License Key</Table.Th>
                         <Table.Th>Validity</Table.Th>
                         <Table.Th>Expires On</Table.Th>
@@ -83,17 +83,17 @@ export const ManageMachines: React.FC = () => {
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                    {machines.map((element) => (
-                        <Table.Tr key={element.machineId}>
-                            <Table.Td>{element.machineId}</Table.Td>
-                            <Table.Td>{element.machineName}</Table.Td>
+                    {machines && machines?.map((element) => (
+                        <Table.Tr key={element?.machineId}>
+                            <Table.Td>{element?.machineId}</Table.Td>
+                            <Table.Td>{element?.machineName}</Table.Td>
                             <Table.Td>{formatTimestamp(element.dateAddedOn)}</Table.Td>
-                            <Table.Td>{element.ipAddress}</Table.Td>
-                            <Table.Td>{element.licenceKey ?? "Unlicensed"}</Table.Td>
-                            <Table.Td>{element.validityStatus ?? "NA"}</Table.Td>
-                            <Table.Td>{element.expirationDate ?? "NA"}</Table.Td>
+                            {/* <Table.Td>{element?.ipAddress}</Table.Td> */}
+                            <Table.Td>{element?.licenceKey ?? "Unlicensed"}</Table.Td>
+                            <Table.Td>{element?.validityStatus ?? "NA"}</Table.Td>
+                            <Table.Td>{element?.expirationDate ?? "NA"}</Table.Td>
                             <Table.Td>
-                                <ActionIcon onClick={() => handleCreateLicense(element.machineId)} color="rgba(0, 3, 255, 1)" variant="filled" style={{ marginLeft: "10px" }} disabled={element.validityStatus !== null}>
+                                <ActionIcon onClick={() => handleCreateLicense(element?.machineId)} color="rgba(0, 3, 255, 1)" variant="filled" style={{ marginLeft: "10px" }} disabled={element.validityStatus !== null}>
                                     <IconLicense size={16} />
                                 </ActionIcon>
                             </Table.Td>

@@ -137,21 +137,6 @@ public class DataRequestController : ControllerBase
 
             var machines = machineIds.Split(',').ToList();
 
-            var accessibleMachines = (
-                from m in _context.Machines
-                join u in _context.Users on m.lastUpdatedBy equals u.UserId into userGroup
-                from user in userGroup.DefaultIfEmpty()
-                where machines.Contains(m.MachineId)
-                select new
-                {
-                    m.MachineId,
-                    m.machineName,
-                    m.ipAddress,
-                    m.currentVersion,
-                    LastUpdatedBy = user != null ? user.Name : "Unknown"
-                }
-            ).ToListAsync();
-
             return Ok(new
             {
                 EngineerEmail = engineerEmail,
@@ -163,6 +148,8 @@ public class DataRequestController : ControllerBase
                         m.machineName,
                         m.ipAddress,
                         m.currentVersion,
+                        m.dateAddedOn,
+                        m.appName,
                         LastUpdatedBy = _context.Users
                             .Where(u => u.UserId == m.lastUpdatedBy)
                             .Select(u => u.Name)

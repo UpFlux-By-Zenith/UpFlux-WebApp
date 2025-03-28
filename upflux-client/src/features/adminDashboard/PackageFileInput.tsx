@@ -25,7 +25,7 @@ export const PackageFileInput = ({ opened, close }) => {
           return;
         }
 
-        const response = await fetch("http://localhost:5000/api/PackageManagement/sign", {
+        const response = await fetch("http://52.215.12.174:5000/api/PackageManagement/sign", {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${authToken}`,
