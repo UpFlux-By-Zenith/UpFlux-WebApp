@@ -14,7 +14,7 @@ import { updateMachine, updateMachineStatus, updatePlotValues } from "./machines
 import { useAppDispatch } from "./hook";
 import { IClusterRecommendation, updateClusterRecommendation } from "./clusterRecommendationSlice";
 
-const hubUrl = "http://52.215.12.174:5000/notificationHub"; // Replace with your SignalR hub URL
+const hubUrl = "http://upflux.cloud/notificationHub"; // Replace with your SignalR hub URL
 
 export const useSubscription = (groupId: string) => {
   const dispatch = useAppDispatch();

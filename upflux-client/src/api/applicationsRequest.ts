@@ -136,7 +136,7 @@ export const CreateSubscription = async (groupId: string) => {
       return null;
     }
 
-    const response = await fetch("http://52.215.12.174:5000/api/Notification/create-group", {
+    const response = await fetch("http://upflux.cloud/api/Notification/create-group", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ export const deployPackage = async (appName: string, ver: string, targetedMachin
       return null;
     }
 
-    const response = await fetch("http://52.215.12.174:5000/api/PackageManagement/packages/upload", {
+    const response = await fetch("http://upflux.cloud/api/PackageManagement/packages/upload", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
