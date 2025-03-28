@@ -10,7 +10,7 @@ namespace Upflux_WebService.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]     
     public class LogFileController : ControllerBase
     {
         private readonly ILogFileService _logFileService;

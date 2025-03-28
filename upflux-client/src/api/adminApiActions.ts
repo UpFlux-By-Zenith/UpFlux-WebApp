@@ -267,7 +267,7 @@ export const getWebServiceLogs = async () => {
 
   try {
     const response = await fetch(ADMIN_REQUEST_API.GET_WEBSERVICE_LOG, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`,
@@ -278,12 +278,16 @@ export const getWebServiceLogs = async () => {
       const contentDisposition = response.headers.get('content-disposition');
       const contentType = response.headers.get('content-type');
 
-      if (contentDisposition && contentType && contentType === 'application/zip') {
+      // Check if content type is 'application/zip'
+      if (contentType && contentType.includes('application/zip')) {
+        // Extract file name from content-disposition
         const fileName = contentDisposition
-          .split(';')
-          .find((value) => value.trim().startsWith('filename='))
-          ?.split('=')[1]
-          .replace(/['"]/g, '');
+          ? contentDisposition
+            .split(';')
+            .find((value) => value.trim().startsWith('filename='))
+            ?.split('=')[1]
+            .replace(/['"]/g, '') // Remove any quotes around the file name
+          : 'logs.zip'; // Default filename if not specified
 
         if (!fileName) {
           console.error('Filename could not be determined from the response.');
@@ -295,35 +299,32 @@ export const getWebServiceLogs = async () => {
         // Optional: Log blob to confirm the file content
         console.log('Downloaded file blob:', blob);
 
+        // Create a link element
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = fileName;
 
-        // Append link to body
+        // Append link to body and trigger click event to start download
         document.body.appendChild(link);
+        link.click();
 
-        // Trigger download and safely revoke URL after
+        // Clean up: Remove link and revoke the object URL
+        document.body.removeChild(link);
         setTimeout(() => {
-          link.click();
-          document.body.removeChild(link);
-          // Delay revoke to allow download to properly start
-          setTimeout(() => {
-            URL.revokeObjectURL(link.href);
-          }, 100);
-        }, 0);
-
+          URL.revokeObjectURL(link.href);
+        }, 100);
       } else {
         const errorData = await response.json();
-        console.error('Error fetching machine logs:', errorData);
-        return errorData.message || 'Failed to fetch machine logs.';
+        console.error('Error fetching logs:', errorData);
+        return errorData.message || 'Failed to fetch logs.';
       }
     } else {
       const errorData = await response.json();
-      console.error('Error fetching machine logs:', errorData);
-      return errorData.message || 'Failed to fetch machine logs.';
+      console.error('Error fetching logs:', errorData);
+      return errorData.message || 'Failed to fetch logs.';
     }
   } catch (error) {
     console.error('Error during fetch request:', error);
-    return 'An error occurred while fetching machine logs.';
+    return 'An error occurred while fetching logs.';
   }
 };
