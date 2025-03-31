@@ -1,4 +1,4 @@
-﻿using Grpc.Core;
+using Grpc.Core;
 using Grpc.Net.Client;
 using UpFlux_GatewaySimulator.Protos;
 using Upflux_GatewaySimulator;
@@ -35,19 +35,15 @@ var monitoringDataDict = new Dictionary<string, MonitoringDataMessage>();
 
 // ---------------------------------------------Update/Rollback Success type Related Debugging Variables--------------------------------------------
 // A= full success B=partial success C=failure
-var commandSuccessResponse = "A";
-var updateSuccessResponse = "A";
+string commandSuccessResponse = "A";
+string updateSuccessResponse = "A";
 
 //----------------------------------------------AI Recommendation Related Debugging Variables--------------------------------------------------------
 // Device UUID
-List<string> deviceUUIDs =
-[
-    "13f04e54-f3ea-4071-bf3b-85077155d845", "7f36d549-23fb-4e2c-99fb-0f791d493dd1",
-    "d3b0580e-db6b-11ef-bd3e-2ccf677985c6"
-];
+List<string> deviceUUIDs = ["test1", "test2", "test3"];
 
 // Ai recommendation generator
-AIRecommendationSender aIRecommendationSender = new(call, senderId, deviceUUIDs);
+AIRecommendationSender aIRecommendationSender = new(call, senderId,deviceUUIDs);
 
 // Task for receiving messages from the server
 var receiveTask = Task.Run(async () =>
@@ -106,9 +102,9 @@ void ShowMenu()
     Console.WriteLine("3. Send License Request");
     Console.WriteLine("4. Send Log Upload");
     Console.WriteLine("5. Send Alert");
-    Console.WriteLine("6. Send AI Recommendations");
-    Console.WriteLine("7. Send Device Status");
-    Console.WriteLine("8. Exit");
+	Console.WriteLine("6. Send AI Recommendations");
+	Console.WriteLine("7. Send Device Status");
+	Console.WriteLine("8. Exit");
 }
 
 async Task SendMonitoringData()
@@ -245,7 +241,7 @@ async Task SendAlert()
 
         var alertMessage = new AlertMessage
         {
-            Timestamp = Timestamp.FromDateTime(DateTime.UtcNow),
+            Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow),
             Level = level,
             Message = message,
             Source = source
@@ -346,210 +342,202 @@ async Task HandleLogRequest(LogRequestMessage logRequest)
 /// this will send
 async Task HandleVersionDataRequest(VersionDataRequest request)
 {
-    Console.WriteLine("Received VersionDataRequest.");
+	Console.WriteLine("Received VersionDataRequest.");
 
-    // Traverse to the root directory of the project
-    var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+	// Traverse to the root directory of the project
+	var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
 
-    // Define directories
-    var currentDirectory = Path.Combine(rootDirectory, "Current");
-    var availableDirectory = Path.Combine(rootDirectory, "Available");
+	// Define directories
+	var currentDirectory = Path.Combine(rootDirectory, "Current");
+	var availableDirectory = Path.Combine(rootDirectory, "Available");
 
-    // Ensure directories exist
-    Directory.CreateDirectory(currentDirectory);
-    Directory.CreateDirectory(availableDirectory);
+	// Ensure directories exist
+	Directory.CreateDirectory(currentDirectory);
+	Directory.CreateDirectory(availableDirectory);
 
-    // Extract the version number from the "Current" package
-    var currentFiles = Directory.GetFiles(currentDirectory);
-    var currentVersion = currentFiles.Length > 0
-        ? ExtractVersionFromFilename(Path.GetFileName(currentFiles[0]))
-        : "No current package";
+	// Extract the version number from the "Current" package
+	var currentFiles = Directory.GetFiles(currentDirectory);
+	string currentVersion = currentFiles.Length > 0
+		? ExtractVersionFromFilename(Path.GetFileName(currentFiles[0]))
+		: "No current package";
 
-    // Extract the version numbers from "Available" packages
-    var availableFiles = Directory.GetFiles(availableDirectory);
-    var availableVersions = availableFiles
-        .Select(file => new UpFlux_GatewaySimulator.Protos.VersionInfo
-        {
-            Version = ExtractVersionFromFilename(Path.GetFileName(file)),
-            InstalledAt = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-2)) // Example timestamp
-        })
-        .ToList();
+	// Extract the version numbers from "Available" packages
+	var availableFiles = Directory.GetFiles(availableDirectory);
+	var availableVersions = availableFiles
+		.Select(file => new UpFlux_GatewaySimulator.Protos.VersionInfo
+		{
+			Version = ExtractVersionFromFilename(Path.GetFileName(file)),
+			InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-2)) // Example timestamp
+		})
+		.ToList();
 
-    // Example UUIDs and version configuration
-    var deviceUuids = new[]
-    {
-        "13f04e54-f3ea-4071-bf3b-85077155d845", "7f36d549-23fb-4e2c-99fb-0f791d493dd1",
-        "d3b0580e-db6b-11ef-bd3e-2ccf677985c6"
-    };
+	// Example UUIDs and version configuration
+	var deviceUuids = new[] { "test1", "test2", "test3" };
 
-    var versionDataResponse = new VersionDataResponse
-    {
-        Success = true,
-        Message = "Version data successfully retrieved."
-    };
+	var versionDataResponse = new VersionDataResponse
+	{
+		Success = true,
+		Message = "Version data successfully retrieved."
+	};
 
-    foreach (var deviceUuid in deviceUuids)
-    {
-        // Set current version using the extracted version
-        var currentVersionInfo = new UpFlux_GatewaySimulator.Protos.VersionInfo
-        {
-            Version = currentVersion,
-            InstalledAt = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-7)) // Example timestamp
-        };
+	foreach (var deviceUuid in deviceUuids)
+	{
+		// Set current version using the extracted version
+		var currentVersionInfo = new UpFlux_GatewaySimulator.Protos.VersionInfo
+		{
+			Version = currentVersion,
+			InstalledAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-7)) // Example timestamp
+		};
 
-        versionDataResponse.DeviceVersionsList.Add(new DeviceVersions
-        {
-            DeviceUuid = deviceUuid,
-            Current = currentVersionInfo,
-            Available = { availableVersions }
-        });
-    }
+		versionDataResponse.DeviceVersionsList.Add(new DeviceVersions
+		{
+			DeviceUuid = deviceUuid,
+			Current = currentVersionInfo,
+			Available = { availableVersions }
+		});
+	}
 
-    // Send the response back to the server
-    var controlMessage = new ControlMessage
-    {
-        SenderId = senderId,
-        VersionDataResponse = versionDataResponse
-    };
+	// Send the response back to the server
+	var controlMessage = new ControlMessage
+	{
+		SenderId = senderId,
+		VersionDataResponse = versionDataResponse
+	};
 
-    try
-    {
-        await call.RequestStream.WriteAsync(controlMessage);
-        Console.WriteLine("Sent VersionDataResponse to server.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error sending VersionDataResponse: {ex.Message}");
-    }
+	try
+	{
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine("Sent VersionDataResponse to server.");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error sending VersionDataResponse: {ex.Message}");
+	}
 }
 
 // Helper function to extract version number from filename
 string ExtractVersionFromFilename(string filename)
 {
-    // Example filename: "upflux-monitoring-service_1.1.21_armhf.deb"
-    var match = System.Text.RegularExpressions.Regex.Match(filename, @"_(\d+\.\d+\.\d+)_");
-    return match.Success ? match.Groups[1].Value : "Unknown";
+	// Example filename: "upflux-monitoring-service_1.1.21_armhf.deb"
+	var match = System.Text.RegularExpressions.Regex.Match(filename, @"_(\d+\.\d+\.\d+)_");
+	return match.Success ? match.Groups[1].Value : "Unknown";
 }
 
 // HandleCommandRequest now uses the global currentExecutionMode
 async Task HandleCommandRequest(CommandRequest commandRequest)
 {
-    try
-    {
-        Console.WriteLine(
-            $"Received CommandRequest: CommandId={commandRequest.CommandId}, CommandType={commandRequest.CommandType}, Parameters={commandRequest.Parameters}");
+	try
+	{
+		Console.WriteLine($"Received CommandRequest: CommandId={commandRequest.CommandId}, CommandType={commandRequest.CommandType}, Parameters={commandRequest.Parameters}");
 
-        var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
-        var currentDirectory = Path.Combine(rootDirectory, "Current");
-        var availableDirectory = Path.Combine(rootDirectory, "Available");
+		var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+		var currentDirectory = Path.Combine(rootDirectory, "Current");
+		var availableDirectory = Path.Combine(rootDirectory, "Available");
 
-        // Ensure directories exist
-        Directory.CreateDirectory(currentDirectory);
-        Directory.CreateDirectory(availableDirectory);
+		// Ensure directories exist
+		Directory.CreateDirectory(currentDirectory);
+		Directory.CreateDirectory(availableDirectory);
 
-        var targetDevices = commandRequest.TargetDevices.ToList();
-        var devicesSucceeded = new List<string>();
-        var devicesFailed = new List<string>();
+		var targetDevices = commandRequest.TargetDevices.ToList();
+		var devicesSucceeded = new List<string>();
+		var devicesFailed = new List<string>();
 
-        if (commandRequest.CommandType == CommandType.Rollback && !string.IsNullOrEmpty(commandRequest.Parameters))
-        {
-            var rollbackVersion = commandRequest.Parameters.Trim(); // Version number e.g., "1.1.21"
+		if (commandRequest.CommandType == CommandType.Rollback && !string.IsNullOrEmpty(commandRequest.Parameters))
+		{
+			string rollbackVersion = commandRequest.Parameters.Trim(); // Version number e.g., "1.1.21"
 
-            // Find the rollback package in "Available" that matches the version
-            var availableFiles = Directory.GetFiles(availableDirectory);
-            var rollbackFilePath =
-                availableFiles.FirstOrDefault(f => ExtractVersionFromFilename(Path.GetFileName(f)) == rollbackVersion);
+			// Find the rollback package in "Available" that matches the version
+			var availableFiles = Directory.GetFiles(availableDirectory);
+			string rollbackFilePath = availableFiles.FirstOrDefault(f => ExtractVersionFromFilename(Path.GetFileName(f)) == rollbackVersion);
 
-            if (!string.IsNullOrEmpty(rollbackFilePath) && File.Exists(rollbackFilePath))
-            {
-                var currentFiles = Directory.GetFiles(currentDirectory);
-                if (currentFiles.Length > 0)
-                {
-                    var currentFilePath = currentFiles[0]; // Assuming only one file in "Current"
-                    var currentFileName = Path.GetFileName(currentFilePath);
-                    var archivedFilePath = Path.Combine(availableDirectory, currentFileName);
+			if (!string.IsNullOrEmpty(rollbackFilePath) && File.Exists(rollbackFilePath))
+			{
+				var currentFiles = Directory.GetFiles(currentDirectory);
+				if (currentFiles.Length > 0)
+				{
+					string currentFilePath = currentFiles[0]; // Assuming only one file in "Current"
+					string currentFileName = Path.GetFileName(currentFilePath);
+					string archivedFilePath = Path.Combine(availableDirectory, currentFileName);
 
-                    // Ensure we don't duplicate versions in "Available"
-                    if (!File.Exists(archivedFilePath))
-                    {
-                        File.Move(currentFilePath, archivedFilePath);
-                        Console.WriteLine($"Moved current package to Available: {archivedFilePath}");
-                    }
-                    else
-                    {
-                        // Delete the current file instead of moving it (as it's already in Available)
-                        File.Delete(currentFilePath);
-                        Console.WriteLine(
-                            $"Deleted current package as it already exists in Available: {currentFilePath}");
-                    }
-                }
+					// Ensure we don't duplicate versions in "Available"
+					if (!File.Exists(archivedFilePath))
+					{
+						File.Move(currentFilePath, archivedFilePath);
+						Console.WriteLine($"Moved current package to Available: {archivedFilePath}");
+					}
+					else
+					{
+						// Delete the current file instead of moving it (as it's already in Available)
+						File.Delete(currentFilePath);
+						Console.WriteLine($"Deleted current package as it already exists in Available: {currentFilePath}");
+					}
+				}
 
-                // Move the rollback package from "Available" to "Current"
-                var newCurrentFilePath = Path.Combine(currentDirectory, Path.GetFileName(rollbackFilePath));
-                File.Move(rollbackFilePath, newCurrentFilePath);
-                Console.WriteLine($"Rollback successful! Moved {Path.GetFileName(rollbackFilePath)} to Current.");
+				// Move the rollback package from "Available" to "Current"
+				string newCurrentFilePath = Path.Combine(currentDirectory, Path.GetFileName(rollbackFilePath));
+				File.Move(rollbackFilePath, newCurrentFilePath);
+				Console.WriteLine($"Rollback successful! Moved {Path.GetFileName(rollbackFilePath)} to Current.");
 
-                devicesSucceeded = targetDevices;
-            }
-            else
-            {
-                Console.WriteLine(
-                    $"Rollback failed: No matching file found in Available for version {rollbackVersion}");
-                devicesFailed = targetDevices;
-            }
-        }
-        else
-        {
-            Console.WriteLine("Invalid rollback command or missing rollback version.");
-            devicesFailed = targetDevices;
-        }
+				devicesSucceeded = targetDevices;
+			}
+			else
+			{
+				Console.WriteLine($"Rollback failed: No matching file found in Available for version {rollbackVersion}");
+				devicesFailed = targetDevices;
+			}
+		}
+		else
+		{
+			Console.WriteLine("Invalid rollback command or missing rollback version.");
+			devicesFailed = targetDevices;
+		}
 
-        // Generate response message
-        var details = devicesFailed.Count == 0
-            ? $"Rollback succeeded on {string.Join(", ", devicesSucceeded)}"
-            : devicesSucceeded.Count == 0
-                ? $"Rollback failed on {string.Join(", ", devicesFailed)}"
-                : $"Rollback partial success: succeeded on {string.Join(", ", devicesSucceeded)}, failed on {string.Join(", ", devicesFailed)}";
+		// Generate response message
+		string details = devicesFailed.Count == 0
+			? $"Rollback succeeded on {string.Join(", ", devicesSucceeded)}"
+			: devicesSucceeded.Count == 0
+				? $"Rollback failed on {string.Join(", ", devicesFailed)}"
+				: $"Rollback partial success: succeeded on {string.Join(", ", devicesSucceeded)}, failed on {string.Join(", ", devicesFailed)}";
 
-        var commandResponse = new CommandResponse
-        {
-            CommandId = commandRequest.CommandId,
-            Success = devicesFailed.Count == 0,
-            Details = details
-        };
+		var commandResponse = new CommandResponse
+		{
+			CommandId = commandRequest.CommandId,
+			Success = devicesFailed.Count == 0,
+			Details = details
+		};
 
-        var controlMessage = new ControlMessage
-        {
-            SenderId = senderId,
-            CommandResponse = commandResponse
-        };
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			CommandResponse = commandResponse
+		};
 
-        await call.RequestStream.WriteAsync(controlMessage);
-        Console.WriteLine($"Sent CommandResponse for CommandId={commandRequest.CommandId} with details: {details}");
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"Sent CommandResponse for CommandId={commandRequest.CommandId} with details: {details}");
 
-        //simulate successfull update
-        foreach (var uuid in devicesSucceeded)
-        {
-            var alert = new AlertMessage
-            {
-                Timestamp = Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
-                Level = "Information",
-                Message = "Update to version " + commandRequest.Parameters + " installed successfully",
-                Source = $"Device-{uuid}"
-            };
+		//simulate successfull update
+		foreach (var uuid in devicesSucceeded)
+		{
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + commandRequest.Parameters + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
 
-            var message = new ControlMessage
-            {
-                SenderId = senderId,
-                AlertMessage = alert
-            };
-            await call.RequestStream.WriteAsync(message);
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error handling CommandRequest: {ex.Message}");
-    }
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error handling CommandRequest: {ex.Message}");
+	}
 }
 
 async Task SendMonitoringDataBatch()
@@ -596,23 +584,11 @@ async Task SendMonitoringDataBatch()
 
 async Task HandleUpdatePackage(UpdatePackage updatePackage)
 {
-    try
-    {
-        Console.WriteLine(
-            $"Received UpdatePackage: FileName={updatePackage.FileName}, Size={updatePackage.PackageData.Length} bytes");
+	try
+	{
+		Console.WriteLine(
+			$"Received UpdatePackage: FileName={updatePackage.FileName}, Size={updatePackage.PackageData.Length} bytes");
 
-<<<<<<< HEAD
-        // Traverse to the root directory of the project
-        var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
-
-        // Define directories
-        var currentDirectory = Path.Combine(rootDirectory, "Current");
-        var availableDirectory = Path.Combine(rootDirectory, "Available");
-
-        // Ensure directories exist
-        Directory.CreateDirectory(currentDirectory);
-        Directory.CreateDirectory(availableDirectory);
-=======
 		Console.WriteLine(
 			$"Received Signature: Size={updatePackage.SignatureData.Length} bytes");
 
@@ -628,243 +604,244 @@ async Task HandleUpdatePackage(UpdatePackage updatePackage)
 		Directory.CreateDirectory(currentDirectory);
 		Directory.CreateDirectory(availableDirectory);
 		Directory.CreateDirectory(signatureDirectory);
->>>>>>> 64744805510a9e48e122842e6b1d5035a7e5d243
 
-        // Get any existing file in "Current" (since only one should exist)
-        var existingFiles = Directory.GetFiles(currentDirectory);
+		// Get any existing file in "Current" (since only one should exist)
+		var existingFiles = Directory.GetFiles(currentDirectory);
 
-        if (existingFiles.Length > 0)
-        {
-            var existingFilePath = existingFiles[0]; // Assuming only one file exists in "Current"
-            var existingFileName = Path.GetFileName(existingFilePath);
-            var archivedFilePath = Path.Combine(availableDirectory, existingFileName);
+		if (existingFiles.Length > 0)
+		{
+			var existingFilePath = existingFiles[0]; // Assuming only one file exists in "Current"
+			var existingFileName = Path.GetFileName(existingFilePath);
+			var archivedFilePath = Path.Combine(availableDirectory, existingFileName);
 
-            // Check if the same package already exists in "Available"
-            if (!File.Exists(archivedFilePath))
-            {
-                // Move the current package to "Available" only if it's not there already
-                File.Move(existingFilePath, archivedFilePath);
-                Console.WriteLine($"Moved existing package to Available: {archivedFilePath}");
-            }
-            else
-            {
-                // Delete the existing "Current" package since it's already in "Available"
-                File.Delete(existingFilePath);
-                Console.WriteLine($"Deleted existing Current package as it's already in Available: {existingFilePath}");
-            }
-        }
+			// Check if the same package already exists in "Available"
+			if (!File.Exists(archivedFilePath))
+			{
+				// Move the current package to "Available" only if it's not there already
+				File.Move(existingFilePath, archivedFilePath);
+				Console.WriteLine($"Moved existing package to Available: {archivedFilePath}");
+			}
+			else
+			{
+				// Delete the existing "Current" package since it's already in "Available"
+				File.Delete(existingFilePath);
+				Console.WriteLine($"Deleted existing Current package as it's already in Available: {existingFilePath}");
+			}
+		}
 
-        // Save the new package to "Current" (ensuring only one package remains)
-        var newFilePath = Path.Combine(currentDirectory, updatePackage.FileName);
-        await File.WriteAllBytesAsync(newFilePath, updatePackage.PackageData.ToByteArray());
-        Console.WriteLine($"UpdatePackage saved to: {newFilePath}");
+		// Save the new package to "Current" (ensuring only one package remains)
+		var newFilePath = Path.Combine(currentDirectory, updatePackage.FileName);
+		await File.WriteAllBytesAsync(newFilePath, updatePackage.PackageData.ToByteArray());
+		Console.WriteLine($"UpdatePackage saved to: {newFilePath}");
 
-        var signatureFilePath = Path.Combine(signatureDirectory, updatePackage.FileName + ".sig");
-        await File.WriteAllBytesAsync(signatureFilePath, updatePackage.SignatureData.ToByteArray());
-        Console.WriteLine($"Signature saved to: {signatureFilePath}");
+		var signatureFilePath = Path.Combine(signatureDirectory, updatePackage.FileName + ".sig");
+		await File.WriteAllBytesAsync(signatureFilePath, updatePackage.SignatureData.ToByteArray());
+		Console.WriteLine($"Signature saved to: {signatureFilePath}");
 
-        // Simulate success/failure for target devices
-        List<string> succeededDevices = new List<string>();
-        List<string> failedDevices = new List<string>();
-        var targetDevices = updatePackage.TargetDevices;
+		// Simulate success/failure for target devices
+		List<string> succeededDevices = new List<string>();
+		List<string> failedDevices = new List<string>();
+		var targetDevices = updatePackage.TargetDevices;
 
-        switch (updateSuccessResponse)
-        {
-            case "A":
-                succeededDevices.AddRange(targetDevices);
-                break;
-            case "B":
-                var halfCount = targetDevices.Count / 2;
-                succeededDevices.AddRange(targetDevices.Take(halfCount));
-                failedDevices.AddRange(targetDevices.Skip(halfCount));
-                break;
-            case "C":
-                failedDevices.AddRange(targetDevices);
-                break;
-            default:
-                Console.WriteLine("Invalid simulatedOutcome provided. Defaulting to success.");
-                succeededDevices.AddRange(targetDevices);
-                break;
-        }
+		switch (updateSuccessResponse)
+		{
+			case "A":
+				succeededDevices.AddRange(targetDevices);
+				break;
+			case "B":
+				int halfCount = targetDevices.Count / 2;
+				succeededDevices.AddRange(targetDevices.Take(halfCount));
+				failedDevices.AddRange(targetDevices.Skip(halfCount));
+				break;
+			case "C":
+				failedDevices.AddRange(targetDevices);
+				break;
+			default:
+				Console.WriteLine("Invalid simulatedOutcome provided. Defaulting to success.");
+				succeededDevices.AddRange(targetDevices);
+				break;
+		}
 
-        // Create detail message
-        var detailMsg =
-            $"Succeeded on: {string.Join(", ", succeededDevices)}; Failed on: {string.Join(", ", failedDevices)}.";
+		// Create detail message
+		string detailMsg = $"Succeeded on: {string.Join(", ", succeededDevices)}; Failed on: {string.Join(", ", failedDevices)}.";
 
-        // Send an acknowledgment back to the server
-        var updateAck = new UpdateAck
-        {
-            FileName = updatePackage.FileName,
-            Success = failedDevices.Count == 0, // Success if no failures
-            Details = detailMsg
-        };
+		// Send an acknowledgment back to the server
+		var updateAck = new UpdateAck
+		{
+			FileName = updatePackage.FileName,
+			Success = failedDevices.Count == 0, // Success if no failures
+			Details = detailMsg
+		};
 
-        var ackMessage = new ControlMessage
-        {
-            SenderId = senderId,
-            UpdateAck = updateAck
-        };
+		var ackMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			UpdateAck = updateAck
+		};
 
-        await call.RequestStream.WriteAsync(ackMessage);
-        Console.WriteLine($"Sent UpdateAck for FileName={updatePackage.FileName}: {detailMsg}");
+		await call.RequestStream.WriteAsync(ackMessage);
+		Console.WriteLine($"Sent UpdateAck for FileName={updatePackage.FileName}: {detailMsg}");
 
-        foreach (var uuid in succeededDevices)
-        {
-            var alert = new AlertMessage
-            {
-                Timestamp = Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
-                Level = "Information",
-                Message = "Update to version " + updatePackage.FileName + " installed successfully",
-                Source = $"Device-{uuid}"
-            };
+		foreach (var uuid in succeededDevices)
+		{
 
-            var message = new ControlMessage
-            {
-                SenderId = senderId,
-                AlertMessage = alert
-            };
-            await call.RequestStream.WriteAsync(message);
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error handling UpdatePackage: {ex.Message}");
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + updatePackage.FileName + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
 
-        // Send a failure acknowledgment back to the server
-        var updateAck = new UpdateAck
-        {
-            FileName = updatePackage.FileName,
-            Success = false,
-            Details = $"Failed to process the update package: {ex.Message}"
-        };
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
 
-        var ackMessage = new ControlMessage
-        {
-            SenderId = senderId,
-            UpdateAck = updateAck
-        };
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"Error handling UpdatePackage: {ex.Message}");
 
-        await call.RequestStream.WriteAsync(ackMessage);
-        Console.WriteLine($"Sent failure UpdateAck for FileName={updatePackage.FileName}");
-    }
+		// Send a failure acknowledgment back to the server
+		var updateAck = new UpdateAck
+		{
+			FileName = updatePackage.FileName,
+			Success = false,
+			Details = $"Failed to process the update package: {ex.Message}"
+		};
+
+		var ackMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			UpdateAck = updateAck
+		};
+
+		await call.RequestStream.WriteAsync(ackMessage);
+		Console.WriteLine($"Sent failure UpdateAck for FileName={updatePackage.FileName}");
+	}
 }
 
 
 async Task SendDeviceStatus()
 {
-    try
-    {
-        Console.Write("\nEnter UUID of the device: ");
-        var deviceUuid = Console.ReadLine()?.Trim();
+	try
+	{
+		Console.Write("\nEnter UUID of the device: ");
+		var deviceUuid = Console.ReadLine()?.Trim();
 
-        if (string.IsNullOrWhiteSpace(deviceUuid))
-        {
-            Console.WriteLine("❌ Invalid UUID. Aborting.");
-            return;
-        }
+		if (string.IsNullOrWhiteSpace(deviceUuid))
+		{
+			Console.WriteLine("❌ Invalid UUID. Aborting.");
+			return;
+		}
 
-        Console.Write("Is the device online? (y/n): ");
-        var isOnlineInput = Console.ReadLine()?.Trim().ToLower();
-        var isOnline = isOnlineInput == "y";
+		Console.Write("Is the device online? (y/n): ");
+		var isOnlineInput = Console.ReadLine()?.Trim().ToLower();
+		bool isOnline = isOnlineInput == "y";
 
-        var deviceStatus = new DeviceStatus
-        {
-            DeviceUuid = deviceUuid,
-            IsOnline = isOnline,
-            LastSeen = Timestamp.FromDateTime(DateTime.UtcNow)
-        };
+		var deviceStatus = new DeviceStatus
+		{
+			DeviceUuid = deviceUuid,
+			IsOnline = isOnline,
+			LastSeen = Timestamp.FromDateTime(DateTime.UtcNow)
+		};
 
-        var controlMessage = new ControlMessage
-        {
-            SenderId = senderId,
-            Description = "Device Status Update",
-            DeviceStatus = deviceStatus
-        };
+		var controlMessage = new ControlMessage
+		{
+			SenderId = senderId,
+			Description = "Device Status Update",
+			DeviceStatus = deviceStatus
+		};
 
-        await call.RequestStream.WriteAsync(controlMessage);
-        Console.WriteLine($"📤 Sent DeviceStatus: UUID={deviceUuid}, Online={isOnline}, LastSeen={DateTime.UtcNow}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Error sending DeviceStatus: {ex.Message}");
-    }
+		await call.RequestStream.WriteAsync(controlMessage);
+		Console.WriteLine($"📤 Sent DeviceStatus: UUID={deviceUuid}, Online={isOnline}, LastSeen={DateTime.UtcNow}");
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"❌ Error sending DeviceStatus: {ex.Message}");
+	}
 }
 
 async Task HandleScheduledUpdate(ScheduledUpdate scheduledUpdate)
 {
-    try
-    {
-        Console.WriteLine($"\n📦 Received Scheduled Update:");
-        Console.WriteLine($"  - Schedule ID: {scheduledUpdate.ScheduleId}");
-        Console.WriteLine($"  - Cluster: {scheduledUpdate.ClusterId}");
-        Console.WriteLine($"  - File Name: {scheduledUpdate.FileName}");
-        Console.WriteLine($"  - Target Devices: {string.Join(", ", scheduledUpdate.DeviceUuids)}");
-        Console.WriteLine($"  - Start Time: {scheduledUpdate.StartTime.ToDateTime()}");
+	try
+	{
+		Console.WriteLine($"\n📦 Received Scheduled Update:");
+		Console.WriteLine($"  - Schedule ID: {scheduledUpdate.ScheduleId}");
+		Console.WriteLine($"  - Cluster: {scheduledUpdate.ClusterId}");
+		Console.WriteLine($"  - File Name: {scheduledUpdate.FileName}");
+		Console.WriteLine($"  - Target Devices: {string.Join(", ", scheduledUpdate.DeviceUuids)}");
+		Console.WriteLine($"  - Start Time: {scheduledUpdate.StartTime.ToDateTime()}");
 
-        // Save package data to disk
+		// Save package data to disk
 
-        var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+		var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
 
-        // Define the directory for scheduled updates
-        var scheduledUpdateDirectory = Path.Combine(rootDirectory, "ScheduledUpdates");
-        var scheduledUpdateSignatureDirectory = Path.Combine(rootDirectory, "ScheduledUpdateSignature");
+		// Define the directory for scheduled updates
+		var scheduledUpdateDirectory = Path.Combine(rootDirectory, "ScheduledUpdates");
+		var scheduledUpdateSignatureDirectory = Path.Combine(rootDirectory, "ScheduledUpdateSignature");
 
-        // Ensure the directory exists
-        Directory.CreateDirectory(scheduledUpdateDirectory);
-        Directory.CreateDirectory(scheduledUpdateSignatureDirectory);
+		// Ensure the directory exists
+		Directory.CreateDirectory(scheduledUpdateDirectory);
+		Directory.CreateDirectory(scheduledUpdateSignatureDirectory);
 
-        // Save package data to disk
-        var savePath = Path.Combine(scheduledUpdateDirectory, scheduledUpdate.FileName);
-        await File.WriteAllBytesAsync(savePath, scheduledUpdate.PackageData.ToByteArray());
+		// Save package data to disk
+		string savePath = Path.Combine(scheduledUpdateDirectory, scheduledUpdate.FileName);
+		await File.WriteAllBytesAsync(savePath, scheduledUpdate.PackageData.ToByteArray());
 
-        // save signature
-        string saveSignaturePath = Path.Combine(scheduledUpdateSignatureDirectory, scheduledUpdate.FileName + ".sig");
-        await File.WriteAllBytesAsync(saveSignaturePath, scheduledUpdate.SignatureData.ToByteArray());
+		// save signature
+		string saveSignaturePath = Path.Combine(scheduledUpdateSignatureDirectory, scheduledUpdate.FileName + ".sig");
+		await File.WriteAllBytesAsync(saveSignaturePath, scheduledUpdate.SignatureData.ToByteArray());
 
-        Console.WriteLine($"✅ Package saved at {savePath}");
+		Console.WriteLine($"✅ Package saved at {savePath}");
 
-        var startUtc = scheduledUpdate.StartTime.ToDateTime();
+		DateTime startUtc = scheduledUpdate.StartTime.ToDateTime();
 
-        // Send acknowledgment back to server
-        var resp = new CommandResponse
-        {
-            CommandId = scheduledUpdate.ScheduleId,
-            Success = true,
-            Details = $"Scheduled update stored for {startUtc:o}"
-        };
-        var msg = new ControlMessage
-        {
-            SenderId = senderId,
-            CommandResponse = resp
-        };
+		// Send acknowledgment back to server
+		CommandResponse resp = new CommandResponse
+		{
+			CommandId = scheduledUpdate.ScheduleId,
+			Success = true,
+			Details = $"Scheduled update stored for {startUtc:o}"
+		};
+		ControlMessage msg = new ControlMessage
+		{
+			SenderId = senderId,
+			CommandResponse = resp
+		};
 
-        await call.RequestStream.WriteAsync(msg);
+		await call.RequestStream.WriteAsync(msg);
 
-        Console.WriteLine($"📤 Sent command response for Scheduled Update {scheduledUpdate.ScheduleId}.");
+		Console.WriteLine($"📤 Sent command response for Scheduled Update {scheduledUpdate.ScheduleId}.");
 
-        //simulate successfull update
-        foreach (var uuid in scheduledUpdate.DeviceUuids)
-        {
-            var alert = new AlertMessage
-            {
-                Timestamp = Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
-                Level = "Information",
-                Message = "Update to version " + scheduledUpdate.FileName + " installed successfully",
-                Source = $"Device-{uuid}"
-            };
+		//simulate successfull update
+		foreach (var uuid in scheduledUpdate.DeviceUuids)
+		{
 
-            var message = new ControlMessage
-            {
-                SenderId = senderId,
-                AlertMessage = alert
-            };
-            await call.RequestStream.WriteAsync(message);
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Error processing ScheduledUpdate: {ex.Message}");
-    }
+			AlertMessage alert = new AlertMessage
+			{
+				Timestamp = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+				Level = "Information",
+				Message = "Update to version " + scheduledUpdate.FileName + " installed successfully",
+				Source = $"Device-{uuid}"
+			};
+
+			var message = new ControlMessage
+			{
+				SenderId = senderId,
+				AlertMessage = alert
+			};
+			await call.RequestStream.WriteAsync(message);
+		}
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine($"❌ Error processing ScheduledUpdate: {ex.Message}");
+	}
 }
 
 // Run the menu loop
@@ -891,13 +868,13 @@ while (running)
         case "5":
             await SendAlert();
             break;
-        case "6":
-            await aIRecommendationSender.SendAIRecommendationsAsync();
-            break;
-        case "7":
-            await SendDeviceStatus();
-            break;
-        case "8":
+		case "6":
+			await aIRecommendationSender.SendAIRecommendationsAsync();
+			break;
+		case "7":
+			await SendDeviceStatus();
+			break;
+		case "8":
             Console.WriteLine("Exiting...");
             running = false;
             break;
