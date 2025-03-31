@@ -6,7 +6,6 @@ import { notifications } from "@mantine/notifications"
 export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => {
 
     const [selectedMachineIds, setSelectedMachineIds] = useState<string[]>()
-    const [selectedApp, setSelectedApp] = useState()
     const [selectedVersion, setSelectionVersion] = useState<string>("")
     const [availableApps, setAvailableApps] = useState<IPackagesOnCloud[]>([])
 
@@ -22,11 +21,6 @@ export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => 
         setSelectedMachineIds(val)
     }
 
-    const handleAppChange = (val) => {
-        setSelectedApp(val)
-    }
-
-
     const handleDeploy = () => {
         setModalOpened(false);
         notifications.show({
@@ -37,10 +31,24 @@ export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => 
             autoClose: 5000,
             withCloseButton: false,
         });
-        deployPackage(selectedApp, selectedVersion, selectedMachineIds)
-    }
 
+        deployPackage(selectedApp[0].value, selectedVersion, selectedMachineIds)
+            .then(() => {
+            })
+            .catch(err => {
+                notifications.show({
+                    title: "Update Failed",
+                    message: "An error occurred during update.",
+                    color: "red",
+                    autoClose: 3000,
+                });
+            });
+    };
 
+    const selectedApp = [{
+        value: "upflux-monitoring-service",
+        label: "UpFlux-Monitoring-Service",
+    }]
 
     return <Modal
         opened={modalOpened}
@@ -63,12 +71,10 @@ export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => 
                 <>
                     <Text mt="md">Select Application*</Text>
                     <Select
-                        data={[{
-                            value: "upflux-monitoring-service",
-                            label: "UpFlux-Monitoring-Service",
-                        }]}
+                        data={selectedApp}
+                        value={selectedApp[0].value}
                         placeholder="Select Application"
-                        onChange={handleAppChange}
+                        disabled
                     />
                 </>
             )}

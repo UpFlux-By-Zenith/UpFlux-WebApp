@@ -326,7 +326,8 @@ namespace UpFlux_WebService
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
             // This handles alerts that affects device packages
-            if (alert.Message.StartsWith("Update to version ") && alert.Message.Contains(" installed successfully"))
+            if ((alert.Message.StartsWith("Update to version ") && alert.Message.Contains(" installed successfully"))||(alert.Message.StartsWith("Rollback to version ") &&
+                    alert.Message.Contains(" completed successfully")))
             {
                 await SendVersionDataRequestAsync("gateway-patrick-1234");
                 await notificationService.SendMessageToUriAsync($"Alert/Update", alert.ToString());

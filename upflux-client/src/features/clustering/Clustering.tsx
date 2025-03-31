@@ -126,7 +126,7 @@ export const Clustering: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://upflux.cloud/api/PackageManagement/packages/schedule-update", {
+      const response = await fetch("http://localhost:5000/api/PackageManagement/packages/schedule-update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

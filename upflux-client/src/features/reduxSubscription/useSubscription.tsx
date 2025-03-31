@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as signalR from "@microsoft/signalr";
 import { useDispatch, useSelector } from "react-redux";
 import { addMetrics, MonitoringData } from "./metricsSlice";
@@ -10,11 +10,13 @@ import { RootState } from "./store";
 import classes from "./notification.module.css"
 import { IApplications, updateApps } from "./applicationVersions";
 import { GROUP_TYPES, IClusterResponse, IMachineStatus } from "./subscriptionConsts";
-import { updateMachine, updateMachineStatus, updatePlotValues } from "./machinesSlice";
+import { updateMachine, updateMachineStatus, updateMachineVersion, updatePlotValues } from "./machinesSlice";
 import { useAppDispatch } from "./hook";
 import { IClusterRecommendation, updateClusterRecommendation } from "./clusterRecommendationSlice";
+import { getAccessibleMachines } from "../../api/accessMachinesRequest";
+import { IMachine } from "../../api/reponseTypes";
 
-const hubUrl = "http://upflux.cloud/notificationHub"; // Replace with your SignalR hub URL
+const hubUrl = "http://localhost:5000/notificationHub"; // Replace with your SignalR hub URL
 
 export const useSubscription = (groupId: string) => {
   const dispatch = useAppDispatch();
@@ -43,11 +45,27 @@ export const useSubscription = (groupId: string) => {
           connection.on("ReceiveMessage", (uri: string, message) => {
             if (uri === GROUP_TYPES.GENERIC_ALERT) {
               const parsedData: IAlertMessage = JSON.parse(message);
+              const { deviceId, version } = extractDeviceInfo(parsedData.message, parsedData.source);
+
+              if (deviceId && version) {
+                dispatch(updateMachineVersion({
+                  machineId: deviceId,
+                  machineName: "",
+                  dateAddedOn: "",
+                  ipAddress: "",
+                  appName: "",
+                  currentVersion: version,
+                  lastUpdatedBy: ""
+                }))
+              }
 
               sendNotification(parsedData)
             } else if (uri === GROUP_TYPES.LICENSE_ALERT) {
 
             } else if (uri === GROUP_TYPES.UPDATE_ALERT) {
+              const parsedData = JSON.parse(message)
+
+
 
             } else if (uri === GROUP_TYPES.RECOMMENDATION_ALERT) {
               const parsedData: IClusterRecommendation = JSON.parse(message)
@@ -76,7 +94,6 @@ export const useSubscription = (groupId: string) => {
                 source: "AI Scheduler"
               }
 
-              sendNotification(notification)
 
             } else if (uri.includes(GROUP_TYPES.STATUS_ALERT)) {
               const statusAlert: IMachineStatus = JSON.parse(message);
@@ -88,6 +105,7 @@ export const useSubscription = (groupId: string) => {
                 source: statusAlert.DeviceUuid
               }
               sendNotification(parsedData)
+
 
               dispatch(updateMachineStatus(statusAlert))
 
@@ -145,4 +163,17 @@ export const useSubscription = (groupId: string) => {
     }
     dispatch(addAlert(parsedData));
   }
+
+  const extractDeviceInfo = (alertMessage: string, alertSource: string) => {
+    // Extract version (Rollback to version X.Y.Z)
+    const versionMatch = alertMessage.match(/(?:Update|Rollback) to version (\d+\.\d+\.\d+)/);
+    const version = versionMatch ? versionMatch[1] : null;
+
+    // Extract device ID (from source: "Device-UUID")
+    const deviceMatch = alertSource.match(/Device-(.+)/);
+    const deviceId = deviceMatch ? deviceMatch[1] : null;
+
+    return { deviceId, version };
+  };
+
 };

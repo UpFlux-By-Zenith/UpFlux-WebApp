@@ -1,10 +1,11 @@
-import { Button, Select, Stack, Text, Loader } from "@mantine/core";
+import { Button, Select, Stack, Text, Loader, Modal } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
 import { getAllMachineLogs, getMachineLogs, getWebServiceLogs } from "../../api/adminApiActions";
+import { notifications } from "@mantine/notifications";
 
-export const DownloadLogs = () => {
+export const DownloadLogs = ({ opened, close }) => {
     const [machineId, setMachineId] = useState<string | null>(null);
     const [multiSelectOptions, setMultiSelectOptions] = useState<{ value: string; label: string }[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -23,32 +24,48 @@ export const DownloadLogs = () => {
         }
     }, [storedMachines]); // This effect runs only when storedMachines changes
 
+
+    const handleDownloadMachineLogs = async () => {
+        await getMachineLogs([machineId]).catch(() => {
+            notifications.show({
+                title: "Web Service",
+                position: "top-right",
+                color: "red",
+                autoClose: 3000,
+                message: "Error downloading logs"
+            })
+        })
+    }
+
     return (
-        <Stack align="center" className="form-stack">
-            <Text className="form-title">QC Machine Logs</Text>
+        <Modal opened={opened} onClose={close} centered>
+
+            <Stack align="center" className="form-stack">
+                <Text className="form-title">QC Machine Logs</Text>
 
 
 
-            {loading ? (
-                <Loader size="sm" />
-            ) : (
-                <Select
-                    value={machineId}
-                    onChange={setMachineId}
-                    data={multiSelectOptions}
-                    label="Machine ID"
-                    placeholder="Select a machine"
-                    clearable
-                />
-            )}
+                {loading ? (
+                    <Loader size="sm" />
+                ) : (
+                    <Select
+                        value={machineId}
+                        onChange={setMachineId}
+                        data={multiSelectOptions}
+                        label="Machine ID"
+                        placeholder="Select a machine"
+                        clearable
+                    />
+                )}
 
-            <Button color="rgba(0, 3, 255, 1)" disabled={!machineId} onClick={() => getMachineLogs([machineId])}>
-                Download Machine Logs
-            </Button>
+                <Button color="rgba(0, 3, 255, 1)" disabled={!machineId} onClick={handleDownloadMachineLogs}>
+                    Download Machine Logs
+                </Button>
 
-            <Button onClick={getAllMachineLogs} color="rgba(0, 3, 255, 1)">Download All Machine Logs</Button>
+                <Button onClick={getAllMachineLogs} color="rgba(0, 3, 255, 1)">Download All Machine Logs</Button>
 
-            <Button onClick={getWebServiceLogs} color="rgba(0, 3, 255, 1)">Download Web Service Logs</Button>
-        </Stack>
+                <Button onClick={getWebServiceLogs} color="rgba(0, 3, 255, 1)">Download Web Service Logs</Button>
+            </Stack>
+        </Modal>
     );
 };

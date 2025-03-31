@@ -136,7 +136,7 @@ export const CreateSubscription = async (groupId: string) => {
       return null;
     }
 
-    const response = await fetch("http://upflux.cloud/api/Notification/create-group", {
+    const response = await fetch("http://localhost:5000/api/Notification/create-group", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ export const deployPackage = async (appName: string, ver: string, targetedMachin
       return null;
     }
 
-    const response = await fetch("http://upflux.cloud/api/PackageManagement/packages/upload", {
+    const response = await fetch("http://localhost:5000/api/PackageManagement/packages/upload", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -392,7 +392,7 @@ export interface IPackagesOnCloud {
   versions: string[]
 }
 
-export const doRollback = async (versionId: string, deviceId: string) => {
+export const doRollback = async (versionId: string, deviceId: string[]) => {
   // Retrieve the token from session storage
   const authToken = sessionStorage.getItem('authToken');
 
@@ -408,7 +408,7 @@ export const doRollback = async (versionId: string, deviceId: string) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`, // Include Bearer token
       },
-      body: JSON.stringify([deviceId])
+      body: JSON.stringify(deviceId)
     });
     if (response.ok) {
       const data: IPackagesOnCloud[] = await response.json();

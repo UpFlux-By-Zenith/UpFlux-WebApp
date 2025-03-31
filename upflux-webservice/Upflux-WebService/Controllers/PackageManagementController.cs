@@ -100,7 +100,7 @@ public class PackageManagementController : ControllerBase
             {
                 FileName = "gpg",
                 Arguments =
-                    $"--homedir \"/root/.gnupg\" --batch --pinentry-mode=loopback --passphrase \"{gpgPassphrase}\" --yes --armor --output \"{signedFilePath}\" --detach-sign -u \"{gpgKeyId}\" \"{filePath}\"",
+                    $"--homedir \"/home/gursimar/.gnupg\" --batch --pinentry-mode=loopback --passphrase \"{gpgPassphrase}\" --yes --armor --output \"{signedFilePath}\" --detach-sign -u \"{gpgKeyId}\" \"{filePath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false

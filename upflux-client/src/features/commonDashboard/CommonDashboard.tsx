@@ -9,6 +9,7 @@ import { UploadedApplications } from '../adminDashboard/UploadedApplications';
 import { VersionControl } from '../versionControl/VersionControl';
 import { AccountSettings } from '../accountSettings/AccountSettings';
 import { ROLES, useAuth } from '../../common/authProvider/AuthProvider';
+import { NotificationLogger } from '../notificationLogger/NotificationLogger';
 
 export const CommonDashboard = () => {
     const { userRole } = useAuth();
@@ -34,7 +35,7 @@ export const CommonDashboard = () => {
             <Tabs.Panel value="package" pb="xs">
                 <UploadedApplications />
             </Tabs.Panel>
-            <Tabs.Panel value="logs" pb="xs"><DownloadLogs /></Tabs.Panel>
+            <Tabs.Panel value="logs" pb="xs"><NotificationLogger /></Tabs.Panel>
             <Tabs.Panel value="account" pb="xs"><AccountSettings /></Tabs.Panel>
             <Tabs.Panel value="engineer" pb="xs"><ViewEngineers /></Tabs.Panel>
             <Tabs.Panel value="license" pb="xs"><ManageMachines /></Tabs.Panel>

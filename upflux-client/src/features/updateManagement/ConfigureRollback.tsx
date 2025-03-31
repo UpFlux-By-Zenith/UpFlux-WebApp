@@ -16,8 +16,6 @@ export const ConfigureRollback = ({ rollbackModalOpened, setRollbackModalOpened,
     const [availableVersions, setAvailableVersions] = useState<string[]>([]);
     const [allAvailableVersions, setAllAvailableVersions] = useState<IStoredVersionsResponse[]>([]);
 
-
-
     useEffect(() => {
         const fetchVersions = async () => {
             const res = await getMachineStoredVersions();
@@ -43,7 +41,7 @@ export const ConfigureRollback = ({ rollbackModalOpened, setRollbackModalOpened,
         }
     }, [selectedMachines, allAvailableVersions]);
 
-    const handleRollback = () => {
+    const handleRollback = async () => {
         if (selectedMachines.length === 0 || !selectedVersion) return;
 
         setRollbackModalOpened(false);
@@ -56,8 +54,20 @@ export const ConfigureRollback = ({ rollbackModalOpened, setRollbackModalOpened,
             withCloseButton: false,
         });
 
-        selectedMachines.forEach(machine => doRollback(selectedVersion, machine));
+        try {
+            await doRollback(selectedVersion, selectedMachines);
+
+        } catch (error) {
+            console.error("Rollback failed:", error);
+            notifications.show({
+                title: "Rollback Failed",
+                message: "An error occurred during rollback.",
+                color: "red",
+                autoClose: 3000,
+            });
+        }
     };
+
 
     const handleMachineChange = (value: string[]) => {
         setSelectedMachines(value);
@@ -65,9 +75,10 @@ export const ConfigureRollback = ({ rollbackModalOpened, setRollbackModalOpened,
         setSelectedVersion("")
     };
 
-    const selectedApp = [
-        { value: "UpFlux-Monitoring-Service", label: "UpFlux-Monitoring-Service" },
-    ];
+    const selectedApp = [{
+        value: "upflux-monitoring-service",
+        label: "UpFlux-Monitoring-Service",
+    }]
 
     return (
         <Modal
