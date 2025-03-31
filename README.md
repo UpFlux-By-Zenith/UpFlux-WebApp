@@ -2,7 +2,7 @@ UpFlux-WebApp
 
 UpFlux-WebApp is a comprehensive web-based application designed to manage gateway simulation, hybrid access control systems, and form error handling. This repository contains the frontend, backend, gateway simulator, and database schema required for full functionality.
 
-📂 Project Structure
+# 📂 Project Structure
 
 UpFlux-WebApp/
 ├── .github/workflows/          # GitHub Actions workflows for CI/CD
@@ -14,35 +14,34 @@ UpFlux-WebApp/
 ├── upflux_db.sql               # Database schema
 ├── upflux_db.sql.bak           # Database schema backup
 
-🚀 Getting Started
+# 🚀 Getting Started
 
-✅ Requirements
+## ✅ Requirements
 
-Node.js
+  - Node.js
+  - .NET SDK
+  - SQL Server or compatible RDBMS
 
-.NET SDK
+## 🔧 Installation Steps
 
-SQL Server or compatible RDBMS
+  1. Clone Repository
+  2. git clone https://github.com/your-organization/UpFlux-WebApp.git
+  3. cd UpFlux-WebApp
 
-🔧 Installation Steps
+## Install Frontend Dependencies
+```
+  cd upflux-client
+  npm install
+  npm start
+```
 
-Clone Repository
-
-git clone https://github.com/your-organization/UpFlux-WebApp.git
-cd UpFlux-WebApp
-
-Install Frontend Dependencies
-
-cd upflux-client
-npm install
-npm start
-
-Setup Backend Web Service
-
-cd ../upflux-webservice
-dotnet restore
-dotnet build
-dotnet run
+## Setup Backend Web Service
+```
+  cd ../upflux-webservice
+  dotnet restore
+  dotnet build
+  dotnet run
+```
 
 Database Setup
 
@@ -50,7 +49,7 @@ Import the upflux_db.sql file to set up a new database.
 
 For restoring from backup, use upflux_db.sql.bak.
 
-🌟 Features
+# 🌟 Features
 
 Gateway Simulation: Manage and simulate control channel communication.
 
@@ -60,7 +59,7 @@ Enhanced Error Handling: Improved handling and user feedback for form-related er
 
 Automated Workflow: CI/CD integration via GitHub Actions.
 
-📦 Recent Updates
+# 📦 Recent Updates
 
 Error Handling Improvements (#58070)
 
@@ -70,13 +69,13 @@ Gateway Channel Package Signature Handling (#57)
 
 Manual GitHub Action Triggers (#45)
 
-🌿 Branching Strategy
+# 🌿 Branching Strategy
 
 main: Stable production branch.
 
-readme-update: Current documentation updates.
+deploy: Deployment pipeline.
 
-🤝 Contributing
+# 🤝 Contributing
 
 Contributions are welcome! Follow these steps to contribute:
 
@@ -90,18 +89,11 @@ Push your branch (git push origin feature-name)
 
 Open a Pull Request
 
-🧪 Testing
-
-Frontend: Execute unit tests via your framework (e.g., Jest).
-
-Backend: Run tests using .NET test.
-
-📜 License
+# 📜 License
 
 This project is licensed under the MIT License. See LICENSE for more information.
 
-📞 Contact
+# 📞 Contact
 
 If you encounter issues or have suggestions, please submit an issue or pull request on GitHub.
-
 Thank you for using UpFlux-WebApp!
