@@ -40,6 +40,40 @@ UpFlux-WebApp/
   - .NET SDK
   - SQL Server or compatible RDBMS
 
+## 📦 Backend Dependencies
+
+The `upflux-webservice` project is built with .NET 8 and relies on the following NuGet packages:
+
+### 🔒 Authentication & Security
+- `Microsoft.AspNetCore.Authentication.JwtBearer` – JWT-based authentication
+- `Microsoft.IdentityModel.Tokens` – Token validation for JWT
+- `System.IdentityModel.Tokens.Jwt` – JWT support and parsing
+
+### 🌐 gRPC & Protocol Buffers
+- `Grpc.AspNetCore.Server` – gRPC server support for ASP.NET Core
+- `Grpc.Tools` – gRPC tooling and code generation
+- `Google.Protobuf` – Protocol Buffers support
+
+### 🗃️ Database & ORM
+- `Microsoft.EntityFrameworkCore.Tools` – EF Core CLI support
+- `Pomelo.EntityFrameworkCore.MySql` – MySQL support for EF Core
+- `MySqlConnector` – A high-performance MySQL ADO.NET library
+
+### 📊 Logging
+- `Serilog` – Structured logging for .NET
+- `Serilog.AspNetCore` – ASP.NET Core integration
+- `Serilog.Settings.Configuration` – Load config from `appsettings.json`
+- `Serilog.Sinks.File` – Log to files
+
+### 📦 API & Tooling
+- `Swashbuckle.AspNetCore` – Swagger/OpenAPI docs for ASP.NET Core APIs
+- `Newtonsoft.Json` – JSON serialization/deserialization
+
+### ⚙️ Utilities
+- `DotNetRateLimiter` – Rate limiting middleware
+- `System.Threading.RateLimiting` – Built-in rate limiting (preview)
+- `AWSSDK.KeyManagementService` – AWS KMS integration
+
 ## 🔧 Installation Steps
 
  ###  1. Clone Repository
@@ -77,8 +111,3 @@ UpFlux-WebApp/
   - Send device status data through gateway simulator console application
     
   - Gateway simulator is now persistently connected to the web-service
-
-### 📫 Authors & Maintainers
-👨‍💻 Collaborative Team: UpFlux Final Project Team
-
-🛠️ Tools Used: Postman · Playwright · C# · .NET 7 · Visual Studio 2022
