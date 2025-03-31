@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Upflux_WebService.Core.Models;
 using Upflux_WebService.Data;
+using Upflux_WebService.Services;
 using Upflux_WebService.Services.Interfaces;
 
 namespace Upflux_WebService.Controllers;
@@ -22,18 +23,57 @@ public class DataRequestController : ControllerBase
     private readonly string _gatewayId;
     private readonly IControlChannelService _controlChannelService;
     private readonly ApplicationDbContext _context;
+    private readonly IAuthService _authService;
 
     #endregion
 
     public DataRequestController(IEntityQueryService entityQueryService, IConfiguration configuration,
-        IControlChannelService controlChannelService, ApplicationDbContext context)
+        IControlChannelService controlChannelService, ApplicationDbContext context, IAuthService authService)
     {
         _context = context;
         _entityQueryService = entityQueryService;
         _gatewayId = configuration["GatewayId"]!;
         _controlChannelService = controlChannelService;
+        _authService = authService;
     }
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [HttpGet("machines/status")]
+    public IActionResult GetDeviceStatus()
+    {
+        try
+        {
+            var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            if (_authService.CheckIfUserIsRevoked(email)) return Unauthorized();
+
+            var machineIds = GetClaimValue("MachineIds");
+            var machines = machineIds.Split(',').ToList();
+            return Ok(_context.Machine_Status.Where(m => machines.Contains(m.MachineId)).ToList());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching applications: {ex.Message}");
+            return StatusCode(500, new { Error = "An internal error occurred." });
+        }
+    }
+
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    [HttpGet("machines/storedVersions")]
+    public IActionResult GetStoredVersions()
+    {
+        try
+        {
+            var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            if (_authService.CheckIfUserIsRevoked(email)) return Unauthorized();
+            _controlChannelService.SendVersionDataRequestAsync("gateway-patrick-1234");
+            return Ok(_context.MachineStoredVersions.ToList());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching applications: {ex.Message}");
+            return StatusCode(500, new { Error = "An internal error occurred." });
+        }
+    }
 
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("applications")]
@@ -41,6 +81,8 @@ public class DataRequestController : ControllerBase
     {
         try
         {
+            var email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            if (_authService.CheckIfUserIsRevoked(email)) return Unauthorized();
             // Fetch applications and join with their corresponding versions
             var applications = _context.Application_Versions.ToList();
 
@@ -57,32 +99,76 @@ public class DataRequestController : ControllerBase
         }
     }
 
+
     /// <summary>
     /// Engineer retrieves accessible machines
     /// </summary>
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("engineer/access-machines")]
-    public IActionResult GetAccessibleMachines()
+    public async Task<IActionResult> GetAccessibleMachines()
     {
         try
         {
             var engineerEmail = GetClaimValue(ClaimTypes.Email);
             var machineIds = GetClaimValue("MachineIds");
 
-            var role = GetClaimValue(ClaimTypes.Role);
-            if (role == "Admin") return Ok(new { engineerEmail, AccessibleMachines = _context.Machines.ToListAsync() });
-
-            if (string.IsNullOrEmpty(engineerEmail) || string.IsNullOrEmpty(machineIds))
+            if (string.IsNullOrEmpty(engineerEmail))
                 return Unauthorized(new { Error = "Invalid engineer token." });
 
-            var machines = machineIds.Split(',').ToList();
+            if (_authService.CheckIfUserIsRevoked(engineerEmail))
+                return Unauthorized();
+
+            var role = GetClaimValue(ClaimTypes.Role);
+
+            if (role == "Admin")
+            {
+                // Fetch all machines for admin, including last updated by username
+                var allMachines = await _context.Machines
+                    .Select(m => new
+                    {
+                        m.MachineId,
+                        m.machineName,
+                        m.ipAddress,
+                        m.currentVersion,
+                        m.dateAddedOn,
+                        m.appName,
+                        LastUpdatedBy = _context.Users
+                            .Where(u => u.UserId == m.lastUpdatedBy)
+                            .Select(u => u.Name)
+                            .FirstOrDefault() ?? "Unknown"
+                    })
+                    .ToListAsync();
+
+                return Ok(new { engineerEmail, AccessibleMachines = allMachines });
+            }
+
+            // Engineer logic: Get assigned machines
+            if (string.IsNullOrEmpty(machineIds))
+                return Unauthorized(new { Error = "No assigned machines found for this engineer." });
+
+            var machinesList = machineIds.Split(',').ToList();
+
+            var accessibleMachines = await _context.Machines
+                .Where(m => machinesList.Contains(m.MachineId))
+                .Select(m => new
+                {
+                    m.MachineId,
+                    m.machineName,
+                    m.ipAddress,
+                    m.currentVersion,
+                    m.dateAddedOn,
+                    m.appName,
+                    LastUpdatedBy = _context.Users
+                        .Where(u => u.UserId == m.lastUpdatedBy)
+                        .Select(u => u.Name)
+                        .FirstOrDefault() ?? "Unknown"
+                })
+                .ToListAsync();
+
             return Ok(new
             {
                 EngineerEmail = engineerEmail,
-                AccessibleMachines = _context.Machines
-                    .Where(m => machines.Contains(m
-                        .MachineId)) // Assuming MachineId is the property you're filtering by
-                    .ToListAsync()
+                AccessibleMachines = accessibleMachines
             });
         }
         catch (Exception ex)
@@ -90,6 +176,7 @@ public class DataRequestController : ControllerBase
             return BadRequest(new { Error = ex.Message });
         }
     }
+
 
     /// <summary>
     /// Get applications running on machines
@@ -110,23 +197,23 @@ public class DataRequestController : ControllerBase
             // Send version data request via control channel service
             await _controlChannelService.SendVersionDataRequestAsync(_gatewayId);
 
-			return Ok(new
-			{
-				Message = "Version data request sent successfully.",
-				//EngineerEmail = engineerEmail,
-				Timestamp = DateTime.UtcNow
-			});
+            // return Ok(new
+            // {
+            // 	Message = "Version data request sent successfully.",
+            // 	//EngineerEmail = engineerEmail,
+            // 	Timestamp = DateTime.UtcNow
+            // });
 
-			//var storedVersionsList = new List<MachineStoredVersions>();
+            var storedVersionsList = new List<MachineStoredVersion>();
 
-			//if (role == "Engineer")
-			//    storedVersionsList = await _context.Machine_Stored_Versions
-			//        .Where(msv => machineIds.Contains(msv.MachineId.ToString()))
-			//        .ToListAsync();
-			//else if (role == "Admin") storedVersionsList = await _context.Machine_Stored_Versions.ToListAsync();
+            if (role == "Engineer")
+                storedVersionsList = await _context.MachineStoredVersions
+                    .Where(msv => machineIds.Contains(msv.MachineId.ToString()))
+                    .ToListAsync();
+            else if (role == "Admin") storedVersionsList = await _context.MachineStoredVersions.ToListAsync();
 
-			//return Ok(storedVersionsList);
-		}
+            return Ok(storedVersionsList);
+        }
         catch (Exception ex)
         {
             return StatusCode(500, new

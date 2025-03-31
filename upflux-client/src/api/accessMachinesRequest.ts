@@ -1,29 +1,14 @@
 import { DATA_REQUEST_API } from './apiConsts';
+import { IMachine } from './reponseTypes';
 
 interface MachineAccessResponse {
   engineerEmail: string;
-  accessibleMachines: {
-    result: {
-      machineId: string;
-      dateAddedOn: string;
-      ipAddress: string;
-    }[];
-    id: number;
-    exception: string | null;
-    status: number;
-    isCanceled: boolean;
-    isCompleted: boolean;
-    isCompletedSuccessfully: boolean;
-    creationOptions: number;
-    asyncState: unknown;
-    isFaulted: boolean;
-  };
+  accessibleMachines: IMachine[]
 }
 
 export const getAccessibleMachines = async (): Promise<MachineAccessResponse | string | null> => {
   // Retrieve the token from local storage
   const authToken = sessionStorage.getItem('authToken');
-  console.log('authToken:', authToken);
 
   if (!authToken) {
     console.error('No authentication token found in local storage.');
@@ -41,7 +26,6 @@ export const getAccessibleMachines = async (): Promise<MachineAccessResponse | s
 
     if (response.ok) {
       const data: MachineAccessResponse = await response.json();
-      console.log('Machines fetched successfully:', data);
       return data;
     } else {
       const errorData = await response.json();

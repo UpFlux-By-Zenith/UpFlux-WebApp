@@ -9,11 +9,9 @@ interface AdminLoginPayload {
   password: string;
 }
 
-export const engineerLoginSubmit = async (payload: LoginPayload)=> {
+export const engineerLoginSubmit = async (payload: LoginPayload) => {
 
   try {
-
-    console.log('Stringified Payload:', JSON.stringify(payload));
 
     const response = await fetch(AUTH_API.LOGIN, {
       method: 'POST',
@@ -25,8 +23,7 @@ export const engineerLoginSubmit = async (payload: LoginPayload)=> {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Login successful:', data);
-      return data; 
+      return data;
     }
     else {
       const errorData = await response.json();
@@ -34,8 +31,8 @@ export const engineerLoginSubmit = async (payload: LoginPayload)=> {
       return 'Login failed. Please check your credentials and token.';
     }
 
-  } 
-  
+  }
+
   catch (error) {
     console.error('Error during login request:', error);
     return 'An error occurred while submitting the login request.';
@@ -55,18 +52,17 @@ export const adminLoginSubmit = async (payload: AdminLoginPayload): Promise<stri
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Login successful:', data);
-      return data; 
+      return data;
     }
-    
+
     else {
       const errorData = await response.json();
       console.error('Login error:', errorData);
       return 'Login failed. Please check your credentials and token.';
     }
 
-  } 
-  
+  }
+
   catch (error) {
     console.error('Error during login request:', error);
     return 'An error occurred while submitting the login request.';

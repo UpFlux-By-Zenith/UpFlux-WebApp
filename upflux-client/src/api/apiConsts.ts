@@ -17,15 +17,21 @@ export const AUTH_API = {
 export const ADMIN_REQUEST_API = {
   GET_ALL_MACHINES: `${API_BASE_URL}/api/auth/admin/get-all-machines`,
   GET_MACHINES_WITH_LICENSE: `${API_BASE_URL}/api/Admin/machinesWithLicenses`,
-  GET_ALL_ENGINEERS: `${API_BASE_URL}/api/Admin/engineers`,
-  GET_ALL_MACHINES_WITH_APPS: `${API_BASE_URL}/api/Admin/machines/applications`
+  GET_ALL_ENGINEERS: `${API_BASE_URL}/api/Admin/users`,
+  GET_ALL_MACHINES_WITH_APPS: `${API_BASE_URL}/api/Admin/machines/applications`,
+  REVOKE_ENGINEER: `${API_BASE_URL}/api/Admin/revoke-engineer`,
+  REINSTATE_ENGINEER: `${API_BASE_URL}/api/Admin/reinstate-engineer`,
+  GET_MACHINE_LOGS: `${API_BASE_URL}/api/LogFile/admin/machine/download`,
+  GET_WEBSERVICE_LOG: `${API_BASE_URL}/api/LogFile/admin/download-all`
 }
 
 //DataRequest-related endpoints
 export const DATA_REQUEST_API = {
   GET_ACCESS_MACHINES: `${API_BASE_URL}/api/DataRequest/engineer/access-machines`,
-  GET_MACHINE_DETAILS: `${API_BASE_URL}/api/DataRequest/applications`,
-  GET_RUNNING_APPS: `${API_BASE_URL}/api/DataRequest/engineer/machines-application`
+  GET_AVAILABLE_APPLICATIONS: `${API_BASE_URL}/api/DataRequest/applications`,
+  GET_MACHINES_STATUS: `${API_BASE_URL}/api/DataRequest/machines/status`,
+  GET_MACHINE_STORED_VERSIONS: `${API_BASE_URL}/api/DataRequest/machines/storedVersions`,
+  GET_RUNNING_APPS: `${API_BASE_URL}/api/DataRequest/engineer/machines-application`,
 };
 
 export const PACKAGE_DEPOYMENT = {

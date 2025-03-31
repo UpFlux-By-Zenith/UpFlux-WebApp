@@ -39,9 +39,18 @@ public class NotificationService : INotificationService
             {
                 GroupUriMapping[groupId] = new List<string>();
 
-                await AddUriToGroupAsync(groupId, "alert");
-                await AddUriToGroupAsync(groupId, "versions");
-                foreach (var machineId in machineIds) await AddUriToGroupAsync(groupId, machineId);
+                await AddUriToGroupAsync(groupId, "Alert");
+                await AddUriToGroupAsync(groupId, "Alert/Licence");
+                await AddUriToGroupAsync(groupId, "Alert/Update");
+                await AddUriToGroupAsync(groupId, "Alert/ScheduledUpdate");
+                await AddUriToGroupAsync(groupId, "Alert/Rollback");
+                await AddUriToGroupAsync(groupId, "Recommendations/Cluster");
+                foreach (var machineId in machineIds)
+                {
+                    await AddUriToGroupAsync(groupId, machineId);
+                    await AddUriToGroupAsync(groupId, $"Status/{machineId}");
+                    await AddUriToGroupAsync(groupId, $"Recommendations/Plot/{machineId}");
+                }
 
                 _logger.LogInformation("Group created successfully with ID: {GroupId}", groupId);
             }
@@ -92,7 +101,7 @@ public class NotificationService : INotificationService
 
     public async Task SendMessageToUriAsync(string uri, string message)
     {
-        _logger.LogInformation("Sending message to URI '{Uri}'", uri);
+        // _logger.LogInformation("Sending message to URI '{Uri}'", uri);
 
         try
         {
@@ -103,10 +112,10 @@ public class NotificationService : INotificationService
                 {
                     // Send message to the group if the uri is found
                     await _hubContext.Clients.Group(groupId).SendAsync("ReceiveMessage", uri, message);
-                    _logger.LogInformation("Message sent to URI '{Uri}' in group '{GroupId}'", uri, groupId);
+                    // _logger.LogInformation("Message sent to URI '{Uri}' in group '{GroupId}'", uri, groupId);
                 }
 
-            _logger.LogWarning("[SignalR] Message not sent. URI '{Uri}' not found in any group.", uri);
+            // _logger.LogWarning("[SignalR] Message not sent. URI '{Uri}' not found in any group.", uri);
         }
         catch (Exception ex)
         {

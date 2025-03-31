@@ -2,28 +2,23 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
-  Group,
   Stack,
   Table,
   Text,
   Select,
   Modal,
-  RingProgress,
   SimpleGrid,
-  Tabs
+  Indicator
 } from "@mantine/core";
-import { Link, useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
 import "./versionControl.css";
 import ReactSpeedometer, { Transition } from "react-d3-speedometer";
-import { getMachineDetails } from "../../api/applicationsRequest";
 import { useSelector } from "react-redux";
 import { RootState } from "../reduxSubscription/store";
 import { IApplications } from "../reduxSubscription/applicationVersions";
 
 export const VersionControl: React.FC = () => {
-  const navigate = useNavigate();
-
+  //Machine list from redux 
+  const storedMachines = useSelector((root: RootState) => root.machines.messages)
   const cpuColors = [
     "#00FF00", // Green
     "#00FF00",
@@ -86,54 +81,24 @@ export const VersionControl: React.FC = () => {
     "#FF0000", // Red 
   ];
 
-  //  // Hardcoded machine metrics data
-  //   const machineMetrics = {
-  //     "M01": {
-  //       metrics: {
-  //         cpuUsage: 45,
-  //         cpuTemperature: 60,
-  //         memoryUsage: 70,
-  //         diskUsage: 30,
-  //         systemUptime: 123456, // Uptime in seconds
-  //       },
-  //     },
-  //   };
-
-  //   // Hardcoded applications data
-  //   const applications = {
-  //     "M01": {
-  //       VersionNames: ["1.0.0", "1.1.0", "1.2.0"],
-  //     },
-  //   };
-
-  //   // Hardcoded app versions data
-  //   const appVersions = [
-  //     {
-  //       appName: "UpFlux-Monitoring-Service",
-  //       appVersion: "1.0.0",
-  //       lastUpdate: "Jan 10 2024",
-  //     },
-  //     {
-  //       appName: "UpFlux-Monitoring-Service",
-  //       appVersion: "1.1.0",
-  //       lastUpdate: "Feb 15 2024",
-  //     },
-  //     {
-  //       appName: "UpFlux-Monitoring-Service",
-  //       appVersion: "1.2.0",
-  //       lastUpdate: "Mar 20 2024",
-  //     },
-  //   ];
-
   // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
   const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
   const machineMetrics = useSelector(
     (state: RootState) => state.metrics.metrics
   );
-  // Retrieve machine ID from the route state
-  const location = useLocation();
-  const machineId = "M01"; // Hardcoded to M01 for demonstration
+
+  const [selectedMachineName, setSelectedMachineName] = useState("")
+  const [selectedMachineId, setSelectedMachineId] = useState("")
+
+  const findMachineIdByName = (name) => {
+    return Object.entries(storedMachines).find(([, machine]) => machine.machineName === name)?.[0] || "";
+  };
+
+  useEffect(() => {
+    setSelectedMachineId(findMachineIdByName(selectedMachineName))
+  }, [selectedMachineName])
+
 
   // State for app versions and loading status
   const [appVersions, setAppVersions] = useState<
@@ -153,21 +118,21 @@ export const VersionControl: React.FC = () => {
   const metrics = [
     {
       label: "CPU (%)",
-      value: parseInt(machineMetrics[machineId]?.metrics.cpuUsage.toFixed()) || 0,
+      value: parseInt(machineMetrics[selectedMachineId]?.metrics.cpuUsage.toFixed()) || 0,
     },
     {
       label: "CPU Temp (°C)",
       value: parseInt(
-        machineMetrics[machineId]?.metrics.cpuTemperature.toFixed()
+        machineMetrics[selectedMachineId]?.metrics.cpuTemperature.toFixed()
       ) || 0,
     },
     {
       label: "Memory Usage (%)",
-      value: parseInt(machineMetrics[machineId]?.metrics.memoryUsage.toFixed()) || 0,
+      value: parseInt(machineMetrics[selectedMachineId]?.metrics.memoryUsage.toFixed()) || 0,
     },
     {
       label: "Disk Usage (%)",
-      value: parseInt(machineMetrics[machineId]?.metrics.diskUsage.toFixed()) || 0,
+      value: parseInt(machineMetrics[selectedMachineId]?.metrics.diskUsage.toFixed()) || 0,
     },
   ];
 
@@ -183,12 +148,30 @@ export const VersionControl: React.FC = () => {
 
       <Box className="content-wrapper">
         <Box className="machine-id-box">
-          <Select
-            data={Object.keys(machineMetrics)}
-            value={machineId}
-            onChange={(value) => navigate(".", { state: { machineId: value } })}
-            placeholder="Select Machine"
-          />
+          {selectedMachineName && (
+            <Indicator
+              inline
+              color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
+              label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
+              size={16}
+            >
+              <Select
+                data={Object.values(storedMachines).map(m => m.machineName)}
+                value={selectedMachineName}
+                onChange={(value) => setSelectedMachineName(value)}
+                placeholder="Select Machine"
+              />
+            </Indicator>
+          )}
+
+          {!selectedMachineName && (
+            <Select
+              data={Object.values(storedMachines).map(m => m.machineName)}
+              value={selectedMachineName}
+              onChange={(value) => setSelectedMachineName(value)}
+              placeholder="Select Machine"
+            />
+          )}
         </Box>
 
         {/* Machine Metrics Section */}
@@ -197,6 +180,7 @@ export const VersionControl: React.FC = () => {
             {metrics.map((metric, index) => (
               <Box key={index} style={{ textAlign: "center" }}>
                 <ReactSpeedometer
+                  key={index}
                   minValue={0}
                   maxValue={100}
                   segments={cpuColors.length}
@@ -214,8 +198,6 @@ export const VersionControl: React.FC = () => {
                   width={250}
                   height={150}
                   ringWidth={30}
-                  currentValueText={""}
-                  forceRender={true}
                   maxSegmentLabels={4}
                 />
                 <Text className="metrics-labels" size="sm" fw="bold" mt="sm">
@@ -226,7 +208,7 @@ export const VersionControl: React.FC = () => {
           </SimpleGrid>
           <center>
             <h2 style={{ textAlign: "center" }}>
-              System Uptime: {formatUptime(machineMetrics[machineId]?.metrics.systemUptime || 0)}
+              System Uptime: {formatUptime(machineMetrics[selectedMachineId]?.metrics.systemUptime || 0)}
             </h2>
           </center>
         </Box>
@@ -238,21 +220,17 @@ export const VersionControl: React.FC = () => {
               <Table.Tr>
                 <Table.Th>App Name</Table.Th>
                 <Table.Th>Version</Table.Th>
-                <Table.Th>Added By</Table.Th>
                 <Table.Th>Last Updated</Table.Th>
                 <Table.Th>Updated By</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {applications[machineId]?.VersionNames.map((appVersion, index) => (
-                <Table.Tr key={index}>
-                  <Table.Td>UpFlux-Monitoring-Service</Table.Td>
-                  <Table.Td>{appVersion}</Table.Td>
-                  <Table.Td>Jane Smith</Table.Td>
-                  <Table.Td>Jan 10 2024</Table.Td>
-                  <Table.Td>Alice Cole</Table.Td>
-                </Table.Tr>
-              ))}
+              <Table.Tr >
+                <Table.Td>{storedMachines[selectedMachineId]?.appName}</Table.Td>
+                <Table.Td>{storedMachines[selectedMachineId]?.currentVersion}</Table.Td>
+                <Table.Td>{storedMachines[selectedMachineId]?.dateAddedOn}</Table.Td>
+                <Table.Td>{storedMachines[selectedMachineId]?.lastUpdatedBy}</Table.Td>
+              </Table.Tr>
             </Table.Tbody>
           </Table>
 

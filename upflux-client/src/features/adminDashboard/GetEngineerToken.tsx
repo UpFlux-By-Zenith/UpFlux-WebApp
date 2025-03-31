@@ -8,10 +8,12 @@ import {
   Text,
   MultiSelect,
   ComboboxData,
+  Modal,
 } from "@mantine/core";
 import { useAuth } from "../../common/authProvider/AuthProvider";
 import { getEngineerToken } from "../../api/adminApiActions";
-import { getAllMachineDetails } from "../../api/applicationsRequest";
+import { useSelector } from "react-redux";
+import { RootState } from "../reduxSubscription/store";
 
 interface IMachineDetails {
   machineId: number;
@@ -19,7 +21,7 @@ interface IMachineDetails {
   ipAddress: string;
 }
 
-export const GetEngineerToken: React.FC = () => {
+export const GetEngineerToken = ({ opened, close }) => {
   // State for form fields
   const [engineerEmail, setEngineerEmail] = useState("");
   const [engineerName, setEngineerName] = useState("");
@@ -28,6 +30,8 @@ export const GetEngineerToken: React.FC = () => {
   const [token, setToken] = useState("");
   const [multiSelectOptions, setMultiSelectOptions] = useState([]);
   const { authToken } = useAuth();
+  //Machine list from redux 
+  const storedMachines = useSelector((root: RootState) => root.machines.messages)
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,61 +48,59 @@ export const GetEngineerToken: React.FC = () => {
   };
 
   useEffect(() => {
-    getAllMachineDetails().then((res: IMachineDetails[]) => {
-      console.log(res);
-      const multiSelectOptions = res.map((val) => {
-        return { value: val.machineId, label: val.machineId };
-      });
-      setMultiSelectOptions(multiSelectOptions);
+    const multiSelectOptions = Object.keys(storedMachines).map((val) => {
+      return { value: val, label: val };
     });
-  }, []);
+    setMultiSelectOptions(multiSelectOptions);
+  }, [storedMachines]);
 
   const handleChange = useCallback((va) => {
     setMachineIds([...va]); // Ensure state is properly updated
   }, [setMachineIds]);
 
   return (
-    // <Box className="get-engineer-token-container">
-    <Stack align="center" className="form-stack" >
-      <Text className="form-title">Create Engineer Token</Text>
+    <Modal opened={opened} onClose={close} centered>
 
-      <TextInput
-        label="Engineer Email"
-        placeholder="Enter engineer email"
-        value={engineerEmail}
-        onChange={(e) => setEngineerEmail(e.target.value)}
-        className="input-field"
-      />
+      <Stack align="center" className="form-stack" >
+        <Text className="form-title">Create Engineer Token</Text>
 
-      <TextInput
-        label="Engineer Name"
-        placeholder="Enter engineer name"
-        value={engineerName}
-        onChange={(e) => setEngineerName(e.target.value)}
-        className="input-field"
-      />
-      <div style={{ width: "600px" }}>
-
-        <MultiSelect
-          onChange={handleChange}
-          data={multiSelectOptions}
-          label="Machine IDs"
-          placeholder="Select machines to give access to"
+        <TextInput
+          label="Engineer Email"
+          placeholder="Enter engineer email"
+          value={engineerEmail}
+          onChange={(e) => setEngineerEmail(e.target.value)}
+          className="input-field"
         />
-      </div>
 
-      <Button color="rgba(0, 3, 255, 1)" onClick={handleSubmit} className="submit-button">
-        Create Token
-      </Button>
+        <TextInput
+          label="Engineer Name"
+          placeholder="Enter engineer name"
+          value={engineerName}
+          onChange={(e) => setEngineerName(e.target.value)}
+          className="input-field"
+        />
+        <div className="input-field">
 
-      {token && (
-        <Text className="token-display">
-          <strong>Token:</strong> {token}
-        </Text>
-      )}
+          <MultiSelect
+            onChange={handleChange}
+            data={multiSelectOptions}
+            label="Machine IDs"
+            placeholder="Select machines to give access to"
+          />
+        </div>
 
-      {errorMessage && <Text className="error-message">{errorMessage}</Text>}
-    </Stack>
-    // </Box>
+        <Button color="rgba(0, 3, 255, 1)" onClick={handleSubmit} className="submit-button">
+          Create Token
+        </Button>
+
+        {token && (
+          <Text className="token-display">
+            <strong>Token:</strong> {token}
+          </Text>
+        )}
+
+        {errorMessage && <Text className="error-message">{errorMessage}</Text>}
+      </Stack>
+    </Modal>
   );
 };

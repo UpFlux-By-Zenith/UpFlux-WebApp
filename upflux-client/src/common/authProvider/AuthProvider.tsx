@@ -51,10 +51,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const logout = () => {
         setAuthToken("");
         setUserRole(ROLES.GUEST);
+
         // Remove from sessionStorage
         sessionStorage.removeItem("authToken");
         sessionStorage.removeItem("userRole");
+
+        // Refresh the page
+        window.location.reload();
     };
+
 
     const isAuthenticated: boolean = !!authToken;
 

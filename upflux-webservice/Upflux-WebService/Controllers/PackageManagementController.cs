@@ -14,335 +14,353 @@ namespace Upflux_WebService.Controllers;
 [Route("api/[controller]")]
 public class PackageManagementController : ControllerBase
 {
-	//private readonly string _uploadPath = "/tmp/uploads"; // Base upload directory
-	//private readonly string _uploadedPackagesPath = "/tmp/uploaded-packages"; // Packages storage directory
-	//private readonly string _signedFilesPath = "/tmp/signed"; // Path to save signed files
+    //private readonly string _uploadPath = "/tmp/uploads"; // Base upload directory
+    //private readonly string _uploadedPackagesPath = "/tmp/uploaded-
+    //"; // Packages storage directory
+    //private readonly string _signedFilesPath = "/tmp/signed"; // Path to save signed files
 
-	// Path.GetTempPath()
-	// on windows points to ==> C:\Users\<Username>\AppData\Local\Temp 
-	// on Linux points to   ==> /tmp 
-	private readonly string _uploadPath = Path.Combine(Path.GetTempPath(), "uploads");
-	private readonly string _uploadedPackagesPath = Path.Combine(Path.GetTempPath(), "uploaded-packages");
-	private readonly string _signedFilesPath = Path.Combine(Path.GetTempPath(), "signed");
-	private readonly string _gatewayId;
-	private readonly IControlChannelService _controlChannelService;
-	private readonly ILogger<PackageManagementController> _logger;
-	private readonly ApplicationDbContext _context;
+    // Path.GetTempPath()
+    // on windows points to ==> C:\Users\<Username>\AppData\Local\Temp 
+    // on Linux points to   ==> /tmp 
+    private readonly string _uploadPath = Path.Combine(Path.GetTempPath(), "uploads");
+    private readonly string _uploadedPackagesPath = Path.Combine(Path.GetTempPath(), "uploaded-packages");
+    private readonly string _signedFilesPath = Path.Combine(Path.GetTempPath(), "signed");
+    private readonly string _gatewayId;
+    private readonly IControlChannelService _controlChannelService;
+    private readonly ILogger<PackageManagementController> _logger;
+    private readonly ApplicationDbContext _context;
 
-	/// <summary>
-	/// Constructor`
-	/// </summary>
-	/// <param name="logger"></param>
-	/// <param name="configuration"></param>
-	/// <param name="controlChannelService"></param>
-	public PackageManagementController(ILogger<PackageManagementController> logger, IConfiguration configuration,
-		IControlChannelService controlChannelService, ApplicationDbContext context)
-	{
-		_context = context;
-		_logger = logger;
-		_gatewayId = configuration["GatewayId"]!;
-		_controlChannelService = controlChannelService;
+    /// <summary>
+    /// Constructor`
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="configuration"></param>
+    /// <param name="controlChannelService"></param>
+    public PackageManagementController(ILogger<PackageManagementController> logger, IConfiguration configuration,
+        IControlChannelService controlChannelService, ApplicationDbContext context)
+    {
+        _context = context;
+        _logger = logger;
+        _gatewayId = configuration["GatewayId"]!;
+        _controlChannelService = controlChannelService;
 
-		// Ensure directories exist
-		Directory.CreateDirectory(_uploadPath);
-		Directory.CreateDirectory(_uploadedPackagesPath);
-		Directory.CreateDirectory(_signedFilesPath);
-	}
+        // Ensure directories exist
+        Directory.CreateDirectory(_uploadPath);
+        Directory.CreateDirectory(_uploadedPackagesPath);
+        Directory.CreateDirectory(_signedFilesPath);
+    }
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <param name="file"></param>
-	/// <returns></returns>
-	[HttpPost("sign")]
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
-	public async Task<IActionResult> SignFile(IFormFile file)
-	{
-		if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    [HttpPost("sign")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+    public async Task<IActionResult> SignFile(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
 
-		var adminEmail = GetClaimValue(ClaimTypes.Email);
+        var adminEmail = GetClaimValue(ClaimTypes.Email);
 
-		if (string.IsNullOrEmpty(adminEmail)) return Unauthorized("Admin email not found in token.");
+        if (string.IsNullOrEmpty(adminEmail)) return Unauthorized("Admin email not found in token.");
 
-		// Find UserID from Users table using admin email
-		var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
-		if (user == null) return NotFound("Admin user not found.");
+        // Find UserID from Users table using admin email
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+        if (user == null) return NotFound("Admin user not found.");
 
-		// Find AdminID from Admin_Details table using UserID
-		var adminDetails = await _context.Admin_Details.FirstOrDefaultAsync(a => a.UserId == user.UserId);
-		if (adminDetails == null) return Unauthorized("Admin ID not found.");
+        // Find AdminID from Admin_Details table using UserID
+        var adminDetails = await _context.Admin_Details.FirstOrDefaultAsync(a => a.UserId == user.UserId);
+        if (adminDetails == null) return Unauthorized("Admin ID not found.");
 
-		var adminId = adminDetails.AdminId;
+        var userId = adminDetails.UserId;
 
 
-		var packageName = Path.GetFileNameWithoutExtension(file.FileName).Split('_')[0];
-		var packageDirectory = Path.Combine(_uploadedPackagesPath, packageName);
-		Directory.CreateDirectory(packageDirectory);
+        var packageName = Path.GetFileNameWithoutExtension(file.FileName).Split('_')[0];
+        var packageDirectory = Path.Combine(_uploadedPackagesPath, packageName);
+        Directory.CreateDirectory(packageDirectory);
 
-		var filePath = Path.Combine(packageDirectory, file.FileName);
-		var signedFilePath = filePath + ".sig";
+        var filePath = Path.Combine(packageDirectory, file.FileName);
+        var signedFilePath = filePath + ".sig";
 
-		try
-		{
-			_logger.LogInformation($"Saving file {file.FileName} to {filePath}");
-			await using (var stream = new FileStream(filePath, FileMode.Create))
-			{
-				await file.CopyToAsync(stream);
-			}
+        try
+        {
+            _logger.LogInformation($"Saving file {file.FileName} to {filePath}");
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
 
-			_logger.LogInformation($"Signing file {file.FileName} using GPG");
-			var processStartInfo = new ProcessStartInfo
-			{
-				FileName = "gpg",
-				Arguments =
-					$"--batch --pinentry-mode=loopback --passphrase \"admin\" --yes --armor --output \"{signedFilePath}\" --detach-sign --default-key \"87405E96DD54A18C1CAA0726F4F7BB6424ED59BF\" \"{filePath}\"",
-				RedirectStandardOutput = true,
-				RedirectStandardError = true,
-				UseShellExecute = false
-			};
+            var gpgPassphrase = "UpFlux123";
+            var gpgKeyId = "3ADAF9875CB265A5C41016D2B1902804CC7BF808";
 
-			var process = new Process { StartInfo = processStartInfo };
-			process.Start();
-			var output = await process.StandardOutput.ReadToEndAsync();
-			var error = await process.StandardError.ReadToEndAsync();
-			process.WaitForExit();
+            Console.WriteLine($"GPG_KEY_ID: {gpgKeyId}");
 
-			if (!string.IsNullOrEmpty(error)) _logger.LogError($"gpg error: {error}");
+            var processStartInfo = new ProcessStartInfo
+            {
+                FileName = "gpg",
+                Arguments =
+                    $"--homedir \"/home/gursimar/.gnupg\" --batch --pinentry-mode=loopback --passphrase \"{gpgPassphrase}\" --yes --armor --output \"{signedFilePath}\" --detach-sign -u \"{gpgKeyId}\" \"{filePath}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
 
-			if (process.ExitCode != 0)
-			{
-				_logger.LogError($"File signing failed with exit code {process.ExitCode}");
-				return StatusCode(500, $"Error signing file: {error}");
-			}
+            using (var process = Process.Start(processStartInfo))
+            {
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
 
-			// Add version record to database
-			var newVersion = new ApplicationVersion
-			{
-				UploadedBy = adminId, // Store Admin ID
-				VersionName = file.FileName,
-				Date = DateTime.UtcNow
-			};
+                _logger.LogInformation($"GPG Output: {output}");
+                _logger.LogError($"GPG Error: {error}");
+            }
 
-			await _context.ApplicationVersions.AddAsync(newVersion);
-			await _context.SaveChangesAsync();
+            // Add version record to database
+            var newVersion = new ApplicationVersion
+            {
+                UploadedBy = userId, // Store Admin ID
+                VersionName = file.FileName.Split('_')[1],
+                Date = DateTime.UtcNow
+            };
 
-			_logger.LogInformation($"File signed successfully: {signedFilePath}");
-			return Ok("File signed successfully.");
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError($"Internal server error: {ex.Message}");
-			return StatusCode(500, $"Internal server error: {ex.Message}");
-		}
-	}
+            await _context.ApplicationVersions.AddAsync(newVersion);
+            await _context.SaveChangesAsync();
 
-	/// <summary>
-	/// Sends available list of application and its versions to be deployed
-	/// </summary>
-	/// <returns></returns>
-	[HttpGet("packages")]
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	public IActionResult GetPackages()
-	{
-		try
-		{
-			if (!Directory.Exists(_uploadedPackagesPath))
-				return Ok(new List<object>());
+            _logger.LogInformation($"File signed successfully: {signedFilePath}");
+            return Ok("File signed successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Internal server error: {ex.Message}");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 
-			var packages = Directory.GetDirectories(_uploadedPackagesPath)
-				.Select(pkgDir => new
-				{
-					Name = Path.GetFileName(pkgDir),
-					Versions = Directory.GetFiles(pkgDir)
-						.Where(file => !file.EndsWith(".sig")) // Exclude .sig files
-						.Select(file => Path.GetFileName(file)) // Extract file names
-						.Select(fileName =>
-						{
-							// Extract version from file name (assumes format "package_name_version.extension")
-							var version = fileName.Split('_')[1];
-							return version;
-						}).ToList()
-				}).ToList();
+    /// <summary>
+    /// Sends available list of application and its versions to be deployed
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("packages")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult GetPackages()
+    {
+        try
+        {
+            if (!Directory.Exists(_uploadedPackagesPath))
+                return Ok(new List<object>());
 
-			return Ok(packages);
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError($"Error retrieving packages: {ex.Message}");
-			return StatusCode(500, $"Error retrieving packages: {ex.Message}");
-		}
-	}
+            // Log the base directory being checked
+            _logger.LogInformation($"Checking directory: {_uploadedPackagesPath}");
 
-	/// <summary>
-	/// Mocks the process of upload the package to a machine
-	/// </summary>
-	/// <param name="request"></param>
-	/// <returns></returns>
-	[HttpPost("packages/check")]
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	public IActionResult CheckPackageExists([FromBody] PackageCheckRequest request)
-	{
-		if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
-			return BadRequest("Package name and version are required.");
+            var packages = Directory.GetDirectories(_uploadedPackagesPath)
+                .Select(pkgDir =>
+                {
+                    // Log each package directory being read
+                    _logger.LogInformation($"Reading package directory: {pkgDir}");
 
-		var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
-		if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
+                    var versionFiles = Directory.GetFiles(pkgDir)
+                        .Where(file => !file.EndsWith(".sig")) // Exclude .sig files
+                        .Select(file =>
+                        {
+                            // Log each file being read
+                            _logger.LogInformation($"Reading file: {file}");
 
-		var packageFile = Directory.GetFiles(packageDirectory).FirstOrDefault(f => f.Contains(request.Version));
-		if (packageFile == null) return NotFound("Package version not found.");
+                            return Path.GetFileName(file); // Extract file name
+                        })
+                        .Select(fileName =>
+                        {
+                            // Extract version from file name (assumes format "package_name_version.extension")
+                            var version = fileName.Split('_')[1];
+                            _logger.LogInformation($"Extracted version: {version} from file: {fileName}");
+                            return version;
+                        })
+                        .ToList();
 
-		return Ok("Package exists.");
-	}
+                    return new
+                    {
+                        Name = Path.GetFileName(pkgDir),
+                        Versions = versionFiles
+                    };
+                })
+                .ToList();
 
-	/// <summary>
-	/// upload package to gateway
-	/// </summary>
-	/// <param name="request"></param>
-	/// <returns></returns>
-	[HttpPost("packages/upload")]
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
-	public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
-	{
-		if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
-			return BadRequest("Package name and version are required.");
+            return Ok(packages);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error retrieving packages: {ex.Message}");
+            return StatusCode(500, $"Error retrieving packages: {ex.Message}");
+        }
+    }
 
-		var engineerEmail = GetClaimValue(ClaimTypes.Email);
-		var machineIds = GetClaimValue("MachineIds");
 
-		//Ensure claims exist
-		if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-			return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+    /// <summary>
+    /// Mocks the process of upload the package to a machine
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("packages/check")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult CheckPackageExists([FromBody] PackageCheckRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
+            return BadRequest("Package name and version are required.");
 
-		var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
-		if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
+        var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
+        if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
 
-		// Look for a .deb file matching the package version
-		var packageFile = Directory.GetFiles(packageDirectory)
-			.FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
+        var packageFile = Directory.GetFiles(packageDirectory).FirstOrDefault(f => f.Contains(request.Version));
+        if (packageFile == null) return NotFound("Package version not found.");
 
-		// Look for a .sig file matching the package version
-		var signatureFile = Directory.GetFiles(packageDirectory)
-			.FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
+        return Ok("Package exists.");
+    }
 
-		if (packageFile == null)
-			return NotFound("Matching .deb package version not found.");
+    /// <summary>
+    /// upload package to gateway
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("packages/upload")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    public async Task<IActionResult> UploadToGateway([FromBody] PackageUploadRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
+            return BadRequest("Package name and version are required.");
 
-		if (signatureFile == null)
-			return NotFound("Matching .sig version signature not found.");
+        var engineerEmail = GetClaimValue(ClaimTypes.Email);
+        var machineIds = GetClaimValue("MachineIds");
 
-		try
-		{
-			var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
-			var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
+        //Ensure claims exist
+        if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+            return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
 
-			await _controlChannelService.SendUpdatePackageAsync(
-				_gatewayId, 
-				Path.GetFileName(packageFile),
-				packageData, 
-				signatureData,
-				request.TargetDevices, 
-				request.Name, 
-				request.Version, 
-				engineerEmail
-			);
+        var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
+        if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
 
-			return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError($"Error sending package: {ex.Message}");
-			return StatusCode(500, $"Error sending package: {ex.Message}");
-		}
-	}
+        // Look for a .deb file matching the package version
+        var packageFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
 
-	/// <summary>
-	/// upload scheduled package to gateway
-	/// </summary>
-	/// <param name="request"></param>
-	/// <returns></returns>
-	[HttpPost("packages/schedule-update")]
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
-	public async Task<IActionResult> UploadScheduledPackageToGateway([FromBody] ScheduledUpdateRequest request)
-	{
-		if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
-			return BadRequest("Package name and version are required.");
+        // Look for a .sig file matching the package version
+        var signatureFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
 
-		var engineerEmail = GetClaimValue(ClaimTypes.Email);
-		var machineIds = GetClaimValue("MachineIds");
+        if (packageFile == null)
+            return NotFound("Matching .deb package version not found.");
 
-		//Ensure claims exist
-		if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
-			return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
+        if (signatureFile == null)
+            return NotFound("Matching .sig version signature not found.");
 
-		var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
-		if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
+        try
+        {
+            var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
+            var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
 
-		// Look for a .deb file matching the package version
-		var packageFile = Directory.GetFiles(packageDirectory)
-			.FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
+            await _controlChannelService.SendUpdatePackageAsync(
+                _gatewayId,
+                Path.GetFileName(packageFile),
+                packageData,
+                signatureData,
+                request.TargetDevices,
+                request.Name,
+                request.Version,
+                engineerEmail
+            );
 
-		// Look for a .sig file matching the package version
-		var signatureFile = Directory.GetFiles(packageDirectory)
-			.FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
 
-		if (packageFile == null)
-			return NotFound("Matching .deb package version not found.");
+            return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error sending package: {ex.Message}");
+            return StatusCode(500, $"Error sending package: {ex.Message}");
+        }
+    }
 
-		if (signatureFile == null)
-			return NotFound("Matching .sig version signature not found.");
+    [HttpPost("packages/schedule-update")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
+    public async Task<IActionResult> UploadScheduledPackageToGateway([FromBody] ScheduledUpdateRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Version))
+            return BadRequest("Package name and version are required.");
 
-		try
-		{
-			var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
-			var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
-			string scheduleId = Guid.NewGuid().ToString("N");
+        var engineerEmail = GetClaimValue(ClaimTypes.Email);
+        var machineIds = GetClaimValue("MachineIds");
 
-			await _controlChannelService.SendScheduledUpdateAsync(
-				_gatewayId, 
-				scheduleId, 
-				request.TargetDevices, 
-				Path.GetFileName(packageFile), 
-				packageData, signatureData, 
-				request.startTimeUtc, 
-				engineerEmail
-			);
+        //Ensure claims exist
+        if (string.IsNullOrWhiteSpace(engineerEmail) || string.IsNullOrWhiteSpace(machineIds))
+            return BadRequest(new { Error = "Invalid claims: Engineer email or machine IDs are missing." });
 
-			return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError($"Error sending package: {ex.Message}");
-			return StatusCode(500, $"Error sending package: {ex.Message}");
-		}
-	}
+        var packageDirectory = Path.Combine(_uploadedPackagesPath, request.Name);
+        if (!Directory.Exists(packageDirectory)) return NotFound("Package not found.");
 
-	public class PackageCheckRequest
-	{
-		public string Name { get; set; }
-		public string Version { get; set; }
-	}
+        // Look for a .deb file matching the package version
+        var packageFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".deb"));
 
-	public class PackageUploadRequest
-	{
-		public string Name { get; set; } // Package name
-		public string Version { get; set; } // Package version
-		public string[] TargetDevices { get; set; } // Target devices
-	}
+        // Look for a .sig file matching the package version
+        var signatureFile = Directory.GetFiles(packageDirectory)
+            .FirstOrDefault(f => f.Contains(request.Version) && f.EndsWith(".sig"));
 
-	public class ScheduledUpdateRequest
-	{
-		public string Name { get; set; } // Package name
-		public string Version { get; set; } // Package version
-		public string[] TargetDevices { get; set; } // Target devices
-		public DateTime startTimeUtc { get; set; }
-	}
+        if (packageFile == null)
+            return NotFound("Matching .deb package version not found.");
 
-	#region helper methods
+        if (signatureFile == null)
+            return NotFound("Matching .sig version signature not found.");
 
-	private string? GetClaimValue(string claimType)
-	{
-		return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
-	}
+        try
+        {
+            var packageData = await System.IO.File.ReadAllBytesAsync(packageFile);
+            var signatureData = await System.IO.File.ReadAllBytesAsync(signatureFile);
+            var scheduleId = Guid.NewGuid().ToString("N");
 
-	#endregion
+            await _controlChannelService.SendScheduledUpdateAsync(
+                _gatewayId,
+                scheduleId,
+                request.TargetDevices,
+                Path.GetFileName(packageFile),
+                packageData, signatureData,
+                request.startTimeUtc,
+                engineerEmail
+            );
+
+            return Ok($"Package [{request.Name}] version [{request.Version}] uploaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error sending package: {ex.Message}");
+            return StatusCode(500, $"Error sending package: {ex.Message}");
+        }
+    }
+
+    public class PackageCheckRequest
+    {
+        public string Name { get; set; }
+        public string Version { get; set; }
+    }
+
+    public class PackageUploadRequest
+    {
+        public string Name { get; set; } // Package name
+        public string Version { get; set; } // Package version
+        public string[] TargetDevices { get; set; } // Target devices
+    }
+
+    public class ScheduledUpdateRequest
+    {
+        public string Name { get; set; } // Package name
+        public string Version { get; set; } // Package version
+        public string[] TargetDevices { get; set; } // Target devices
+        public DateTime startTimeUtc { get; set; }
+    }
+
+    #region helper methods
+
+    private string? GetClaimValue(string claimType)
+    {
+        return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+    }
+
+    #endregion
 }

@@ -6,55 +6,84 @@ import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import "./update-management.css";
 import { useSubscription } from "../reduxSubscription/useSubscription";
 import { useAuth } from "../../common/authProvider/AuthProvider";
-import { getRunningMachinesApplications } from "../../api/applicationsRequest";
 import { ConfigureUpdate } from "./ConfigureUpdate";
 import { IMachine } from "../../api/reponseTypes";
 import { ConfigureRollback } from "./ConfigureRollback";
+import { useDispatch, useSelector } from "react-redux";
+import { updateMachine, updateMachineStatus } from "../reduxSubscription/machinesSlice";
+import { RootState } from "../reduxSubscription/store";
+import { getMachineStatus, getMachineStoredVersions } from "../../api/applicationsRequest";
+import { IMachineStatus } from "../reduxSubscription/subscriptionConsts";
 
 export const UpdateManagement = () => {
   const [rollbackModalOpened, setRollbackModalOpened] = useState(false);
   const [machines, setMachines] = useState<IMachine[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
   const [updateModal, setUpdateModal] = useState<boolean>(false)
   const { authToken } = useAuth();
 
+  //Machine list from redux 
+  const storedMachines = useSelector((root: RootState) => root.machines.messages)
+
+  const dispatch = useDispatch();
 
   useSubscription(authToken);
 
   //Fetch accessible machines on component load
   useEffect(() => {
+
     const fetchMachines = async () => {
       const result = await getAccessibleMachines();
-      if (typeof result === "object" && result?.accessibleMachines?.result) {
-        setMachines(result.accessibleMachines.result as IMachine[]);
+
+      if (typeof result === "object" && result?.accessibleMachines) {
+        setMachines(result.accessibleMachines as IMachine[]);
+        console.log(machines)
+
       } else {
         console.error("Failed to fetch machines:", result);
         setMachines([]); // Clear machines in case of failure
       }
       setLoading(false);
     };
-
-    const getRunningMachines = async () => {
-      await getRunningMachinesApplications().then(res => {
-        console.log(res)
-      })
-    }
-
-    // getRunningMachines()
     fetchMachines();
   }, []);
 
 
-  // Chart data for multiple measures
+  const fetchMachineStatus = async () => {
+    const res: IMachineStatus[] = await getMachineStatus()
+
+    res.forEach((m: any) => dispatch(updateMachineStatus({
+      DeviceUuid: m.machineId,
+      IsOnline: m.isOnline,
+      LastSeen: {
+        Seconds: 0,
+        Nanos: 0
+      }
+    })))
+  }
+
+  useEffect(() => {
+
+    machines.forEach(m => dispatch(updateMachine(m)))
+    fetchMachineStatus()
+  }, [machines])
+
+  // Calculate machine statuses
+  const machineValues = Object.values(storedMachines);
+
+  const aliveCount = machineValues.filter((machine) => machine.isOnline).length;
+  const shutdownCount = machineValues.filter((machine) => !machine.isOnline).length;
+
   const chartData = [
-    { name: "Alive", value: machines.length, color: "#40C057" },
-    { name: "Shutdown", value: 0, color: "#FA5252" },
-    { name: "Unknown", value: 0, color: "#6c757d" },
+    { name: "Online", value: aliveCount, color: "#40C057" },
+    { name: "Offline", value: shutdownCount, color: "#FA5252" },
+    { name: "Unknown", value: machineValues.length === 0 ? 1 : 0, color: "#6c757d" },
   ];
 
-
-  const machineIds = machines.map(m => m.machineId)
+  const getStatusBadge = (isOnline) => {
+    if (isOnline) return <Badge color="green">Online</Badge>;
+    return <Badge color="red">Offline</Badge>;
+  };
 
   return (
 
@@ -72,15 +101,15 @@ export const UpdateManagement = () => {
           <Stack className="legend">
             <Group className="legend-item">
               <Box className="circle green"></Box>
-              <Text size="sm">{0} Alive</Text>
+              <Text size="sm">{aliveCount} Online</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle red"></Box>
-              <Text size="sm">{0} Shutdown</Text>
+              <Text size="sm">{shutdownCount} Offline</Text>
             </Group>
             <Group className="legend-item">
               <Box className="circle gray"></Box>
-              <Text size="sm">{machines.length} Unknown</Text>
+              <Text size="sm">{machineValues.length === 0 ? 1 : 0} Unknown</Text>
             </Group>
           </Stack>
 
@@ -90,14 +119,14 @@ export const UpdateManagement = () => {
               className="configure-button"
               onClick={() => setUpdateModal(true)}
             >
-              Configure Update
+              Perform Update
             </Button>
             <Button
               color="rgba(0, 3, 255, 1)"
               className="configure-button"
               onClick={() => setRollbackModalOpened(true)}
             >
-              Configure Rollback
+              Rollback
             </Button>
           </Stack>
         </Group>
@@ -111,7 +140,7 @@ export const UpdateManagement = () => {
                 <Table.Tr>
                   <Table.Th>QC Machine Name</Table.Th>
                   <Table.Th>QC Machine ID</Table.Th>
-                  <Table.Th>IP Address</Table.Th>
+                  {/* <Table.Th>IP Address</Table.Th> */}
                   <Table.Th>Application Name</Table.Th>
                   <Table.Th>Application Version</Table.Th>
                   <Table.Th>Machine Added On</Table.Th>
@@ -119,21 +148,19 @@ export const UpdateManagement = () => {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {machines?.map((machine) => (
+                {Object.values(storedMachines)?.map((machine) => (
                   <Table.Tr
                     key={machine.machineId}
-                    onClick={() => navigate("/version-control", { state: { machineId: machine.machineId } })}
+                    // onClick={() => navigate("/version-control", { state: { machineId: machine.machineId } })}
                     style={{ cursor: "pointer" }}
                   >
                     <Table.Td>{machine.machineName}</Table.Td>
                     <Table.Td>{machine.machineId}</Table.Td>
-                    <Table.Td>{machine.ipAddress || "N/A"}</Table.Td>
+                    {/* <Table.Td>{machine.ipAddress || "N/A"}</Table.Td> */}
                     <Table.Td>{machine.appName}</Table.Td>
                     <Table.Td>{machine.currentVersion}</Table.Td>
                     <Table.Td>{machine.dateAddedOn}</Table.Td>
-                    <Table.Td>
-                      <Badge color="green">{"Alive"}</Badge>
-                    </Table.Td>
+                    <Table.Td>{getStatusBadge(machine.isOnline)}</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Tbody>
@@ -141,8 +168,8 @@ export const UpdateManagement = () => {
           )}
         </Box>
       </Box>
-      <ConfigureUpdate setModalOpened={setUpdateModal} modalOpened={updateModal} machineIds={machineIds} />
-      <ConfigureRollback setRollbackModalOpened={setRollbackModalOpened} rollbackModalOpened={rollbackModalOpened} machines={machines} />
+      <ConfigureUpdate setModalOpened={setUpdateModal} modalOpened={updateModal} machines={storedMachines} />
+      <ConfigureRollback setRollbackModalOpened={setRollbackModalOpened} rollbackModalOpened={rollbackModalOpened} machines={Object.values(storedMachines)} />
 
     </Stack>
   );

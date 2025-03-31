@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Upflux_WebService.Core.Models;
@@ -29,7 +30,7 @@ public class AdminController : ControllerBase
     /// Retrieves a list of all users from the database.
     /// </summary>
     /// <returns>A list of users if found, otherwise a 404 Not Found response.</returns>
-    [HttpGet("/users")] // Defines the HTTP GET endpoint at "/users".
+    [HttpGet("users")] // Defines the HTTP GET endpoint at "/users".
     public ActionResult<IEnumerable<User>> GetUsers()
     {
         // Fetch all users from the database
@@ -46,53 +47,53 @@ public class AdminController : ControllerBase
     /// Revokes an engineer's token, preventing further access.
     /// </summary>
     /// <param name="engineerId">The ID of the engineer whose token is being revoked.</param>
-    /// <param name="adminId">The ID of the admin performing the revocation.</param>
     /// <param name="reason">Optional reason for revocation.</param>
     /// <returns>Returns an HTTP response indicating success or failure.</returns>
-    [HttpPost("/revoke-engineer")]
-    public IActionResult RevokeEngineerToken(string engineerId, string adminId, string? reason = null)
+    [HttpPost("revoke-engineer")]
+    public IActionResult RevokeEngineerToken([FromBody] RevokeEngineerRequest request)
     {
         try
         {
-            // Validate required parameters
-            if (string.IsNullOrEmpty(engineerId) || string.IsNullOrEmpty(adminId))
-                return BadRequest("Engineer ID and Admin ID are required.");
+            // Get the admin's email from the claims
+            var adminEmail = GetClaimValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(adminEmail))
+                return Unauthorized("Admin email not found in claims.");
 
-            // Check if the engineer exists in the Users table
-            var engineerExists = _context.Users.Any(u => u.UserId == engineerId);
-            if (!engineerExists)
+            // Validate required parameters
+            if (string.IsNullOrEmpty(request.engineerId))
+                return BadRequest("Engineer ID is required.");
+
+            // Check if the admin engineer exists
+            var engineer = _context.Users.FirstOrDefault(u => u.Email == adminEmail);
+            if (engineer == null)
                 return NotFound("Engineer not found.");
 
-            // Check if the admin exists in the Admin_Details table
-            var adminExists = _context.Admin_Details.Any(a => a.AdminId == adminId);
-            if (!adminExists)
-                return NotFound("Admin not found.");
+            var admin = _context.Admin_Details.FirstOrDefault(a => a.UserId == engineer.UserId);
+            var adminUser = _context.Users.FirstOrDefault(u => u.UserId == admin.UserId && u.Email == adminEmail);
+
+            if (admin == null || adminUser == null)
+                return NotFound("Admin not found or unauthorized.");
 
             // Create a new revocation entry
             var revocation = new Revokes
             {
-                UserId = engineerId,
-                RevokedBy = adminId,
+                UserId = request.engineerId,
+                RevokedBy = admin.AdminId,
                 RevokedAt = DateTime.UtcNow,
-                Reason = reason
+                Reason = request.reason
             };
 
-            // Add the revocation entry to the database
+            // Add and save the revocation
             _context.Revokes.Add(revocation);
             _context.SaveChanges();
 
-            // Logging (for debugging purposes)
-            Console.WriteLine($"Token revoked: Engineer {engineerId} by Admin {adminId}");
+            Console.WriteLine($"Token revoked: Engineer {request.engineerId} by Admin {admin.AdminId}");
 
-            // Return success response
             return Ok(new { message = "Engineer token revoked successfully." });
         }
         catch (Exception ex)
         {
-            // Log the error message
             Console.WriteLine($"Error revoking token: {ex.Message}");
-
-            // Return a 500 Internal Server Error response
             return StatusCode(500, "An error occurred while revoking the token.");
         }
     }
@@ -103,24 +104,30 @@ public class AdminController : ControllerBase
     /// <param name="engineerId">The ID of the engineer whose revocation is being removed.</param>
     /// <param name="adminId">The ID of the admin performing the removal.</param>
     /// <returns>Returns an HTTP response indicating success or failure.</returns>
-    [HttpDelete("/reinstate-engineer")]
-    public IActionResult ReinstateEngineerToken(string engineerId, string adminId)
+    [HttpDelete("reinstate-engineer")]
+    public IActionResult ReinstateEngineerToken(string engineerId)
     {
         try
         {
-            // Validate required parameters
-            if (string.IsNullOrEmpty(engineerId) || string.IsNullOrEmpty(adminId))
-                return BadRequest("Engineer ID and Admin ID are required.");
+            // Get the admin's email from the claims
+            var adminEmail = GetClaimValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(adminEmail))
+                return Unauthorized("Admin email not found in claims.");
 
-            // Check if the engineer exists in the Users table
-            var engineerExists = _context.Users.Any(u => u.UserId == engineerId);
-            if (!engineerExists)
+            // Validate required parameters
+            if (string.IsNullOrEmpty(engineerId))
+                return BadRequest("Engineer ID is required.");
+
+            // Check if the admin engineer exists
+            var engineer = _context.Users.FirstOrDefault(u => u.Email == adminEmail);
+            if (engineer == null)
                 return NotFound("Engineer not found.");
 
-            // Check if the admin exists in the Admin_Details table
-            var adminExists = _context.Admin_Details.Any(a => a.AdminId == adminId);
-            if (!adminExists)
-                return NotFound("Admin not found.");
+            var admin = _context.Admin_Details.FirstOrDefault(a => a.UserId == engineer.UserId);
+            var adminUser = _context.Users.FirstOrDefault(u => u.UserId == admin.UserId && u.Email == adminEmail);
+
+            if (admin == null || adminUser == null)
+                return NotFound("Admin not found or unauthorized.");
 
             // Check if the engineer's token is revoked
             var revokedToken = _context.Revokes.FirstOrDefault(r => r.UserId == engineerId);
@@ -132,7 +139,7 @@ public class AdminController : ControllerBase
             _context.SaveChanges();
 
             // Logging (for debugging purposes)
-            Console.WriteLine($"Revocation removed: Engineer {engineerId} by Admin {adminId}");
+            Console.WriteLine($"Revocation removed: Engineer {engineerId} by Admin {admin.AdminId}");
 
             // Return success response
             return Ok(new { message = "Engineer token revocation removed successfully." });
@@ -154,4 +161,21 @@ public class AdminController : ControllerBase
         var machinesWithLicense = await _entityQuery.GetAllMachinesWithLicences();
         return Ok(machinesWithLicense);
     }
+
+
+    #region private methods
+
+    // Helper method to get claim value
+    private string? GetClaimValue(string claimType)
+    {
+        return User.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+    }
+
+    #endregion
+}
+
+public class RevokeEngineerRequest
+{
+    public string engineerId;
+    public string? reason = null;
 }

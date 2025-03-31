@@ -9,7 +9,6 @@ namespace Upflux_WebService.Controllers;
 [Route("[controller]")]
 public class UpFluxController : ControllerBase
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("about", Name = "About")]
     public string About()
     {

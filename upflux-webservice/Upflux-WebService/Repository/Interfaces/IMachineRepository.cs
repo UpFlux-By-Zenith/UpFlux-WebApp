@@ -1,13 +1,12 @@
 ﻿using Upflux_WebService.Core.Models;
 
-namespace Upflux_WebService.Repository.Interfaces
+namespace Upflux_WebService.Repository.Interfaces;
+
+public interface IMachineRepository : IRepository<Machine>
 {
-	public interface IMachineRepository : IRepository<Machine>
-	{
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <returns></returns>
-		string[] GetAllMachineIds();
-	}
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    string[] GetAllMachineIds();
 }

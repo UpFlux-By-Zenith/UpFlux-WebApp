@@ -41,19 +41,32 @@ public class Program
         // serilog as default logger
         builder.Host.UseSerilog();
 
+        // builder.Services.AddCors(options =>
+        // {
+        //     options.AddPolicy("AllowSpecificOrigins", policy =>
+        //     {
+        //         policy.WithOrigins("http://localhost:3000",
+        //                 "http://127.0.0.1:5500", // Add this
+        //                 "https://localhost:5500" // And this, if you're using HTTPS
+        //             ) // Replace with your client URL(s)
+        //             .AllowAnyHeader()
+        //             .AllowAnyMethod()
+        //             .AllowCredentials(); // Necessary for SignalR negotiation
+        //     });
+        // });
+        //
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowSpecificOrigins", policy =>
+            options.AddPolicy("AllowAllOriginsWithCredentials", policy =>
             {
-                policy.WithOrigins("http://localhost:3000",
-                        "http://127.0.0.1:5500", // Add this
-                        "https://localhost:5500" // And this, if you're using HTTPS
-                    ) // Replace with your client URL(s)
+                policy
+                    .SetIsOriginAllowed(origin => true) // Accepts any origin
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials(); // Necessary for SignalR negotiation
+                    .AllowCredentials();
             });
         });
+
 
         // Increase the max request body size (in bytes)
         builder.Services.Configure<IISServerOptions>(options =>
@@ -94,8 +107,8 @@ public class Program
             .AddScoped<ILogFileService, LogFileService>()
             .AddScoped<IUserRepository, UserRepository>()
             .AddScoped<IMachineStoredVersionsRepository, MachineStoredVersionsRepository>()
-			.AddScoped<IMachineStatusRepository, MachineStatusRepository>()
-			.AddSingleton<ControlChannelService>()
+            .AddScoped<IMachineStatusRepository, MachineStatusRepository>()
+            .AddSingleton<ControlChannelService>()
             .AddSingleton<IControlChannelService>(sp => sp.GetRequiredService<ControlChannelService>());
 
         // Load JWT settings from configuration
@@ -171,7 +184,7 @@ public class Program
                 };
             });
 
-// Add role-based authorization policies
+        // Add role-based authorization policies
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
@@ -213,7 +226,7 @@ public class Program
         }
 
         // Use CORS
-        app.UseCors("AllowSpecificOrigins");
+        app.UseCors("AllowAllOriginsWithCredentials");
 
         // Apply Rate Limiting Middleware
         app.UseRateLimiter();

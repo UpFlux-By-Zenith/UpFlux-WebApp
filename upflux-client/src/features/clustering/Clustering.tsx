@@ -1,142 +1,250 @@
-import React, { useState, useEffect } from "react";
-import { Box, Text, Group, Select, Switch } from "@mantine/core";
-import { LineChart } from "@mantine/charts"; // Import LineChart
+import React, { useState, useEffect, useMemo } from "react";
+import { Box, Text, Group, Select, Paper, Button, ActionIcon, Tooltip } from "@mantine/core";
+import { ChartTooltipProps, ScatterChart } from "@mantine/charts";
 import "@mantine/core/styles.css";
 import "@mantine/charts/styles.css";
 import "@mantine/dates/styles.css";
 
-import { Calendar } from "@mantine/dates";
-import dayjs from "dayjs"; // Import dayjs to compare and format dates
+import { DateTimePicker } from "@mantine/dates";
 import "./clustering.css";
-import cluster1 from "../../assets/images/cluster1.png";
-import cluster2 from "../../assets/images/cluster2.png";
-import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../reduxSubscription/store";
+import { IMachine } from "../../api/reponseTypes";
+import { PLOT_COLORS } from "./clusteringConsts";
+import { IconAi, IconArrowBigDownLinesFilled, IconBulbFilled } from "@tabler/icons-react";
+import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
+import { notifications } from "@mantine/notifications";
+
+interface IPlotData {
+  color: string;
+  name: string;
+  machineId: string[];
+  data: {
+    x: number;
+    y: number;
+  }[];
+}
 
 export const Clustering: React.FC = () => {
-  // Updated data with 24-hour time format and 'value' instead of 'Apples'
-  const dataPoints = {
-    "Dec 10, 2024": [
-        { time: "00:00", value: 0 },
-        { time: "03:00", value: 0 },
-        { time: "06:00", value: 80 },
-        { time: "09:00", value: null },
-        { time: "12:00", value: null },
-        { time: "15:00", value: 40 },
-        { time: "18:00", value: 110 },
-        { time: "21:00", value: null },
-      ],
-      "Dec 9, 2024": [
-        { time: "00:00", value: 120 },
-        { time: "03:00", value: 65 },
-        { time: "06:00", value: 90 },
-        { time: "09:00", value: 40 },
-        { time: "12:00", value: 75 },
-        { time: "15:00", value: 50 },
-        { time: "18:00", value: 130 },
-        { time: "21:00", value: null },
-      ],
-      "Dec 6, 2024": [
-          { time: "00:00", value: 0 },
-          { time: "03:00", value: 0 },
-          { time: "06:00", value: 0 },
-          { time: "09:00", value: 40 },
-          { time: "12:00", value: 60 },
-          { time: "15:00", value: 90 },
-          { time: "18:00", value: 0 },
-          { time: "21:00", value: null },
-        ],
-  };
+  const storedMachines = useSelector((root: RootState) => root.machines.messages);
+  const clusterRecommendation = useSelector((root: RootState) => root.clusterRecommendation);
 
-  // State to store the selected date
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [mappedClusterPlotData, setMappedClusterPlotData] = useState<IPlotData[]>([]);
+  const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
+  const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
 
-  // Function to format the date to match the format used in dataPoints (e.g., 'Mar 22')
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-  };
-
-  // Function to handle date selection and update chart data
-  const handleSelect = (date: Date) => {
-    const formattedDate = formatDate(date);
-    setSelectedDate(formattedDate); // Update the selected date in state
-    console.log("Selected date:", formattedDate); 
-  };
-
-  // Get data for the selected date or use default
-  const chartData = selectedDate ? dataPoints[selectedDate] : [];
+  const [selectedVersion, setSelectionVersion] = useState<string>("")
+  const [availableApps, setAvailableApps] = useState<IPackagesOnCloud[]>([])
 
   useEffect(() => {
-    // Set the calendar to the current date initially
-    const today = new Date();
-    const formattedDate = formatDate(today);
-    setSelectedDate(formattedDate);
-  }, []);
+
+    getAvailablePackages().then(res => {
+      setAvailableApps(res as IPackagesOnCloud[])
+    })
+
+  }, [])
+
+  useEffect(() => {
+    const plotData: IPlotData[] = [];
+
+    const groupedMachines: Record<string, IMachine[]> = Object.values(storedMachines).reduce(
+      (acc, machine) => {
+        if (machine && machine.clusterId) {
+          if (!acc[machine.clusterId]) {
+            acc[machine.clusterId] = [];
+          }
+          acc[machine.clusterId].push(machine);
+        }
+        return acc;
+      },
+      {} as Record<string, IMachine[]>
+    );
+
+    Object.entries(groupedMachines).forEach(([clusterId, machines], index) => {
+      const validMachines = machines.filter(m => m.x !== undefined && m.y !== undefined);
+
+      if (validMachines.length > 0) {
+        plotData.push({
+          name: clusterId,
+          data: validMachines.map(machine => ({
+            x: machine.x!,
+            y: machine.y!
+          })),
+          machineId: validMachines.map(m => m.machineId),
+          color: PLOT_COLORS[index % PLOT_COLORS.length]
+        });
+      }
+    });
+
+    setMappedClusterPlotData(plotData);
+  }, [storedMachines]);
+
+  const [recommendedTime, setRecommendedTime] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (!selectedCluster) {
+      setRecommendedTime(null);
+      return;
+    }
+
+    const recommendation = clusterRecommendation.find((rec) => rec.ClusterId === selectedCluster);
+
+    if (!recommendation) {
+      setRecommendedTime(null);
+      return;
+    }
+
+    const { Seconds, Nanos } = recommendation.UpdateTime;
+    setRecommendedTime(new Date(Seconds * 1000 + Math.floor(Nanos / 1e6))); // Convert to milliseconds
+  }, [selectedCluster, clusterRecommendation]);
+
+
+  const handleDeploy = async () => {
+
+    const authToken = sessionStorage.getItem('authToken');
+
+
+    // Check if required fields are selected
+    if (!selectedCluster || !selectedDateTime || !selectedVersion) {
+      console.error("Please select all required fields.");
+      return;
+    }
+
+    const targetDevices = mappedClusterPlotData
+      .find((data) => data.name === selectedCluster)
+      ?.machineId;
+
+    if (!targetDevices || targetDevices.length === 0) {
+      console.error("No devices found for the selected cluster.");
+      return;
+    }
+
+    const requestBody = {
+      name: "upflux-monitoring-service", // Assuming this is static; if dynamic, replace accordingly
+      version: selectedVersion,
+      targetDevices: targetDevices,
+      startTimeUtc: selectedDateTime.toISOString(), // Convert to ISO format
+    };
+
+    try {
+      const response = await fetch("http://localhost:5000/api/PackageManagement/packages/schedule-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`, // Ensure you add the authorization token
+        },
+        body: JSON.stringify(requestBody),
+      }).then(() => {
+
+        notifications.show({
+          title: "Web Service",
+          position: "top-right",
+          autoClose: 10000,
+          message: "Update has been scheduled"
+        })
+        setSelectedCluster(null)
+        setSelectionVersion(null)
+        setSelectedDateTime(null)
+
+      })
+
+    } catch (error) {
+      console.error("Error during deploy request:", error);
+    }
+  };
+
+
+  const ChartTooltip = ({ payload }: ChartTooltipProps) => {
+    if (!payload) return null;
+    return (
+      <Paper px="md" py="sm" withBorder shadow="md" radius="md">
+        <Text fz="sm">
+          {payload["0"]?.payload.name}
+          {payload["0"]?.payload.machineId}
+        </Text>
+      </Paper>
+    );
+  };
 
   return (
     <Box className="clustering-container">
-      {/* Dropdown Section */}
-      <Group align="center" className="dropdown-section">
-        <Select
-          data={["Cluster State", "Cluster Details"]}
-          defaultValue="Cluster State"
-          rightSection={null}
-          className="dropdown"
-        />
-        <Select
-          data={["Update State", "Update Logs"]}
-          defaultValue="Update State"
-          className="dropdown"
-        />
-        <Switch label="Real Time" size="md" className="real-time-switch" />
-      </Group>
-
       <Group align="flex-start" className="main-content">
-        {/* Cluster Visuals */}
-        <Box className="cluster-visuals">
-        {/* Small Cluster */}
-          <Link to="/cluster-management" className="cluster-circle small-circle">
-            <img src={cluster1} alt="Small Cluster" className="cluster-icon" />
-          </Link>
-          {/* Large Cluster */}
-          <Link to="/cluster-management" className="cluster-circle large-circle">
-            <img src={cluster2} alt="Large Cluster" className="cluster-icon" />
-          </Link>
-        </Box>
-        {/* Calendar */}
-        <Box className="calendar-wrapper">
-          {/* Calendar with custom styles */}
-          <Calendar
-            className="calendar"
-            highlightToday
-            getDayProps={(date) => ({
-              selected: dayjs(date).isSame(selectedDate, 'date'), // Compare selected date using dayjs
-              onClick: () => handleSelect(date), // Capture the date selection
-            })}
+        <ScatterChart
+          w={800}
+          h={600}
+          data={mappedClusterPlotData}
+          tooltipProps={{
+            content: ({ payload }) => <ChartTooltip payload={payload} />,
+          }}
+          dataKey={{ x: 'x', y: 'y' }}
+          withLegend
+        />
+        <Box className="calendar-wrapper" title="Schedule Update" mt="md" style={{ display: 'flex', flexDirection: 'column', gap: "20px" }}>
+          <Text className="form-title">Update Scheduling </Text>
+
+          <Select
+            label="Select Cluster*"
+            placeholder="Choose a cluster"
+            data={mappedClusterPlotData.map((plot) => ({ value: plot.name, label: plot.name }))}
+            value={selectedCluster}
+            onChange={(value) => setSelectedCluster(value)}
           />
+          {selectedCluster && <Text></Text>}
+          <Select
+            label="Select Application*"
+
+            data={[{
+              value: "upflux-monitoring-service",
+              label: "UpFlux-Monitoring-Service",
+            }]}
+            placeholder="Select Application"
+            value="upflux-monitoring-service"
+            disabled
+          />
+          <Select
+            label="Select Version*"
+            data={availableApps[0]?.versions.map((version) => ({
+              value: version,
+              label: version,
+            }))}
+            placeholder="Select Version"
+            onChange={(value) => setSelectionVersion(value)}
+          />
+
+
+          {recommendedTime && (
+
+            <Group mt="xs" align="center">
+              <Tooltip label="Suggested by AI" position="top" withArrow>
+                <Paper withBorder p="xs" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {/* Lightbulb Icon */}
+                  <IconBulbFilled size={20} />
+                  <Text c="blue" fz="md" style={{ fontWeight: 500 }}>
+                    Suggested Update Time: {recommendedTime.toLocaleString()}
+                  </Text>
+
+                  <ActionIcon
+                    color="rgba(0, 3, 255, 1)"
+                    aria-label="Settings"
+                    onClick={() => setSelectedDateTime(recommendedTime)}
+                    variant="light"
+                  >
+                    <IconArrowBigDownLinesFilled style={{ width: "70%", height: "70%" }} stroke={1.5} />
+                  </ActionIcon>
+                </Paper>
+              </Tooltip>
+            </Group>
+          )}
+
+          <DateTimePicker
+            label="Select Date & Time*"
+            value={selectedDateTime}
+            onChange={setSelectedDateTime}
+          />
+
+          <Button disabled={!selectedVersion && !selectedDateTime && !selectedCluster} color="rgba(0, 3, 255, 1)" onClick={handleDeploy}>Schedule Update</Button>
         </Box>
       </Group>
-
-      {/* Network Upload Section */}
-      <Box className="network-upload">
-        <Text size="sm">Network Upload</Text>
-        <Text size="sm" className="data-label">
-          Data
-        </Text>
-        <LineChart
-          h={180}
-          data={chartData} // Use filtered data based on selected date
-          dataKey="time"
-          series={[{ name: "value", color: "indigo.6" }]}
-          curveType="linear"
-          connectNulls
-        />
-        {/* Axis Labels */}
-        <Group align="apart">
-          <Text size="sm" className="time-label">
-            Time
-          </Text>
-        </Group>
-      </Box>
     </Box>
   );
 };

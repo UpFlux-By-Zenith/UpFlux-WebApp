@@ -36,7 +36,7 @@ namespace Upflux_WebService.Controllers
 		/// <param name="targetDevices"></param>
 		/// <returns></returns>
 		[HttpPost("rollback")]
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Engineer")]
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
 		public async Task<IActionResult> SendRollbackCommand(
 			[FromQuery] string version = "",
 			[FromBody] string[] targetDevices = null)

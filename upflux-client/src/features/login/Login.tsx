@@ -24,7 +24,7 @@ export const LoginComponent: React.FC = () => {
 
 
   if (isAuthenticated) {
-    navigate('/update-management');
+    navigate('/dashboard');
   }
 
   const handleInputChange = (field: keyof LoginFormState) => (
@@ -84,7 +84,6 @@ export const LoginComponent: React.FC = () => {
             login(ROLES.ENGINEER, result.token);
 
             if (result) {
-              console.log('Login successful!');
               navigate('/update-management');
             } else {
               setErrorMessage('Login failed.');
