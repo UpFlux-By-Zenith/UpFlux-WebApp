@@ -93,6 +93,7 @@ export const ConfigureRollback = ({ rollbackModalOpened, setRollbackModalOpened,
                     data={machines.map((machine) => ({
                         value: machine.machineId,
                         label: machine.machineId,
+                        disabled: !machine.isOnline
                     }))}
                     placeholder="Select Machines"
                     onChange={handleMachineChange}

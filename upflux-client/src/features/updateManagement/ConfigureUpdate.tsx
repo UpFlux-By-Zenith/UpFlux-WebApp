@@ -3,11 +3,13 @@ import { useEffect, useState } from "react"
 import { deployPackage, getAvailablePackages, IPackagesOnCloud } from "../../api/applicationsRequest"
 import { notifications } from "@mantine/notifications"
 
-export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => {
+export const ConfigureUpdate = ({ modalOpened, setModalOpened, machines }) => {
 
     const [selectedMachineIds, setSelectedMachineIds] = useState<string[]>()
     const [selectedVersion, setSelectionVersion] = useState<string>("")
     const [availableApps, setAvailableApps] = useState<IPackagesOnCloud[]>([])
+
+    const machineIds = Object.keys(machines)
 
     useEffect(() => {
 
@@ -61,7 +63,8 @@ export const ConfigureUpdate = ({ modalOpened, setModalOpened, machineIds }) => 
             <MultiSelect
                 data={machineIds.map((machineid) => ({
                     value: machineid,
-                    label: machineid, // Use machineName if available, otherwise use machineId
+                    label: machineid,
+                    disabled: !machines[machineid].isOnline // Use machineName if available, otherwise use machineId
                 }))}
                 placeholder="Select Machines"
                 onChange={handleMachineChange}

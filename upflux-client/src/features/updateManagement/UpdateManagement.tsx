@@ -25,7 +25,6 @@ export const UpdateManagement = () => {
   //Machine list from redux 
   const storedMachines = useSelector((root: RootState) => root.machines.messages)
 
-  const machineIds = machines.map(m => m.machineId)
   const dispatch = useDispatch();
 
   useSubscription(authToken);
@@ -36,8 +35,9 @@ export const UpdateManagement = () => {
     const fetchMachines = async () => {
       const result = await getAccessibleMachines();
 
-      if (typeof result === "object" && result?.accessibleMachines?.result) {
-        setMachines(result.accessibleMachines.result as IMachine[]);
+      if (typeof result === "object" && result?.accessibleMachines) {
+        setMachines(result.accessibleMachines as IMachine[]);
+        console.log(machines)
 
       } else {
         console.error("Failed to fetch machines:", result);
@@ -63,6 +63,7 @@ export const UpdateManagement = () => {
   }
 
   useEffect(() => {
+
     machines.forEach(m => dispatch(updateMachine(m)))
     fetchMachineStatus()
   }, [machines])
@@ -167,8 +168,8 @@ export const UpdateManagement = () => {
           )}
         </Box>
       </Box>
-      <ConfigureUpdate setModalOpened={setUpdateModal} modalOpened={updateModal} machineIds={machineIds} />
-      <ConfigureRollback setRollbackModalOpened={setRollbackModalOpened} rollbackModalOpened={rollbackModalOpened} machines={machines} />
+      <ConfigureUpdate setModalOpened={setUpdateModal} modalOpened={updateModal} machines={storedMachines} />
+      <ConfigureRollback setRollbackModalOpened={setRollbackModalOpened} rollbackModalOpened={rollbackModalOpened} machines={Object.values(storedMachines)} />
 
     </Stack>
   );
