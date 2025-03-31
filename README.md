@@ -111,3 +111,6 @@ The `upflux-webservice` project is built with .NET 8 and relies on the following
   - Send device status data through gateway simulator console application
     
   - Gateway simulator is now persistently connected to the web-service
+
+📫 Authors & Maintainers
+👨‍💻 Collaborative Team: UpFlux Final Project Team
