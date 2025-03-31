@@ -1,20 +1,12 @@
-# Step 1: Build the React app
-FROM node:16 AS build
-
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 
-COPY package.json ./
-COPY package-lock.json ./
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 
-RUN npm install
-COPY . ./
-RUN npm run build
+COPY ./ ./
 
-# Step 2: Serve the app using Nginx
-FROM nginx:alpine
+EXPOSE 5000
+EXPOSE 5002
 
-COPY --from=build /app/build /usr/share/nginx/html
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["dotnet", "Upflux-WebService.dll"]
