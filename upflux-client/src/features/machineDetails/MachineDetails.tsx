@@ -15,19 +15,16 @@ import ReactSpeedometer from "react-d3-speedometer";
 import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
-import { IApplications } from "../reduxSubscription/applicationVersions";
 import { getMachineDetails } from "../../api/applicationsRequest";
 
 export const MachineDetails: React.FC = () => {
   const storedMachines = useSelector((root: RootState) => root.machines.messages);
-  const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages);
   const machineMetrics = useSelector((state: RootState) => state.metrics.metrics);
 
   const [modalOpened, setModalOpened] = useState(false);
   const [selectedMachineName, setSelectedMachineName] = useState("");
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [appVersions, setAppVersions] = useState<{ appName: string; appVersion: string; lastUpdate: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
 
   const location = useLocation();
@@ -58,9 +55,20 @@ export const MachineDetails: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const machineId = params.get("machineId");
-    setSelectedMachineName(machineId || "");
-    setSelectedMachineId(machineId || "");
-  }, [location.search]);
+  
+    if (machineId) {
+      setSelectedMachineId(machineId);
+  
+      // Look for machine name from Redux store
+      const matchedMachine = storedMachines[machineId];
+      if (matchedMachine) {
+        setSelectedMachineName(matchedMachine.machineName);
+      } else {
+        setSelectedMachineName("Unknown Machine");
+      }
+    }
+  }, [location.search, storedMachines]);
+  
   
   useEffect(() => {
     if (selectedMachineId) {
@@ -159,7 +167,12 @@ export const MachineDetails: React.FC = () => {
       label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
       size={16}
     >
-      <Text fw={700} style={{ textAlign: "center" }} size="sm">{selectedMachineName}</Text>
+    <Text fw={700} style={{ textAlign: "center", fontSize: "1rem" }} size="lg">
+    {selectedMachineName}
+    </Text>
+    <Text fw={700} style={{ textAlign: "center", fontSize: "1rem" }} size="md">
+        ID: {selectedMachineId}
+    </Text>
        {/* Display Current Version */}
        <Text fw={500} style={{ textAlign: "center" }} size="sm">
         Current Version: {storedMachines[selectedMachineId]?.currentVersion || "N/A"}
