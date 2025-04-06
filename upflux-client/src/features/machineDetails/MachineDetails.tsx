@@ -3,126 +3,55 @@ import {
   Box,
   Button,
   Stack,
-  Table,
   Text,
   Select,
   Modal,
   SimpleGrid,
   Indicator
 } from "@mantine/core";
-import ReactSpeedometer, { Transition } from "react-d3-speedometer";
+import { useMediaQuery } from "@mantine/hooks";
+import "./machineDetails.css";
+import ReactSpeedometer from "react-d3-speedometer";
 import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
 import { IApplications } from "../reduxSubscription/applicationVersions";
 
 export const MachineDetails: React.FC = () => {
-  //Machine list from redux 
-  const storedMachines = useSelector((root: RootState) => root.machines.messages)
-  const cpuColors = [
-    "#00FF00", // Green
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#33FF00",
-    "#FFFF00", // Yellow 
-    "#FFFF00",
-    "#FF0000",
-    "#FF0000", // Red 
-  ];
+  const storedMachines = useSelector((root: RootState) => root.machines.messages);
+  const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages);
+  const machineMetrics = useSelector((state: RootState) => state.metrics.metrics);
 
-  const tempColors = [
-    "#00FF00", // Green
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#33FF00",
-    "#FFFF00", // Yellow 
-    "#FFFF00",
-    "#FF0000",
-    "#FF0000", // Red 
-  ];
-
-  const memoryColors = [
-    "#00FF00", // Green
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#33FF00",
-    "#FFFF00",
-    "#FFFF00", // Yellow 
-    "#FFFF00",
-    "#FF0000", // Red 
-  ];
-
-  const diskColors = [
-    "#00FF00", // Green
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#00FF00",
-    "#33FF00",
-    "#FFFF00", // Yellow 
-    "#FFFF00",
-    "#FF0000",
-    "#FF0000", // Red 
-  ];
-
-  // State for Modal visibility
   const [modalOpened, setModalOpened] = useState(false);
-  const applications: Record<string, IApplications> = useSelector((state: RootState) => state.applications.messages)
-  const machineMetrics = useSelector(
-    (state: RootState) => state.metrics.metrics
-  );
-
-  const [selectedMachineName, setSelectedMachineName] = useState("")
-  const [selectedMachineId, setSelectedMachineId] = useState("")
-
-  const findMachineIdByName = (name) => {
-    return Object.entries(storedMachines).find(([, machine]) => machine.machineName === name)?.[0] || "";
-  };
+  const [selectedMachineName, setSelectedMachineName] = useState("");
+  const [selectedMachineId, setSelectedMachineId] = useState("");
+  const [appVersions, setAppVersions] = useState<{ appName: string; appVersion: string; lastUpdate: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const location = useLocation();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const speedoWidth = isMobile ? 160 : 250;
+  const speedoHeight = isMobile ? 120 : 150;
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const machineId = params.get("machineId");
-
-    if (machineId && storedMachines[machineId]) {
-      setSelectedMachineId(machineId);
-      setSelectedMachineName(storedMachines[machineId].machineName);
-    }
+    setSelectedMachineName(machineId || "");
+    setSelectedMachineId(machineId || "");
   }, [location.search, storedMachines]);
 
-
-  // State for app versions and loading status
-  const [appVersions, setAppVersions] = useState<
-    { appName: string; appVersion: string; lastUpdate: string }[]
-  >([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cpuColors = ["#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#33FF00", "#FFFF00", "#FFFF00", "#FF0000", "#FF0000"];
+  const tempColors = [...cpuColors];
+  const memoryColors = [...cpuColors];
+  const diskColors = [...cpuColors];
 
   const formatUptime = (seconds: number): string => {
     const days = Math.floor(seconds / (24 * 3600));
     const hours = Math.floor((seconds % (24 * 3600)) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-
     return `${days}d ${hours}h ${minutes}m`;
   };
 
-  // Mocked machine metrics data
   const metrics = [
     {
       label: "CPU (%)",
@@ -130,9 +59,7 @@ export const MachineDetails: React.FC = () => {
     },
     {
       label: "CPU Temp (°C)",
-      value: parseInt(
-        machineMetrics[selectedMachineId]?.metrics.cpuTemperature.toFixed()
-      ) || 0,
+      value: parseInt(machineMetrics[selectedMachineId]?.metrics.cpuTemperature.toFixed()) || 0,
     },
     {
       label: "Memory Usage (%)",
@@ -144,58 +71,48 @@ export const MachineDetails: React.FC = () => {
     },
   ];
 
-  // Determine the color based on the metric value
-  const getColor = (value: number) => {
-    if (value <= 50) return "green";
-    if (value > 50 && value <= 80) return "orange";
-    return "red";
-  };
-
   return (
     <Stack className="version-control-content">
-
       <Box className="content-wrapper">
-      <Box className="machine-id-box">
-  {selectedMachineName && (
-    <Indicator
-      inline
-      color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
-      label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
-      size={16}
-    >
-      <Text fw={700}>{selectedMachineName}</Text>
-    </Indicator>
-  )}
+        <Box className="machine-id-box">
+          {selectedMachineName ? (
+            <Indicator
+              inline
+              color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
+              label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
+              size={16}
+            >
+              <Text fw={700}>{selectedMachineName}</Text>
+            </Indicator>
+          ) : (
+            <Text color="red" fw={700}>Invalid or Missing Machine ID</Text>
+          )}
+        </Box>
 
-  {!selectedMachineName && (
-    <Text color="red" fw={700}>Invalid or Missing Machine ID</Text>
-  )}
-</Box>
-
-
-        {/* Machine Metrics Section */}
+        {/* Metrics Section */}
         <Box className="metrics-container">
-          <SimpleGrid cols={4}>
+          <SimpleGrid
+            cols={isMobile ? 2 : 4}
+          >
             {metrics.map((metric, index) => (
-              <Box key={index} style={{ textAlign: "center" }}>
+              <Box key={index} style={{ textAlign: "center", padding: "0.5rem" }}>
                 <ReactSpeedometer
-                  key={index}
                   minValue={0}
                   maxValue={100}
                   segments={cpuColors.length}
                   segmentColors={
-                    index % 4 === 0
+                    index === 0
                       ? cpuColors
-                      : index % 4 === 1
+                      : index === 1
                         ? tempColors
-                        : index % 4 === 2
+                        : index === 2
                           ? memoryColors
                           : diskColors
                   }
                   value={metric.value}
                   needleColor="black"
-                  width={250}
-                  height={150}
+                  width={speedoWidth}
+                  height={speedoHeight}
                   ringWidth={30}
                   maxSegmentLabels={4}
                 />
