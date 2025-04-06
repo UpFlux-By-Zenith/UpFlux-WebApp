@@ -30,8 +30,6 @@ export const MachineDetails: React.FC = () => {
 
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const speedoWidth = isMobile ? 160 : 250;
-  const speedoHeight = isMobile ? 120 : 150;
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -41,9 +39,51 @@ export const MachineDetails: React.FC = () => {
   }, [location.search, storedMachines]);
 
   const cpuColors = ["#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#33FF00", "#FFFF00", "#FFFF00", "#FF0000", "#FF0000"];
-  const tempColors = [...cpuColors];
-  const memoryColors = [...cpuColors];
-  const diskColors = [...cpuColors];
+  const tempColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000",
+    "#FF0000", // Red 
+  ];
+
+  const memoryColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00",
+    "#FFFF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000", // Red 
+  ];
+
+  const diskColors = [
+    "#00FF00", // Green
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#00FF00",
+    "#33FF00",
+    "#FFFF00", // Yellow 
+    "#FFFF00",
+    "#FF0000",
+    "#FF0000", // Red 
+  ];
 
   const formatUptime = (seconds: number): string => {
     const days = Math.floor(seconds / (24 * 3600));
@@ -74,23 +114,34 @@ export const MachineDetails: React.FC = () => {
   return (
     <Stack className="version-control-content">
       <Box className="content-wrapper">
-        <Box className="machine-id-box">
-          {selectedMachineName ? (
-            <Indicator
-              inline
-              color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
-              label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
-              size={16}
-            >
-              <Text fw={700}>{selectedMachineName}</Text>
-            </Indicator>
-          ) : (
-            <Text color="red" fw={700}>Invalid or Missing Machine ID</Text>
-          )}
-        </Box>
+      <Box
+  className="machine-id-box"
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    width: "100%",
+  }}
+>
+  {selectedMachineName ? (
+    <Indicator
+      inline
+      color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
+      label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
+      size={16}
+    >
+      <Text fw={700}>{selectedMachineName}</Text>
+       {/* Display Current Version */}
+       <Text fw={500} style={{ textAlign: "center" }} size="sm">
+        Current Version: {storedMachines[selectedMachineId]?.currentVersion || "N/A"}
+      </Text>
+    </Indicator>
+  ) : (
+    <Text color="red" fw={700}>Invalid or Missing Machine ID</Text>
+  )}
+</Box>
 
         {/* Metrics Section */}
-        <Box className="metrics-container">
+        <Box className="new-metrics-container">
           <SimpleGrid
             cols={isMobile ? 2 : 4}
           >
@@ -111,8 +162,8 @@ export const MachineDetails: React.FC = () => {
                   }
                   value={metric.value}
                   needleColor="black"
-                  width={speedoWidth}
-                  height={speedoHeight}
+                  width={200}
+                  height={130}
                   ringWidth={30}
                   maxSegmentLabels={4}
                 />
