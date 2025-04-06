@@ -24,6 +24,14 @@ const machineSlice = createSlice({
                 dateAddedOn: new Date(action.payload.dateAddedOn).toUTCString()
             }; // Store using UUID as key
         },
+        updateMachineVersion: (state, action: PayloadAction<IMachine>) => {
+            const { machineId } = action.payload;
+            state.messages[machineId] = {
+                ...state.messages[machineId],
+
+                currentVersion: action.payload.currentVersion
+            }; // Store using UUID as key
+        },
         updateMachineStatus: (state, action: PayloadAction<IMachineStatus>) => {
             const { LastSeen, IsOnline, DeviceUuid } = action.payload;
             if (state.messages[DeviceUuid]) {
@@ -49,6 +57,6 @@ const machineSlice = createSlice({
     },
 });
 
-export const { updateMachine, updateMachineStatus, updatePlotValues } = machineSlice.actions;
+export const { updateMachine, updateMachineVersion, updateMachineStatus, updatePlotValues } = machineSlice.actions;
 const machineReducer = machineSlice.reducer;
 export default machineReducer;

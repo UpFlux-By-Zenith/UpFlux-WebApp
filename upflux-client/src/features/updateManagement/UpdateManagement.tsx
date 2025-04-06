@@ -19,14 +19,12 @@ export const UpdateManagement = () => {
   const [rollbackModalOpened, setRollbackModalOpened] = useState(false);
   const [machines, setMachines] = useState<IMachine[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
   const [updateModal, setUpdateModal] = useState<boolean>(false)
   const { authToken } = useAuth();
 
   //Machine list from redux 
   const storedMachines = useSelector((root: RootState) => root.machines.messages)
 
-  const machineIds = machines.map(m => m.machineId)
   const dispatch = useDispatch();
 
   useSubscription(authToken);
@@ -37,8 +35,9 @@ export const UpdateManagement = () => {
     const fetchMachines = async () => {
       const result = await getAccessibleMachines();
 
-      if (typeof result === "object" && result?.accessibleMachines?.result) {
-        setMachines(result.accessibleMachines.result as IMachine[]);
+      if (typeof result === "object" && result?.accessibleMachines) {
+        setMachines(result.accessibleMachines as IMachine[]);
+        console.log(machines)
 
       } else {
         console.error("Failed to fetch machines:", result);
@@ -53,7 +52,6 @@ export const UpdateManagement = () => {
   const fetchMachineStatus = async () => {
     const res: IMachineStatus[] = await getMachineStatus()
 
-    console.log(res)
     res.forEach((m: any) => dispatch(updateMachineStatus({
       DeviceUuid: m.machineId,
       IsOnline: m.isOnline,
@@ -68,24 +66,6 @@ export const UpdateManagement = () => {
     machines.forEach(m => dispatch(updateMachine(m)))
     fetchMachineStatus()
   }, [machines])
-
-
-  // useEffect to call getMachineStoredVersions every 30 seconds
-  useEffect(() => {
-    // Call the function immediately on component mount
-    getMachineStoredVersions();
-
-    // Set an interval to call the method every 30 seconds
-    const intervalId = setInterval(() => {
-      getMachineStoredVersions();
-    }, 30000); // 30 seconds
-
-    // Cleanup the interval on component unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
-
 
   // Calculate machine statuses
   const machineValues = Object.values(storedMachines);
@@ -103,7 +83,6 @@ export const UpdateManagement = () => {
     if (isOnline) return <Badge color="green">Online</Badge>;
     return <Badge color="red">Offline</Badge>;
   };
-
 
   return (
 
@@ -139,14 +118,14 @@ export const UpdateManagement = () => {
               className="configure-button"
               onClick={() => setUpdateModal(true)}
             >
-              Configure Update
+              Perform Update
             </Button>
             <Button
               color="rgba(0, 3, 255, 1)"
               className="configure-button"
               onClick={() => setRollbackModalOpened(true)}
             >
-              Configure Rollback
+              Rollback
             </Button>
           </Stack>
         </Group>
@@ -188,8 +167,8 @@ export const UpdateManagement = () => {
           )}
         </Box>
       </Box>
-      <ConfigureUpdate setModalOpened={setUpdateModal} modalOpened={updateModal} machineIds={machineIds} />
-      <ConfigureRollback setRollbackModalOpened={setRollbackModalOpened} rollbackModalOpened={rollbackModalOpened} machines={machines} />
+      <ConfigureUpdate setModalOpened={setUpdateModal} modalOpened={updateModal} machines={storedMachines} />
+      <ConfigureRollback setRollbackModalOpened={setRollbackModalOpened} rollbackModalOpened={rollbackModalOpened} machines={Object.values(storedMachines)} />
 
     </Stack>
   );

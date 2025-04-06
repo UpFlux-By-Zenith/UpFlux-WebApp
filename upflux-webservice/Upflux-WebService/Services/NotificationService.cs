@@ -101,7 +101,7 @@ public class NotificationService : INotificationService
 
     public async Task SendMessageToUriAsync(string uri, string message)
     {
-        _logger.LogInformation("Sending message to URI '{Uri}'", uri);
+        // _logger.LogInformation("Sending message to URI '{Uri}'", uri);
 
         try
         {
@@ -112,10 +112,10 @@ public class NotificationService : INotificationService
                 {
                     // Send message to the group if the uri is found
                     await _hubContext.Clients.Group(groupId).SendAsync("ReceiveMessage", uri, message);
-                    _logger.LogInformation("Message sent to URI '{Uri}' in group '{GroupId}'", uri, groupId);
+                    // _logger.LogInformation("Message sent to URI '{Uri}' in group '{GroupId}'", uri, groupId);
                 }
 
-            _logger.LogWarning("[SignalR] Message not sent. URI '{Uri}' not found in any group.", uri);
+            // _logger.LogWarning("[SignalR] Message not sent. URI '{Uri}' not found in any group.", uri);
         }
         catch (Exception ex)
         {

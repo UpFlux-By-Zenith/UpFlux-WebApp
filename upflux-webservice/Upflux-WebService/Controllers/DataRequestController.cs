@@ -99,49 +99,31 @@ public class DataRequestController : ControllerBase
         }
     }
 
+
     /// <summary>
     /// Engineer retrieves accessible machines
     /// </summary>
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminOrEngineer")]
     [HttpGet("engineer/access-machines")]
-    public IActionResult GetAccessibleMachines()
+    public async Task<IActionResult> GetAccessibleMachines()
     {
         try
         {
             var engineerEmail = GetClaimValue(ClaimTypes.Email);
             var machineIds = GetClaimValue("MachineIds");
-            if (_authService.CheckIfUserIsRevoked(engineerEmail)) return Unauthorized();
-            var role = GetClaimValue(ClaimTypes.Role);
 
-            // C# Query to fetch all Machines with UserName for Admin
-            var allMachines = (
-                from m in _context.Machines
-                join u in _context.Users on m.lastUpdatedBy equals u.UserId into userGroup
-                from user in userGroup.DefaultIfEmpty()
-                select new
-                {
-                    m.MachineId,
-                    m.machineName,
-                    m.ipAddress,
-                    m.currentVersion,
-                    m.dateAddedOn,
-                    m.appName,
-                    LastUpdatedBy = user != null ? user.Name : "Unknown"
-                }
-            ).ToListAsync();
-
-            if (role == "Admin") return Ok(new { engineerEmail, AccessibleMachines = allMachines });
-
-            if (string.IsNullOrEmpty(engineerEmail) || string.IsNullOrEmpty(machineIds))
+            if (string.IsNullOrEmpty(engineerEmail))
                 return Unauthorized(new { Error = "Invalid engineer token." });
 
-            var machines = machineIds.Split(',').ToList();
+            if (_authService.CheckIfUserIsRevoked(engineerEmail))
+                return Unauthorized();
 
-            return Ok(new
+            var role = GetClaimValue(ClaimTypes.Role);
+
+            if (role == "Admin")
             {
-                EngineerEmail = engineerEmail,
-                AccessibleMachines = _context.Machines
-                    .Where(m => machines.Contains(m.MachineId))
+                // Fetch all machines for admin, including last updated by username
+                var allMachines = await _context.Machines
                     .Select(m => new
                     {
                         m.MachineId,
@@ -153,9 +135,40 @@ public class DataRequestController : ControllerBase
                         LastUpdatedBy = _context.Users
                             .Where(u => u.UserId == m.lastUpdatedBy)
                             .Select(u => u.Name)
-                            .FirstOrDefault()
+                            .FirstOrDefault() ?? "Unknown"
                     })
-                    .ToListAsync()
+                    .ToListAsync();
+
+                return Ok(new { engineerEmail, AccessibleMachines = allMachines });
+            }
+
+            // Engineer logic: Get assigned machines
+            if (string.IsNullOrEmpty(machineIds))
+                return Unauthorized(new { Error = "No assigned machines found for this engineer." });
+
+            var machinesList = machineIds.Split(',').ToList();
+
+            var accessibleMachines = await _context.Machines
+                .Where(m => machinesList.Contains(m.MachineId))
+                .Select(m => new
+                {
+                    m.MachineId,
+                    m.machineName,
+                    m.ipAddress,
+                    m.currentVersion,
+                    m.dateAddedOn,
+                    m.appName,
+                    LastUpdatedBy = _context.Users
+                        .Where(u => u.UserId == m.lastUpdatedBy)
+                        .Select(u => u.Name)
+                        .FirstOrDefault() ?? "Unknown"
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                EngineerEmail = engineerEmail,
+                AccessibleMachines = accessibleMachines
             });
         }
         catch (Exception ex)
@@ -163,6 +176,7 @@ public class DataRequestController : ControllerBase
             return BadRequest(new { Error = ex.Message });
         }
     }
+
 
     /// <summary>
     /// Get applications running on machines

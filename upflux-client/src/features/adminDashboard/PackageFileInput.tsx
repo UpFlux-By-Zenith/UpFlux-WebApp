@@ -3,7 +3,7 @@ import { Button, FileInput, Modal, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import "./admin-dashboard.css";
 
-export const PackageFileInput = ({ opened, close }) => {
+export const PackageFileInput = ({ opened, close, getPackages }) => {
   const [file, setFile] = useState<File | null>(null);
 
   // Handle file selection
@@ -41,8 +41,9 @@ export const PackageFileInput = ({ opened, close }) => {
             autoClose: 10000,
             message: "Package has been signed & stored"
           })
+
+          getPackages()
         }
-        const data = await response.json();
       } catch (error) {
         console.error("Error during package upload:", error);
       }

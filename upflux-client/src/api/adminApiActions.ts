@@ -178,16 +178,16 @@ export const getMachineLogs = async (deviceUuids: string[]) => {
       } else {
         const errorData = await response.json();
         console.error('Error fetching machine logs:', errorData);
-        return errorData.message || 'Failed to fetch machine logs.';
+        throw errorData.message || 'Failed to fetch machine logs.';
       }
     } else {
       const errorData = await response.json();
       console.error('Error fetching machine logs:', errorData);
-      return errorData.message || 'Failed to fetch machine logs.';
+      throw errorData.message || 'Failed to fetch machine logs.';
     }
   } catch (error) {
     console.error('Error during fetch request:', error);
-    return 'An error occurred while fetching machine logs.';
+    throw 'An error occurred while fetching machine logs.';
   }
 };
 

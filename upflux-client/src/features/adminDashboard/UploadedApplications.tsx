@@ -4,12 +4,6 @@ import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRe
 import "./admin-dashboard.css";
 import { useDisclosure } from "@mantine/hooks";
 import { PackageFileInput } from "./PackageFileInput";
-const applications = [
-    {
-        name: "upflux-monitoring-service",
-        versions: ["1.1.5"],
-    },
-];
 
 export const UploadedApplications = () => {
 
@@ -17,15 +11,20 @@ export const UploadedApplications = () => {
     const [opened, { open, close }] = useDisclosure(false);
 
     useEffect(() => {
+        getPackages()
 
+    }, [])
+
+    const getPackages = () => {
         getAvailablePackages().then(res => {
             setAvailableApps(res as IPackagesOnCloud[])
         })
 
-    }, [])
+    }
+
     return (
         <>
-            <PackageFileInput opened={opened} close={close} />
+            <PackageFileInput opened={opened} close={close} getPackages={getPackages} />
             <Stack align="center" className="form-stack">
                 <Text className="form-title">Uploaded Applications</Text>
                 <Table>

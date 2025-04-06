@@ -392,7 +392,7 @@ export interface IPackagesOnCloud {
   versions: string[]
 }
 
-export const doRollback = async (versionId: string, deviceId: string) => {
+export const doRollback = async (versionId: string, deviceId: string[]) => {
   // Retrieve the token from session storage
   const authToken = sessionStorage.getItem('authToken');
 
@@ -408,7 +408,7 @@ export const doRollback = async (versionId: string, deviceId: string) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`, // Include Bearer token
       },
-      body: JSON.stringify([deviceId])
+      body: JSON.stringify(deviceId)
     });
     if (response.ok) {
       const data: IPackagesOnCloud[] = await response.json();

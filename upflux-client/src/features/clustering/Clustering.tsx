@@ -13,6 +13,7 @@ import { IMachine } from "../../api/reponseTypes";
 import { PLOT_COLORS } from "./clusteringConsts";
 import { IconAi, IconArrowBigDownLinesFilled, IconBulbFilled } from "@tabler/icons-react";
 import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
+import { notifications } from "@mantine/notifications";
 
 interface IPlotData {
   color: string;
@@ -126,27 +127,27 @@ export const Clustering: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://upflux.cloud/api/PackageManagement/packages/schedule-update", {
+      const response = await fetch("http://localhost:5000/api/PackageManagement/packages/schedule-update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${authToken}`, // Ensure you add the authorization token
         },
         body: JSON.stringify(requestBody),
-      });
+      }).then(() => {
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Deployment scheduled successfully:", result);
-
-        setSelectedCluster("")
-        setSelectionVersion("")
+        notifications.show({
+          title: "Web Service",
+          position: "top-right",
+          autoClose: 10000,
+          message: "Update has been scheduled"
+        })
+        setSelectedCluster(null)
+        setSelectionVersion(null)
         setSelectedDateTime(null)
 
-      } else {
-        const errorData = await response.json();
-        console.error("Error scheduling update:", errorData);
-      }
+      })
+
     } catch (error) {
       console.error("Error during deploy request:", error);
     }
@@ -187,8 +188,8 @@ export const Clustering: React.FC = () => {
             data={mappedClusterPlotData.map((plot) => ({ value: plot.name, label: plot.name }))}
             value={selectedCluster}
             onChange={(value) => setSelectedCluster(value)}
-
           />
+          {selectedCluster && <Text></Text>}
           <Select
             label="Select Application*"
 
