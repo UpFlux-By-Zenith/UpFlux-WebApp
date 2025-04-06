@@ -12,6 +12,7 @@ import {
 } from "@mantine/core";
 import ReactSpeedometer, { Transition } from "react-d3-speedometer";
 import { useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
 import { IApplications } from "../reduxSubscription/applicationVersions";
 
@@ -94,9 +95,17 @@ export const MachineDetails: React.FC = () => {
     return Object.entries(storedMachines).find(([, machine]) => machine.machineName === name)?.[0] || "";
   };
 
+  const location = useLocation();
+
   useEffect(() => {
-    setSelectedMachineId(findMachineIdByName(selectedMachineName))
-  }, [selectedMachineName])
+    const params = new URLSearchParams(location.search);
+    const machineId = params.get("machineId");
+
+    if (machineId && storedMachines[machineId]) {
+      setSelectedMachineId(machineId);
+      setSelectedMachineName(storedMachines[machineId].machineName);
+    }
+  }, [location.search, storedMachines]);
 
 
   // State for app versions and loading status
@@ -146,32 +155,23 @@ export const MachineDetails: React.FC = () => {
     <Stack className="version-control-content">
 
       <Box className="content-wrapper">
-        <Box className="machine-id-box">
-          {selectedMachineName && (
-            <Indicator
-              inline
-              color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
-              label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
-              size={16}
-            >
-              <Select
-                data={Object.values(storedMachines).map(m => m.machineName)}
-                value={selectedMachineName}
-                onChange={(value) => setSelectedMachineName(value)}
-                placeholder="Select Machine"
-              />
-            </Indicator>
-          )}
+      <Box className="machine-id-box">
+  {selectedMachineName && (
+    <Indicator
+      inline
+      color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
+      label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
+      size={16}
+    >
+      <Text fw={700}>{selectedMachineName}</Text>
+    </Indicator>
+  )}
 
-          {!selectedMachineName && (
-            <Select
-              data={Object.values(storedMachines).map(m => m.machineName)}
-              value={selectedMachineName}
-              onChange={(value) => setSelectedMachineName(value)}
-              placeholder="Select Machine"
-            />
-          )}
-        </Box>
+  {!selectedMachineName && (
+    <Text color="red" fw={700}>Invalid or Missing Machine ID</Text>
+  )}
+</Box>
+
 
         {/* Machine Metrics Section */}
         <Box className="metrics-container">
@@ -210,29 +210,6 @@ export const MachineDetails: React.FC = () => {
               System Uptime: {formatUptime(machineMetrics[selectedMachineId]?.metrics.systemUptime || 0)}
             </h2>
           </center>
-        </Box>
-
-        {/* Table Section */}
-        <Box>
-          <Table className="version-table" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>App Name</Table.Th>
-                <Table.Th>Version</Table.Th>
-                <Table.Th>Last Updated</Table.Th>
-                <Table.Th>Updated By</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              <Table.Tr >
-                <Table.Td>{storedMachines[selectedMachineId]?.appName}</Table.Td>
-                <Table.Td>{storedMachines[selectedMachineId]?.currentVersion}</Table.Td>
-                <Table.Td>{storedMachines[selectedMachineId]?.dateAddedOn}</Table.Td>
-                <Table.Td>{storedMachines[selectedMachineId]?.lastUpdatedBy}</Table.Td>
-              </Table.Tr>
-            </Table.Tbody>
-          </Table>
-
         </Box>
       </Box>
 
