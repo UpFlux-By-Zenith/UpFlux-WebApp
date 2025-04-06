@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
 import { IApplications } from "../reduxSubscription/applicationVersions";
+import { getMachineDetails } from "../../api/applicationsRequest";
 
 export const MachineDetails: React.FC = () => {
   const storedMachines = useSelector((root: RootState) => root.machines.messages);
@@ -27,16 +28,45 @@ export const MachineDetails: React.FC = () => {
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [appVersions, setAppVersions] = useState<{ appName: string; appVersion: string; lastUpdate: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [availableVersions, setAvailableVersions] = useState<string[]>([]);
 
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
+
+  const fetchAvailableVersions = async () => {
+    const machineDetails = await getMachineDetails();
+  
+    if (typeof machineDetails === "string" || machineDetails === null) {
+      console.error("Error fetching machine details:", machineDetails);
+      setAvailableVersions([]);
+      return;
+    }
+  
+    const matchingApps = machineDetails.applications.filter(
+      (app) => app.machineId === selectedMachineId
+    );
+  
+    // Flatten versions from all apps on this machine
+    const versions: string[] = matchingApps.flatMap((app) =>
+      app.versions.map((version) => version.versionName)
+    );
+  
+    setAvailableVersions(versions);
+  };
+  
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const machineId = params.get("machineId");
     setSelectedMachineName(machineId || "");
     setSelectedMachineId(machineId || "");
-  }, [location.search, storedMachines]);
+  }, [location.search]);
+  
+  useEffect(() => {
+    if (selectedMachineId) {
+      fetchAvailableVersions();
+    }
+  }, [selectedMachineId]);
 
   const cpuColors = ["#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#00FF00", "#33FF00", "#FFFF00", "#FFFF00", "#FF0000", "#FF0000"];
   const tempColors = [
@@ -124,15 +154,18 @@ export const MachineDetails: React.FC = () => {
 >
   {selectedMachineName ? (
     <Indicator
-      inline
+
       color={storedMachines[selectedMachineId]?.isOnline ? "green" : "red"}
       label={storedMachines[selectedMachineId]?.isOnline ? "Online" : "Offline"}
       size={16}
     >
-      <Text fw={700}>{selectedMachineName}</Text>
+      <Text fw={700} style={{ textAlign: "center" }} size="sm">{selectedMachineName}</Text>
        {/* Display Current Version */}
        <Text fw={500} style={{ textAlign: "center" }} size="sm">
         Current Version: {storedMachines[selectedMachineId]?.currentVersion || "N/A"}
+      </Text>
+      <Text fw={500} style={{ textAlign: "center" }} size="sm">
+        Available Versions: {availableVersions.length > 0 ? availableVersions.join(", ") : "No available versions"}
       </Text>
     </Indicator>
   ) : (
