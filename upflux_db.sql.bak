@@ -360,13 +360,15 @@ WHERE
 
 /*Show all machines a specific user has access to*/
 SELECT 
-    m.machine_id, c.access_level, c.access_granted_at
+    m.machine_id,
+    m.machine_name,
+    c.access_granted_at
 FROM 
     Machines m
 JOIN 
     Credentials c ON m.machine_id = c.machine_id
 WHERE 
-    c.user_id = 2; 
+    c.user_id = 'E123';
 
 /*Show access logs for a specific user*/
 SELECT 
