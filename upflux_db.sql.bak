@@ -165,11 +165,10 @@ CREATE TEMPORARY TABLE User_Context (
 /*Show all tables present in the database*/
 SHOW TABLES;
 
--- Insert into Machines
-INSERT INTO Machines (machine_id, ip_address, machine_name, app_name) VALUES
-('MCH123ABC', '192.168.0.1', 'M456', 'UpFlux-Monitoring-Service'),
-('MCH456DEF', '192.168.0.2', 'M789', 'UpFlux-Monitoring-Service'),
-('MCH789GHI', '192.168.0.3', 'M321', 'UpFlux-Monitoring-Service');
+INSERT INTO Machines (machine_id, ip_address, machine_name, app_name, current_version, last_updated_by) VALUES
+('MCH123ABC', '192.168.0.1', 'M456', 'UpFlux-Monitoring-Service', 'v1.0', 'E123'),
+('MCH456DEF', '192.168.0.2', 'M789', 'UpFlux-Monitoring-Service', 'v1.0', 'E456'),
+('MCH789GHI', '192.168.0.3', 'M321', 'UpFlux-Monitoring-Service', 'v1.0', 'E789');
 
 -- Insert into Users
 INSERT INTO Users (user_id, name, email, role, last_login) VALUES
@@ -221,14 +220,13 @@ INSERT INTO Applications (machine_id, app_name, added_by, current_version) VALUE
 ('MCH789GHI', 'AppThree', 'E789', 'v1.2');
 */
 
--- Insert into Application_Versions
-INSERT INTO Application_Versions (machine_id, version_name, uploaded_by, installed_date, storage_type) VALUES
-('MCH123ABC', 'v1.0.1', 'E123', '2024-01-15 09:00:00', 'cloud'),
-('MCH123ABC', 'v1.1.1', 'E123', '2024-01-16 10:30:00', 'machine'),
-('MCH123ABC', 'v1.2.1', 'E456', '2024-01-17 11:45:00', 'cloud');
+INSERT INTO Application_Versions (version_name, uploaded_by, date) VALUES
+('v1.0.1', 'E123', '2024-01-15 09:00:00'),
+('v1.1.1', 'E123', '2024-01-16 10:30:00'),
+('v1.2.1', 'E456', '2024-01-17 11:45:00');
 
 -- Insert into Generated_Machine_Ids
-INSERT INTO Generated_Machine_Ids (generated_uuid, machine_id) VALUES
+INSERT INTO Generated_Machine_Ids (Id, machine_id) VALUES
 ('123e4567-e89b-12d3-a456-426614174000', 'MCH123ABC'),
 ('987f6543-e21b-34c2-b789-526613274111', 'MCH456DEF'),
 ('456a1234-b56c-45f1-c321-626612374222', 'MCH789GHI');
