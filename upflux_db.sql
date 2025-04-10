@@ -58,8 +58,7 @@ CREATE TABLE Credentials (
     access_granted_by VARCHAR(50) NOT NULL,  
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
-    FOREIGN KEY (access_granted_by) REFERENCES Admin_Details(admin_id),
-    UNIQUE (user_id, machine_id, credential_id)   
+    FOREIGN KEY (access_granted_by) REFERENCES Admin_Details(admin_id) 
 );
 
 
@@ -291,10 +290,7 @@ WHERE
 SELECT 
     ul.update_id,
     ul.machine_id,
-    m.machine_status,
     ul.package_id,
-    p.version_number,
-    p.package_signature,
     ul.update_status,
     ul.time_applied
 FROM 
@@ -350,28 +346,33 @@ WHERE
 
 /*Show all users with admin access to a machine*/
 SELECT 
-    u.user_id, u.name, c.access_level, c.access_granted_at
+    u.user_id,
+    u.name,
+    c.access_granted_at
 FROM 
     Credentials c
 JOIN 
     Users u ON c.user_id = u.user_id
 WHERE 
-    c.access_level = 'Admin'
-    AND c.machine_id = 1;  -- Replace with the specific machine ID
+    u.role = 'Admin'
+    AND c.machine_id = 'MCH123ABC';
+
 
 /*Show all machines a specific user has access to*/
 SELECT 
-    m.machine_id, c.access_level, c.access_granted_at
+    m.machine_id,
+    m.machine_name,
+    c.access_granted_at
 FROM 
     Machines m
 JOIN 
     Credentials c ON m.machine_id = c.machine_id
 WHERE 
-    c.user_id = 2; 
+    c.user_id = 'E123';
 
 /*Show access logs for a specific user*/
 SELECT 
-    al.log_id, al.machine_id, al.action, al.time_performed
+    al.log_id, al.machine_id, al.time_performed
 FROM 
     Action_Logs al
 WHERE 
@@ -410,7 +411,7 @@ WHERE
 
 /*Show all actions performed on a specific machine*/
 SELECT 
-    al.log_id, u.name, al.action, al.time_performed
+    al.log_id, u.name, al.time_performed
 FROM 
     Action_Logs al
 JOIN 
@@ -420,23 +421,13 @@ WHERE
 
 /*Show the most recent actions performed by each user*/
 SELECT 
-    al.user_id, u.name, al.action, MAX(al.time_performed) AS last_action_time
+    al.user_id, u.name, MAX(al.time_performed) AS last_action_time
 FROM 
     Action_Logs al
 JOIN 
     Users u ON al.user_id = u.user_id
 GROUP BY 
     al.user_id, u.name;
-
-/*Show all actions related to update rollbacks*/
-SELECT 
-    al.log_id, al.machine_id, u.name, al.time_performed
-FROM 
-    Action_Logs al
-JOIN 
-    Users u ON al.user_id = u.user_id
-WHERE 
-    al.action = 'rollback_initiated';
 
 /*Role-Based Access Control*/
 
