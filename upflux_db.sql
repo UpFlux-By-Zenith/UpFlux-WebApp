@@ -240,37 +240,49 @@ INSERT INTO Machine_Status (machine_id, is_online, last_seen) VALUES
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
 
-/*Basic Queries*/
-
-/*Show all users*/
+--------------------------------------------------
+/* Basic Queries */
+/* Show all machines */
 SELECT * FROM Machines;
 
-/*Show all users*/
+/* Show all users */
 SELECT * FROM Users;
 
-/*Show all packages*/
+/* Show all packages */
 SELECT * FROM Packages;
 
-/*Show all licences*/
-SELECT * FROM Licences
+/* Show all licences */
+SELECT * FROM Licences;
 
-/*Update-Related Queries*'/
+/* Show all entries from Generated_Machine_Ids */
+SELECT * FROM Generated_Machine_Ids;
 
-/*Show all machine current versions*/
+/* Show all entries from Machine_Status */
+SELECT * FROM Machine_Status;
+
+/* Show all revoked tokens */
+SELECT * FROM Revoked_tokens;
+
+/* Show all stored machine versions */
+SELECT * FROM Machine_Stored_Versions;
+
+/* Show all application versions */
+SELECT * FROM Application_Versions;
+
+--------------------------------------------------
+/* Update-Related Queries */
+/* Show all machine current versions via completed updates */
 SELECT 
-	m.machine_id, p.version_number
-FROM
-	Machines m
-JOIN 
-	Update_Logs ul ON m.machine_id = ul.machine_id
-JOIN 
-	Packages p ON ul.package_id = p.package_id
-WHERE 
-	ul.update_status = 'Completed'
-ORDER BY 
-	ul.time_applied DESC;
+    m.machine_id, 
+    p.version_number,
+    ul.time_applied
+FROM Machines m
+JOIN Update_Logs ul ON m.machine_id = ul.machine_id
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.update_status = 'Completed'
+ORDER BY ul.time_applied DESC;
 
-/*Show all failed upadates*/
+/* Show all failed updates */
 SELECT 
     ul.update_id,
     m.machine_id,
@@ -278,157 +290,130 @@ SELECT
     p.package_signature,
     ul.update_status,
     ul.time_applied
-FROM 
-    Update_Logs ul
-JOIN 
-    Machines m ON ul.machine_id = m.machine_id
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    ul.update_status = 'Failed';
+FROM Update_Logs ul
+JOIN Machines m ON ul.machine_id = m.machine_id
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.update_status = 'Failed';
 
-/*Show all currently pending updates*/
+/* Show all currently pending updates without a later final status */
 SELECT 
     ul.update_id,
     ul.machine_id,
     ul.package_id,
     ul.update_status,
     ul.time_applied
-FROM 
-    Update_Logs ul
-JOIN 
-    Machines m ON ul.machine_id = m.machine_id
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    ul.update_status = 'Pending'
-    AND NOT EXISTS (
-        SELECT 1 
-        FROM Update_Logs ul2
-        WHERE ul2.machine_id = ul.machine_id
+FROM Update_Logs ul
+WHERE ul.update_status = 'Pending'
+  AND NOT EXISTS (
+      SELECT 1 
+      FROM Update_Logs ul2
+      WHERE ul2.machine_id = ul.machine_id
         AND ul2.package_id = ul.package_id
         AND ul2.time_applied > ul.time_applied
         AND ul2.update_status IN ('Completed', 'Failed')
-    );
+  );
 
-/*Show the number of updates per machine*/
+/* Show the number of updates per machine */
 SELECT 
     m.machine_id, COUNT(ul.update_id) AS update_count
-FROM 
-    Machines m
-LEFT JOIN 
-    Update_Logs ul ON m.machine_id = ul.machine_id
-GROUP BY 
-    m.machine_id;
+FROM Machines m
+LEFT JOIN Update_Logs ul ON m.machine_id = ul.machine_id
+GROUP BY m.machine_id;
 
-/*Show all updates for a specific machine*/
+/* Show all updates for a specific machine (use an actual machine_id, e.g., 'MCH123ABC') */
 SELECT 
-    ul.update_id, p.version_number, ul.update_status, ul.time_applied
-FROM 
-    Update_Logs ul
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    ul.machine_id = 1;  
+    ul.update_id, 
+    p.version_number, 
+    ul.update_status, 
+    ul.time_applied
+FROM Update_Logs ul
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.machine_id = 'MCH123ABC';
 
-/*Licence Management Queries*/
-
-/*Show all expired licences*/
+--------------------------------------------------
+/* Licence Management Queries */
+/* Show all expired licences */
 SELECT 
-    l.licence_key, m.machine_id, l.expiration_date
-FROM 
-    Licences l
-JOIN 
-    Machines m ON l.machine_id = m.machine_id
-WHERE 
-    l.expiration_date <= CURRENT_TIMESTAMP;
+    l.licence_key, 
+    m.machine_id, 
+    l.expiration_date
+FROM Licences l
+JOIN Machines m ON l.machine_id = m.machine_id
+WHERE l.expiration_date <= CURRENT_TIMESTAMP;
 
-/*User and Acces Management Queries*/
-
-/*Show all users with admin access to a machine*/
+--------------------------------------------------
+/* User and Access Management Queries */
+/* Show all users with admin access to a specific machine */
 SELECT 
     u.user_id,
     u.name,
     c.access_granted_at
-FROM 
-    Credentials c
-JOIN 
-    Users u ON c.user_id = u.user_id
-WHERE 
-    u.role = 'Admin'
-    AND c.machine_id = 'MCH123ABC';
+FROM Credentials c
+JOIN Users u ON c.user_id = u.user_id
+WHERE u.role = 'Admin'
+  AND c.machine_id = 'MCH123ABC';
 
-
-/*Show all machines a specific user has access to*/
+/* Show all machines a specific user has access to */
 SELECT 
     m.machine_id,
     m.machine_name,
     c.access_granted_at
-FROM 
-    Machines m
-JOIN 
-    Credentials c ON m.machine_id = c.machine_id
-WHERE 
-    c.user_id = 'E123';
+FROM Machines m
+JOIN Credentials c ON m.machine_id = c.machine_id
+WHERE c.user_id = 'E123';
 
-/*Show access logs for a specific user*/
+/* Show access logs for a specific user (e.g., user_id 'E123') */
 SELECT 
-    al.log_id, al.machine_id, al.time_performed
-FROM 
-    Action_Logs al
-WHERE 
-    al.user_id = 3;  -- Replace with the user ID
+    al.log_id, 
+    al.time_performed
+FROM Action_Logs al
+WHERE al.user_id = 'E123';
 
-/*Machine Monitoring and Status Queries*/
-
-/*Show all alive machines*/
-SELECT * FROM Machines WHERE machine_status = 'Alive';
-
-/*Show all machines with high memory usage*/
-SELECT * FROM Machines WHERE memory_usage > 80.0;
-
-/*Show all idle machines*/
-SELECT * FROM Machines WHERE activity_status = 'Idle';
-
-/*Show all offline machines*/
-SELECT * FROM Machines WHERE machine_status = 'Shutdown' OR activity_status = 'Offline';
-
-
-/*Package Version queries*/
-
-/*Show all versions running a specific package version*/
+--------------------------------------------------
+/* Machine Monitoring and Status Queries */
+/* Show all machines that are currently online (via Machine_Status) */
 SELECT 
-    m.machine_id, p.version_number
-FROM 
-    Machines m
-JOIN 
-    Update_Logs ul ON m.machine_id = ul.machine_id
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    p.version_number = 1.2;
-	
-/*Action Log and Auditing Queries*/
+    m.machine_id, 
+    m.machine_name, 
+    ms.is_online, 
+    ms.last_seen
+FROM Machines m
+JOIN Machine_Status ms ON m.machine_id = ms.machine_id
+WHERE ms.is_online = TRUE;
 
-/*Show all actions performed on a specific machine*/
+--------------------------------------------------
+/* Package Version Queries */
+/* Show all machines running a specific package version, e.g., version_number 1.2 */
 SELECT 
-    al.log_id, u.name, al.time_performed
-FROM 
-    Action_Logs al
-JOIN 
-    Users u ON al.user_id = u.user_id
-WHERE 
-    al.machine_id = 1;  -- Replace with the machine ID
+    m.machine_id, 
+    p.version_number
+FROM Machines m
+JOIN Update_Logs ul ON m.machine_id = ul.machine_id
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE p.version_number = 1.2;
 
-/*Show the most recent actions performed by each user*/
+--------------------------------------------------
+/* Action Log and Auditing Queries */
+/* Show all actions performed related to Machines (filtering by the entity name 'Machine') */
 SELECT 
-    al.user_id, u.name, MAX(al.time_performed) AS last_action_time
-FROM 
-    Action_Logs al
-JOIN 
-    Users u ON al.user_id = u.user_id
-GROUP BY 
-    al.user_id, u.name;
+    al.log_id, 
+    u.name AS performed_by, 
+    al.entity_name, 
+    al.time_performed
+FROM Action_Logs al
+JOIN Users u ON al.user_id = u.user_id
+WHERE al.entity_name = 'Machine';
+
+/* Show the most recent action performed by each user */
+SELECT 
+    al.user_id, 
+    u.name, 
+    MAX(al.time_performed) AS last_action_time
+FROM Action_Logs al
+JOIN Users u ON al.user_id = u.user_id
+GROUP BY al.user_id, u.name;
+
+--------------------------------------------------
 
 /*Role-Based Access Control*/
 
