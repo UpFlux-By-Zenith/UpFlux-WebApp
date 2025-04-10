@@ -477,6 +477,7 @@ GRANT SELECT ON upflux_db.Update_Logs TO 'Engineer';
 GRANT SELECT, INSERT, UPDATE ON upflux_db.Packages TO 'Engineer';
 
 DELIMITER //
+
 CREATE PROCEDURE CreateUser(
     IN p_name VARCHAR(255), 
     IN p_email VARCHAR(255), 
@@ -486,21 +487,21 @@ CREATE PROCEDURE CreateUser(
 BEGIN
     DECLARE v_user_id VARCHAR(50);
     DECLARE v_username VARCHAR(255);
-    
+
     -- Generate a username based on the email (before '@')
     SET v_username = SUBSTRING_INDEX(p_email, '@', 1);
 
-    -- Insert into Users table
-    INSERT INTO Users (name, email, role) 
-    VALUES (p_name, p_email, p_role);
+    -- Generate a unique user id using UUID()
+    SET v_user_id = UUID();
 
-    -- Get the last inserted user_id
-    SET v_user_id = LAST_INSERT_ID();
+    -- Insert into Users table with the generated user_id
+    INSERT INTO Users (user_id, name, email, role) 
+    VALUES (v_user_id, p_name, p_email, p_role);
 
-    -- For Admin, insert into Admin_Details with password hash
+    -- For Admin, insert into Admin_Details with password hash and a generated admin_id
     IF p_role = 'Admin' THEN
-        INSERT INTO Admin_Details (user_id, password_hash) 
-        VALUES (v_user_id, SHA2(p_password, 256));
+        INSERT INTO Admin_Details (admin_id, user_id, password_hash) 
+        VALUES (UUID(), v_user_id, SHA2(p_password, 256));
     END IF;
 
     -- Create a MySQL user for the newly added user
@@ -535,6 +536,7 @@ BEGIN
     DEALLOCATE PREPARE stmt;
 END //
 DELIMITER ;
+
 
 /* Attribute-Based Access Control */
 DELIMITER //
