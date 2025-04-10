@@ -94,35 +94,6 @@ CREATE TABLE Action_Logs (
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
-/*
--- Create Applications Table
-CREATE TABLE Applications (
-    app_id INT AUTO_INCREMENT PRIMARY KEY,
-	machine_id VARCHAR(255) NOT NULL,
-    app_name VARCHAR(255) NOT NULL,
-    added_by VARCHAR(50) NOT NULL,
-    current_version VARCHAR(50) NOT NULL,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (added_by) REFERENCES Users(user_id),
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
-);
-*/
-
-/*
--- Create Application_Versions Table
-CREATE TABLE Application_Versions (
-    version_id INT AUTO_INCREMENT PRIMARY KEY, 
-    version_name VARCHAR(50) NOT NULL,  
-    machine_id VARCHAR(255) NOT NULL,
-    uploaded_by VARCHAR(50), 
-    installed_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    storage_type ENUM('cloud', 'machine') NOT NULL, 
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
-    UNIQUE (version_name, machine_id, storage_type) 
-);
-*/
-
 CREATE TABLE Generated_Machine_Ids (
     Id VARCHAR(36) PRIMARY KEY, 
     machine_id VARCHAR(255) NOT NULL,  
@@ -160,6 +131,36 @@ CREATE TEMPORARY TABLE User_Context (
     user_id VARCHAR(50) NOT NULL,               
     PRIMARY KEY (session_id)
 );
+
+/* Alternative DB structure if a need arises to manage multiple applications per machine */
+/*
+-- Create Applications Table
+CREATE TABLE Applications (
+    app_id INT AUTO_INCREMENT PRIMARY KEY,
+	machine_id VARCHAR(255) NOT NULL,
+    app_name VARCHAR(255) NOT NULL,
+    added_by VARCHAR(50) NOT NULL,
+    current_version VARCHAR(50) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (added_by) REFERENCES Users(user_id),
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
+);
+*/
+
+/*
+-- Create Application_Versions Table
+CREATE TABLE Application_Versions (
+    version_id INT AUTO_INCREMENT PRIMARY KEY, 
+    version_name VARCHAR(50) NOT NULL,  
+    machine_id VARCHAR(255) NOT NULL,
+    uploaded_by VARCHAR(50), 
+    installed_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    storage_type ENUM('cloud', 'machine') NOT NULL, 
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    UNIQUE (version_name, machine_id, storage_type) 
+);
+*/
 
 /*Show all tables present in the database*/
 SHOW TABLES;
@@ -917,16 +918,13 @@ WHERE
 CREATE VIEW Application_Details AS
 SELECT 
     m.app_name,
-    av.version AS current_version,
-    u1.name AS added_by,
-    av.date AS last_updated,
-    u2.name AS updated_by
+    m.current_version,
+    u.name AS updated_by,
+    av.date AS last_updated
 FROM Machines m
-LEFT JOIN (
-    SELECT av1.machine_id, av1.version, av1.updated_by, av1.date
-    FROM Application_Versions av1
-    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.machine_id = av2.machine_id)
-) av ON m.machine_id = av.machine_id
-LEFT JOIN Users u1 ON m.added_by = u1.user_id
-LEFT JOIN Users u2 ON av.updated_by = u2.user_id;
+LEFT JOIN Application_Versions av
+    ON m.current_version = av.version_name
+LEFT JOIN Users u
+    ON av.uploaded_by = u.user_id;
+
 
