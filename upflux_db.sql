@@ -58,8 +58,7 @@ CREATE TABLE Credentials (
     access_granted_by VARCHAR(50) NOT NULL,  
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (machine_id) REFERENCES Machines(machine_id),
-    FOREIGN KEY (access_granted_by) REFERENCES Admin_Details(admin_id),
-    UNIQUE (user_id, machine_id, credential_id)   
+    FOREIGN KEY (access_granted_by) REFERENCES Admin_Details(admin_id) 
 );
 
 
@@ -94,35 +93,6 @@ CREATE TABLE Action_Logs (
     time_performed TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
-
-/*
--- Create Applications Table
-CREATE TABLE Applications (
-    app_id INT AUTO_INCREMENT PRIMARY KEY,
-	machine_id VARCHAR(255) NOT NULL,
-    app_name VARCHAR(255) NOT NULL,
-    added_by VARCHAR(50) NOT NULL,
-    current_version VARCHAR(50) NOT NULL,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (added_by) REFERENCES Users(user_id),
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
-);
-*/
-
-/*
--- Create Application_Versions Table
-CREATE TABLE Application_Versions (
-    version_id INT AUTO_INCREMENT PRIMARY KEY, 
-    version_name VARCHAR(50) NOT NULL,  
-    machine_id VARCHAR(255) NOT NULL,
-    uploaded_by VARCHAR(50), 
-    installed_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    storage_type ENUM('cloud', 'machine') NOT NULL, 
-    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
-    UNIQUE (version_name, machine_id, storage_type) 
-);
-*/
 
 CREATE TABLE Generated_Machine_Ids (
     Id VARCHAR(36) PRIMARY KEY, 
@@ -162,14 +132,43 @@ CREATE TEMPORARY TABLE User_Context (
     PRIMARY KEY (session_id)
 );
 
+/* Alternative DB structure if a need arises to manage multiple applications per machine */
+/*
+-- Create Applications Table
+CREATE TABLE Applications (
+    app_id INT AUTO_INCREMENT PRIMARY KEY,
+	machine_id VARCHAR(255) NOT NULL,
+    app_name VARCHAR(255) NOT NULL,
+    added_by VARCHAR(50) NOT NULL,
+    current_version VARCHAR(50) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (added_by) REFERENCES Users(user_id),
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) 
+);
+*/
+
+/*
+-- Create Application_Versions Table
+CREATE TABLE Application_Versions (
+    version_id INT AUTO_INCREMENT PRIMARY KEY, 
+    version_name VARCHAR(50) NOT NULL,  
+    machine_id VARCHAR(255) NOT NULL,
+    uploaded_by VARCHAR(50), 
+    installed_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    storage_type ENUM('cloud', 'machine') NOT NULL, 
+    FOREIGN KEY (machine_id) REFERENCES Machines(machine_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES Users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    UNIQUE (version_name, machine_id, storage_type) 
+);
+*/
+
 /*Show all tables present in the database*/
 SHOW TABLES;
 
--- Insert into Machines
-INSERT INTO Machines (machine_id, ip_address, machine_name, app_name) VALUES
-('MCH123ABC', '192.168.0.1', 'M456', 'UpFlux-Monitoring-Service'),
-('MCH456DEF', '192.168.0.2', 'M789', 'UpFlux-Monitoring-Service'),
-('MCH789GHI', '192.168.0.3', 'M321', 'UpFlux-Monitoring-Service');
+INSERT INTO Machines (machine_id, ip_address, machine_name, app_name, current_version, last_updated_by) VALUES
+('MCH123ABC', '192.168.0.1', 'M456', 'UpFlux-Monitoring-Service', 'v1.0', 'E123'),
+('MCH456DEF', '192.168.0.2', 'M789', 'UpFlux-Monitoring-Service', 'v1.0', 'E456'),
+('MCH789GHI', '192.168.0.3', 'M321', 'UpFlux-Monitoring-Service', 'v1.0', 'E789');
 
 -- Insert into Users
 INSERT INTO Users (user_id, name, email, role, last_login) VALUES
@@ -221,19 +220,18 @@ INSERT INTO Applications (machine_id, app_name, added_by, current_version) VALUE
 ('MCH789GHI', 'AppThree', 'E789', 'v1.2');
 */
 
--- Insert into Application_Versions
-INSERT INTO Application_Versions (machine_id, version_name, uploaded_by, installed_date, storage_type) VALUES
-('MCH123ABC', 'v1.0.1', 'E123', '2024-01-15 09:00:00', 'cloud'),
-('MCH123ABC', 'v1.1.1', 'E123', '2024-01-16 10:30:00', 'machine'),
-('MCH123ABC', 'v1.2.1', 'E456', '2024-01-17 11:45:00', 'cloud');
+INSERT INTO Application_Versions (version_name, uploaded_by, date) VALUES
+('v1.0.1', 'E123', '2024-01-15 09:00:00'),
+('v1.1.1', 'E123', '2024-01-16 10:30:00'),
+('v1.2.1', 'E456', '2024-01-17 11:45:00');
 
 -- Insert into Generated_Machine_Ids
-INSERT INTO Generated_Machine_Ids (generated_uuid, machine_id) VALUES
+INSERT INTO Generated_Machine_Ids (Id, machine_id) VALUES
 ('123e4567-e89b-12d3-a456-426614174000', 'MCH123ABC'),
 ('987f6543-e21b-34c2-b789-526613274111', 'MCH456DEF'),
 ('456a1234-b56c-45f1-c321-626612374222', 'MCH789GHI');
 
-INSERT INTO Machine_Status (machine_id, isOnline, lastSeen) VALUES
+INSERT INTO Machine_Status (machine_id, is_online, last_seen) VALUES
 ('MCH123ABC', TRUE, '2024-01-15 09:00:00'),
 ('MCH456DEF', FALSE, '2024-01-16 10:30:00'),
 ('MCH789GHI', TRUE, '2024-01-17 11:45:00');
@@ -242,37 +240,49 @@ INSERT INTO Machine_Status (machine_id, isOnline, lastSeen) VALUES
 -- View Action Logs table data
 SELECT * FROM Action_Logs;
 
-/*Basic Queries*/
-
-/*Show all users*/
+--------------------------------------------------
+/* Basic Queries */
+/* Show all machines */
 SELECT * FROM Machines;
 
-/*Show all users*/
+/* Show all users */
 SELECT * FROM Users;
 
-/*Show all packages*/
+/* Show all packages */
 SELECT * FROM Packages;
 
-/*Show all licences*/
-SELECT * FROM Licences
+/* Show all licences */
+SELECT * FROM Licences;
 
-/*Update-Related Queries*'/
+/* Show all entries from Generated_Machine_Ids */
+SELECT * FROM Generated_Machine_Ids;
 
-/*Show all machine current versions*/
+/* Show all entries from Machine_Status */
+SELECT * FROM Machine_Status;
+
+/* Show all revoked tokens */
+SELECT * FROM Revoked_tokens;
+
+/* Show all stored machine versions */
+SELECT * FROM Machine_Stored_Versions;
+
+/* Show all application versions */
+SELECT * FROM Application_Versions;
+
+--------------------------------------------------
+/* Update-Related Queries */
+/* Show all machine current versions via completed updates */
 SELECT 
-	m.machine_id, p.version_number
-FROM
-	Machines m
-JOIN 
-	Update_Logs ul ON m.machine_id = ul.machine_id
-JOIN 
-	Packages p ON ul.package_id = p.package_id
-WHERE 
-	ul.update_status = 'Completed'
-ORDER BY 
-	ul.time_applied DESC;
+    m.machine_id, 
+    p.version_number,
+    ul.time_applied
+FROM Machines m
+JOIN Update_Logs ul ON m.machine_id = ul.machine_id
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.update_status = 'Completed'
+ORDER BY ul.time_applied DESC;
 
-/*Show all failed upadates*/
+/* Show all failed updates */
 SELECT 
     ul.update_id,
     m.machine_id,
@@ -280,176 +290,130 @@ SELECT
     p.package_signature,
     ul.update_status,
     ul.time_applied
-FROM 
-    Update_Logs ul
-JOIN 
-    Machines m ON ul.machine_id = m.machine_id
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    ul.update_status = 'Failed';
+FROM Update_Logs ul
+JOIN Machines m ON ul.machine_id = m.machine_id
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.update_status = 'Failed';
 
-/*Show all currently pending updates*/
+/* Show all currently pending updates without a later final status */
 SELECT 
     ul.update_id,
     ul.machine_id,
-    m.machine_status,
     ul.package_id,
-    p.version_number,
-    p.package_signature,
     ul.update_status,
     ul.time_applied
-FROM 
-    Update_Logs ul
-JOIN 
-    Machines m ON ul.machine_id = m.machine_id
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    ul.update_status = 'Pending'
-    AND NOT EXISTS (
-        SELECT 1 
-        FROM Update_Logs ul2
-        WHERE ul2.machine_id = ul.machine_id
+FROM Update_Logs ul
+WHERE ul.update_status = 'Pending'
+  AND NOT EXISTS (
+      SELECT 1 
+      FROM Update_Logs ul2
+      WHERE ul2.machine_id = ul.machine_id
         AND ul2.package_id = ul.package_id
         AND ul2.time_applied > ul.time_applied
         AND ul2.update_status IN ('Completed', 'Failed')
-    );
+  );
 
-/*Show the number of updates per machine*/
+/* Show the number of updates per machine */
 SELECT 
     m.machine_id, COUNT(ul.update_id) AS update_count
-FROM 
-    Machines m
-LEFT JOIN 
-    Update_Logs ul ON m.machine_id = ul.machine_id
-GROUP BY 
-    m.machine_id;
+FROM Machines m
+LEFT JOIN Update_Logs ul ON m.machine_id = ul.machine_id
+GROUP BY m.machine_id;
 
-/*Show all updates for a specific machine*/
+/* Show all updates for a specific machine (use an actual machine_id, e.g., 'MCH123ABC') */
 SELECT 
-    ul.update_id, p.version_number, ul.update_status, ul.time_applied
-FROM 
-    Update_Logs ul
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    ul.machine_id = 1;  
+    ul.update_id, 
+    p.version_number, 
+    ul.update_status, 
+    ul.time_applied
+FROM Update_Logs ul
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE ul.machine_id = 'MCH123ABC';
 
-/*Licence Management Queries*/
-
-/*Show all valid licences*/
+--------------------------------------------------
+/* Licence Management Queries */
+/* Show all expired licences */
 SELECT 
-    l.license_key, m.machine_id, l.validity_status, l.expiration_date
-FROM 
-    Licences l
-JOIN 
-    Machines m ON l.machine_id = m.machine_id
-WHERE 
-    l.validity_status = 'Valid'
-    AND l.expiration_date > CURRENT_TIMESTAMP;
+    l.licence_key, 
+    m.machine_id, 
+    l.expiration_date
+FROM Licences l
+JOIN Machines m ON l.machine_id = m.machine_id
+WHERE l.expiration_date <= CURRENT_TIMESTAMP;
 
-/*Show all expired licences*/
+--------------------------------------------------
+/* User and Access Management Queries */
+/* Show all users with admin access to a specific machine */
 SELECT 
-    l.license_key, m.machine_id, l.expiration_date
-FROM 
-    Licences l
-JOIN 
-    Machines m ON l.machine_id = m.machine_id
-WHERE 
-    l.expiration_date <= CURRENT_TIMESTAMP;
+    u.user_id,
+    u.name,
+    c.access_granted_at
+FROM Credentials c
+JOIN Users u ON c.user_id = u.user_id
+WHERE u.role = 'Admin'
+  AND c.machine_id = 'MCH123ABC';
 
-/*User and Acces Management Queries*/
-
-/*Show all users with admin access to a machine*/
+/* Show all machines a specific user has access to */
 SELECT 
-    u.user_id, u.name, c.access_level, c.access_granted_at
-FROM 
-    Credentials c
-JOIN 
-    Users u ON c.user_id = u.user_id
-WHERE 
-    c.access_level = 'Admin'
-    AND c.machine_id = 1;  -- Replace with the specific machine ID
+    m.machine_id,
+    m.machine_name,
+    c.access_granted_at
+FROM Machines m
+JOIN Credentials c ON m.machine_id = c.machine_id
+WHERE c.user_id = 'E123';
 
-/*Show all machines a specific user has access to*/
+/* Show access logs for a specific user (e.g., user_id 'E123') */
 SELECT 
-    m.machine_id, c.access_level, c.access_granted_at
-FROM 
-    Machines m
-JOIN 
-    Credentials c ON m.machine_id = c.machine_id
-WHERE 
-    c.user_id = 2; 
+    al.log_id, 
+    al.time_performed
+FROM Action_Logs al
+WHERE al.user_id = 'E123';
 
-/*Show access logs for a specific user*/
+--------------------------------------------------
+/* Machine Monitoring and Status Queries */
+/* Show all machines that are currently online (via Machine_Status) */
 SELECT 
-    al.log_id, al.machine_id, al.action, al.time_performed
-FROM 
-    Action_Logs al
-WHERE 
-    al.user_id = 3;  -- Replace with the user ID
+    m.machine_id, 
+    m.machine_name, 
+    ms.is_online, 
+    ms.last_seen
+FROM Machines m
+JOIN Machine_Status ms ON m.machine_id = ms.machine_id
+WHERE ms.is_online = TRUE;
 
-/*Machine Monitoring and Status Queries*/
-
-/*Show all alive machines*/
-SELECT * FROM Machines WHERE machine_status = 'Alive';
-
-/*Show all machines with high memory usage*/
-SELECT * FROM Machines WHERE memory_usage > 80.0;
-
-/*Show all idle machines*/
-SELECT * FROM Machines WHERE activity_status = 'Idle';
-
-/*Show all offline machines*/
-SELECT * FROM Machines WHERE machine_status = 'Shutdown' OR activity_status = 'Offline';
-
-
-/*Package Version queries*/
-
-/*Show all versions running a specific package version*/
+--------------------------------------------------
+/* Package Version Queries */
+/* Show all machines running a specific package version, e.g., version_number 1.2 */
 SELECT 
-    m.machine_id, p.version_number
-FROM 
-    Machines m
-JOIN 
-    Update_Logs ul ON m.machine_id = ul.machine_id
-JOIN 
-    Packages p ON ul.package_id = p.package_id
-WHERE 
-    p.version_number = 1.2;
-	
-/*Action Log and Auditing Queries*/
+    m.machine_id, 
+    p.version_number
+FROM Machines m
+JOIN Update_Logs ul ON m.machine_id = ul.machine_id
+JOIN Packages p ON ul.package_id = p.package_id
+WHERE p.version_number = 1.2;
 
-/*Show all actions performed on a specific machine*/
+--------------------------------------------------
+/* Action Log and Auditing Queries */
+/* Show all actions performed related to Machines (filtering by the entity name 'Machine') */
 SELECT 
-    al.log_id, u.name, al.action, al.time_performed
-FROM 
-    Action_Logs al
-JOIN 
-    Users u ON al.user_id = u.user_id
-WHERE 
-    al.machine_id = 1;  -- Replace with the machine ID
+    al.log_id, 
+    u.name AS performed_by, 
+    al.entity_name, 
+    al.time_performed
+FROM Action_Logs al
+JOIN Users u ON al.user_id = u.user_id
+WHERE al.entity_name = 'Machine';
 
-/*Show the most recent actions performed by each user*/
+/* Show the most recent action performed by each user */
 SELECT 
-    al.user_id, u.name, al.action, MAX(al.time_performed) AS last_action_time
-FROM 
-    Action_Logs al
-JOIN 
-    Users u ON al.user_id = u.user_id
-GROUP BY 
-    al.user_id, u.name;
+    al.user_id, 
+    u.name, 
+    MAX(al.time_performed) AS last_action_time
+FROM Action_Logs al
+JOIN Users u ON al.user_id = u.user_id
+GROUP BY al.user_id, u.name;
 
-/*Show all actions related to update rollbacks*/
-SELECT 
-    al.log_id, al.machine_id, u.name, al.time_performed
-FROM 
-    Action_Logs al
-JOIN 
-    Users u ON al.user_id = u.user_id
-WHERE 
-    al.action = 'rollback_initiated';
+--------------------------------------------------
 
 /*Role-Based Access Control*/
 
@@ -469,14 +433,15 @@ GRANT SELECT, INSERT, UPDATE ON upflux.Packages TO 'Engineer';
 CREATE ROLE 'Admin', 'Engineer';
 
 -- Admin Role: Full Permissions on All Tables
-GRANT ALL PRIVILEGES ON upflux_db.* TO 'Admin';
+GRANT ALL PRIVILEGES ON upflux.* TO 'Admin';
 
 -- Engineer Role: Specific Permissions
-GRANT SELECT ON upflux_db.Machines TO 'Engineer';
-GRANT SELECT ON upflux_db.Update_Logs TO 'Engineer';
-GRANT SELECT, INSERT, UPDATE ON upflux_db.Packages TO 'Engineer';
+GRANT SELECT ON upflux.Machines TO 'Engineer';
+GRANT SELECT ON upflux.Update_Logs TO 'Engineer';
+GRANT SELECT, INSERT, UPDATE ON upflux.Packages TO 'Engineer';
 
 DELIMITER //
+
 CREATE PROCEDURE CreateUser(
     IN p_name VARCHAR(255), 
     IN p_email VARCHAR(255), 
@@ -486,21 +451,21 @@ CREATE PROCEDURE CreateUser(
 BEGIN
     DECLARE v_user_id VARCHAR(50);
     DECLARE v_username VARCHAR(255);
-    
+
     -- Generate a username based on the email (before '@')
     SET v_username = SUBSTRING_INDEX(p_email, '@', 1);
 
-    -- Insert into Users table
-    INSERT INTO Users (name, email, role) 
-    VALUES (p_name, p_email, p_role);
+    -- Generate a unique user id using UUID()
+    SET v_user_id = UUID();
 
-    -- Get the last inserted user_id
-    SET v_user_id = LAST_INSERT_ID();
+    -- Insert into Users table with the generated user_id
+    INSERT INTO Users (user_id, name, email, role) 
+    VALUES (v_user_id, p_name, p_email, p_role);
 
-    -- For Admin, insert into Admin_Details with password hash
+    -- For Admin, insert into Admin_Details with password hash and a generated admin_id
     IF p_role = 'Admin' THEN
-        INSERT INTO Admin_Details (user_id, password_hash) 
-        VALUES (v_user_id, SHA2(p_password, 256));
+        INSERT INTO Admin_Details (admin_id, user_id, password_hash) 
+        VALUES (UUID(), v_user_id, SHA2(p_password, 256));
     END IF;
 
     -- Create a MySQL user for the newly added user
@@ -535,6 +500,7 @@ BEGIN
     DEALLOCATE PREPARE stmt;
 END //
 DELIMITER ;
+
 
 /* Attribute-Based Access Control */
 DELIMITER //
@@ -848,6 +814,23 @@ SELECT
 FROM Users
 WHERE role = 'Engineer';
 
+-- View engineers and whether they are currently revoked or not
+CREATE VIEW Engineer_Revocation_Status AS
+SELECT 
+    u.user_id,
+    u.name,
+    u.email,
+    u.last_login,
+    CASE 
+        WHEN COUNT(rt.revoke_id) > 0 THEN 'Revoked'
+        ELSE 'Active'
+    END AS revocation_status
+FROM Users u
+LEFT JOIN Revoked_tokens rt ON u.user_id = rt.user_id
+WHERE u.role = 'Engineer'
+GROUP BY u.user_id, u.name, u.email, u.last_login;
+
+
 -- View details about admin users
 CREATE VIEW Admin_Users AS
 SELECT 
@@ -931,22 +914,19 @@ FROM
 JOIN 
     Licences l ON m.machine_id = l.machine_id
 WHERE 
-    l.expiration_date BETWEEN CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP + INTERVAL '30 days';
+    l.expiration_date BETWEEN CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP + INTERVAL 30 DAY
 
 -- View relevant application data for an engineer
 CREATE VIEW Application_Details AS
 SELECT 
     m.app_name,
-    av.version AS current_version,
-    u1.name AS added_by,
-    av.date AS last_updated,
-    u2.name AS updated_by
+    m.current_version,
+    u.name AS updated_by,
+    av.date AS last_updated
 FROM Machines m
-LEFT JOIN (
-    SELECT av1.machine_id, av1.version, av1.updated_by, av1.date
-    FROM Application_Versions av1
-    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.machine_id = av2.machine_id)
-) av ON m.machine_id = av.machine_id
-LEFT JOIN Users u1 ON m.added_by = u1.user_id
-LEFT JOIN Users u2 ON av.updated_by = u2.user_id;
+LEFT JOIN Application_Versions av
+    ON m.current_version = av.version_name
+LEFT JOIN Users u
+    ON av.uploaded_by = u.user_id;
+
 
