@@ -336,20 +336,9 @@ WHERE
 
 /*Licence Management Queries*/
 
-/*Show all valid licences*/
-SELECT 
-    l.license_key, m.machine_id, l.validity_status, l.expiration_date
-FROM 
-    Licences l
-JOIN 
-    Machines m ON l.machine_id = m.machine_id
-WHERE 
-    l.validity_status = 'Valid'
-    AND l.expiration_date > CURRENT_TIMESTAMP;
-
 /*Show all expired licences*/
 SELECT 
-    l.license_key, m.machine_id, l.expiration_date
+    l.licence_key, m.machine_id, l.expiration_date
 FROM 
     Licences l
 JOIN 
