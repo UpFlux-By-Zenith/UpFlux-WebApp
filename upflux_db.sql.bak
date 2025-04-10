@@ -381,11 +381,6 @@ FROM Machines m
 JOIN Machine_Status ms ON m.machine_id = ms.machine_id
 WHERE ms.is_online = TRUE;
 
-/* 
--- (Removed queries referencing memory_usage or activity_status,
--- as these fields are not defined in the current Machines table.)
-*/
-
 --------------------------------------------------
 /* Package Version Queries */
 /* Show all machines running a specific package version, e.g., version_number 1.2 */

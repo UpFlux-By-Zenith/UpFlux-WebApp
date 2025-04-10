@@ -814,6 +814,23 @@ SELECT
 FROM Users
 WHERE role = 'Engineer';
 
+-- View engineers and whether they are currently revoked or not
+CREATE VIEW Engineer_Revocation_Status AS
+SELECT 
+    u.user_id,
+    u.name,
+    u.email,
+    u.last_login,
+    CASE 
+        WHEN COUNT(rt.revoke_id) > 0 THEN 'Revoked'
+        ELSE 'Active'
+    END AS revocation_status
+FROM Users u
+LEFT JOIN Revoked_tokens rt ON u.user_id = rt.user_id
+WHERE u.role = 'Engineer'
+GROUP BY u.user_id, u.name, u.email, u.last_login;
+
+
 -- View details about admin users
 CREATE VIEW Admin_Users AS
 SELECT 
