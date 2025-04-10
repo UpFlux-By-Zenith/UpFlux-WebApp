@@ -917,16 +917,13 @@ WHERE
 CREATE VIEW Application_Details AS
 SELECT 
     m.app_name,
-    av.version AS current_version,
-    u1.name AS added_by,
-    av.date AS last_updated,
-    u2.name AS updated_by
+    m.current_version,
+    u.name AS updated_by,
+    av.date AS last_updated
 FROM Machines m
-LEFT JOIN (
-    SELECT av1.machine_id, av1.version, av1.updated_by, av1.date
-    FROM Application_Versions av1
-    WHERE av1.date = (SELECT MAX(av2.date) FROM Application_Versions av2 WHERE av1.machine_id = av2.machine_id)
-) av ON m.machine_id = av.machine_id
-LEFT JOIN Users u1 ON m.added_by = u1.user_id
-LEFT JOIN Users u2 ON av.updated_by = u2.user_id;
+LEFT JOIN Application_Versions av
+    ON m.current_version = av.version_name
+LEFT JOIN Users u
+    ON av.uploaded_by = u.user_id;
+
 

@@ -447,12 +447,12 @@ GRANT SELECT, INSERT, UPDATE ON upflux.Packages TO 'Engineer';
 CREATE ROLE 'Admin', 'Engineer';
 
 -- Admin Role: Full Permissions on All Tables
-GRANT ALL PRIVILEGES ON upflux_db.* TO 'Admin';
+GRANT ALL PRIVILEGES ON upflux.* TO 'Admin';
 
 -- Engineer Role: Specific Permissions
-GRANT SELECT ON upflux_db.Machines TO 'Engineer';
-GRANT SELECT ON upflux_db.Update_Logs TO 'Engineer';
-GRANT SELECT, INSERT, UPDATE ON upflux_db.Packages TO 'Engineer';
+GRANT SELECT ON upflux.Machines TO 'Engineer';
+GRANT SELECT ON upflux.Update_Logs TO 'Engineer';
+GRANT SELECT, INSERT, UPDATE ON upflux.Packages TO 'Engineer';
 
 DELIMITER //
 
