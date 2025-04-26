@@ -26,6 +26,12 @@ public interface IAuthService
         string engineerName = "Engineer");
 
     /// <summary>
+    /// Method to allow guest login
+    /// </summary>
+    /// <returns>JWT Access Token</returns>
+    string GuestLogin();
+
+    /// <summary>
     /// Generates a new token for an engineer with specified machine access.
     /// </summary>
     /// <param name="engineerEmail">The email address of the engineer.</param>

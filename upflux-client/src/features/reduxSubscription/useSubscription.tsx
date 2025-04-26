@@ -15,8 +15,7 @@ import { useAppDispatch } from "./hook";
 import { IClusterRecommendation, updateClusterRecommendation } from "./clusterRecommendationSlice";
 import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import { IMachine } from "../../api/reponseTypes";
-
-const hubUrl = "http://localhost:5000/notificationHub"; // Replace with your SignalR hub URL
+import { HUB_URL } from "../../api/apiConsts";
 
 export const useSubscription = (groupId: string) => {
   const dispatch = useAppDispatch();
@@ -32,7 +31,7 @@ export const useSubscription = (groupId: string) => {
       CreateSubscription(groupId)
         .then(() => {
           connection = new signalR.HubConnectionBuilder()
-            .withUrl(hubUrl)
+            .withUrl(HUB_URL)
             .withAutomaticReconnect()
             .build();
           dispatch(changeConnectionStatus(true));
