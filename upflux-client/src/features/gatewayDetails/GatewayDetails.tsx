@@ -144,9 +144,11 @@ export const GatewayDetails = () => {
               <Box className="circle red"></Box>
               <Text size="sm">{shutdownCount} Offline</Text>
             </Group>
+            <Group className="last-legend-item">
             <Group className="legend-item">
               <Box className="circle gray"></Box>
               <Text size="sm">{machineValues.length === 0 ? 1 : 0} Unknown</Text>
+            </Group>
             </Group>
           </Stack>
         </Group>
