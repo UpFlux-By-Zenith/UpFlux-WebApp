@@ -12,6 +12,7 @@ export const AUTH_API = {
   GET_ENGINEER_TOKEN: `${API_BASE_URL}/api/Auth/admin/create-engineer-token`,
   ADMIN_LOGIN: `${API_BASE_URL}/api/Auth/admin/login`,
   VERIFY_TOKEN: `${API_BASE_URL}/api/Auth/parse-token`,
+  GUEST_LOGIN: `${API_BASE_URL}/api/Auth/guest/login`,
 };
 
 export const ADMIN_REQUEST_API = {
