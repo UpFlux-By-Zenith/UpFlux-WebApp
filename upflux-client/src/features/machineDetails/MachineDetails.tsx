@@ -12,10 +12,12 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import "./machineDetails.css";
 import ReactSpeedometer from "react-d3-speedometer";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
 import { getMachineDetails } from "../../api/applicationsRequest";
+import { guestLoginSubmit } from "../../api/loginRequests";
+import { useSubscription } from "../reduxSubscription/useSubscription";
 
 export const MachineDetails: React.FC = () => {
   const storedMachines = useSelector((root: RootState) => root.machines.messages);
@@ -26,10 +28,27 @@ export const MachineDetails: React.FC = () => {
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [appVersions, setAppVersions] = useState<{ appName: string; appVersion: string; lastUpdate: string }[]>([]);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getGuestToken = async () => {
+      const token = await guestLoginSubmit();
+      if (token) {
+        sessionStorage.setItem('authToken', token);
+        setAuthToken(token);
+      }
+      else{
+        console.log("Failed to fetch guest token");
+      }
+    };
+
+    getGuestToken();
+  }, []);
+
+  useSubscription(authToken);
 
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width: 768px)");
-
 
   const fetchAvailableVersions = async () => {
     const machineDetails = await getMachineDetails();

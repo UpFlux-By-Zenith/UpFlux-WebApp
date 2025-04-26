@@ -69,4 +69,32 @@ export const adminLoginSubmit = async (payload: AdminLoginPayload): Promise<stri
   }
 };
 
+export const guestLoginSubmit = async () => {
 
+  try {
+      
+      const response = await fetch(AUTH_API.GUEST_LOGIN, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+  
+      else {
+        const errorData = await response.json();
+        console.error('Login error:', errorData);
+        return 'Login failed. Please check your credentials and token.';
+      }
+  
+    }
+  
+    catch (error) {
+      console.error('Error during login request:', error);
+      return 'An error occurred while submitting the login request.';
+    }
+  }
