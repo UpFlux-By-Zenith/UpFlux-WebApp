@@ -15,9 +15,10 @@ import ReactSpeedometer from "react-d3-speedometer";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { RootState } from "../reduxSubscription/store";
-import { getMachineDetails } from "../../api/applicationsRequest";
+import { getMachineStoredVersions } from "../../api/applicationsRequest";
 import { guestLoginSubmit } from "../../api/loginRequests";
 import { useSubscription } from "../reduxSubscription/useSubscription";
+import { adminLogin } from "../../api/adminApiActions";
 
 export const MachineDetails: React.FC = () => {
   const storedMachines = useSelector((root: RootState) => root.machines.messages);
@@ -30,19 +31,39 @@ export const MachineDetails: React.FC = () => {
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
+  const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL!;
+  const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD!;
+
+
   useEffect(() => {
-    const getGuestToken = async () => {
-      const token = await guestLoginSubmit();
-      if (token) {
-        sessionStorage.setItem('authToken', token);
-        setAuthToken(token);
-      }
-      else{
-        console.log("Failed to fetch guest token");
+    const getAdminToken = async () => {
+      try {
+        const response = await adminLogin({
+          email: ADMIN_EMAIL,
+          password: ADMIN_PASSWORD,
+        });
+  
+        if (response.error) {
+          console.error("Admin login failed:", response.error);
+          return;
+        }
+  
+        if (response.token) {
+          sessionStorage.setItem("authToken", response.token);
+          setAuthToken(response.token);
+        }
+      } catch (error: any) {
+        if (error.response) {
+          console.error(error.response.data?.message || "Admin login failed.");
+        } else if (error.request) {
+          console.error("Network error. Please check your connection.");
+        } else {
+          console.error("Unexpected error during admin login.");
+        }
       }
     };
-
-    getGuestToken();
+  
+    getAdminToken();
   }, []);
 
   useSubscription(authToken);
@@ -51,25 +72,29 @@ export const MachineDetails: React.FC = () => {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const fetchAvailableVersions = async () => {
-    const machineDetails = await getMachineDetails();
+    const machineDetails = await getMachineStoredVersions();
   
-    if (typeof machineDetails === "string" || machineDetails === null) {
-      console.error("Error fetching machine details:", machineDetails);
-      setAvailableVersions([]);
-      return;
-    }
+    // if (!machineDetails || typeof machineDetails !== "object" || !Array.isArray(machineDetails.applications)) {
+    //   console.error("Invalid machine details format:", machineDetails);
+    //   setAvailableVersions([]);
+    //   return;
+    // }
   
-    const matchingApps = machineDetails.applications.filter(
+    console.log("Machine Details:", machineDetails);
+
+    const matchingApps = machineDetails.filter(
       (app) => app.machineId === selectedMachineId
     );
+
+    console.log("Matching Apps:", matchingApps);
   
-    // Flatten versions from all apps on this machine
-    const versions: string[] = matchingApps.flatMap((app) =>
-      app.versions.map((version) => version.versionName)
-    );
+    const versions: string[] = matchingApps.map((app) => app.versionName);
   
+    console.log("Versions:", versions);
+
     setAvailableVersions(versions);
   };
+  
   
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -272,3 +297,7 @@ export const MachineDetails: React.FC = () => {
     </Stack>
   );
 };
+function login(ADMIN: any, token: any) {
+  throw new Error("Function not implemented.");
+}
+
