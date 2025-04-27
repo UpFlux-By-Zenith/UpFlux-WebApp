@@ -19,10 +19,9 @@ import { getMachineStoredVersions } from "../../api/applicationsRequest";
 import { guestLoginSubmit } from "../../api/loginRequests";
 import { useSubscription } from "../reduxSubscription/useSubscription";
 import { adminLogin } from "../../api/adminApiActions";
+import { ROLES, useAuth } from "../../common/authProvider/AuthProvider";
 
 export const MachineDetails: React.FC = () => {
-  const storedMachines = useSelector((root: RootState) => root.machines.messages);
-  const machineMetrics = useSelector((state: RootState) => state.metrics.metrics);
 
   const [modalOpened, setModalOpened] = useState(false);
   const [selectedMachineName, setSelectedMachineName] = useState("");
@@ -30,43 +29,50 @@ export const MachineDetails: React.FC = () => {
   const [appVersions, setAppVersions] = useState<{ appName: string; appVersion: string; lastUpdate: string }[]>([]);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const { login, isAuthenticated } = useAuth();
 
   const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL!;
   const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD!;
 
 
-  useEffect(() => {
-    const getAdminToken = async () => {
-      try {
-        const response = await adminLogin({
-          email: ADMIN_EMAIL,
-          password: ADMIN_PASSWORD,
-        });
-  
-        if (response.error) {
-          console.error("Admin login failed:", response.error);
-          return;
+   useEffect(() => {
+      const getAdminToken = async () => {
+        try {
+          const response = await adminLogin({
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
+          });
+    
+          if (response.error) {
+            console.error("Admin login failed:", response.error);
+            return;
+          }
+    
+          if (response.token) {
+            console.log("Admin token:", response.token);
+            sessionStorage.setItem("authToken", response.token);
+            setAuthToken(response.token);
+            login(ROLES.ADMIN, response.token)
+          }
+        } catch (error: any) {
+          if (error.response) {
+            console.error(error.response.data?.message || "Admin login failed.");
+          } else if (error.request) {
+            console.error("Network error. Please check your connection.");
+          } else {
+            console.error("Unexpected error during admin login.");
+          }
         }
-  
-        if (response.token) {
-          sessionStorage.setItem("authToken", response.token);
-          setAuthToken(response.token);
-        }
-      } catch (error: any) {
-        if (error.response) {
-          console.error(error.response.data?.message || "Admin login failed.");
-        } else if (error.request) {
-          console.error("Network error. Please check your connection.");
-        } else {
-          console.error("Unexpected error during admin login.");
-        }
-      }
-    };
-  
-    getAdminToken();
-  }, []);
+      };
+    
+      getAdminToken();
+    }, []);
 
-  useSubscription(authToken);
+
+    useSubscription(authToken);
+
+    const storedMachines = useSelector((root: RootState) => root.machines.messages);
+    const machineMetrics = useSelector((state: RootState) => state.metrics.metrics);
 
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -271,33 +277,7 @@ export const MachineDetails: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Modal for Configure Update */}
-      <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title="Configure Update"
-        centered
-      >
-        <Box>
-          <Text>Select App*</Text>
-          <Select
-            data={appVersions.map((app) => app.appName)}
-            placeholder="Select App"
-          />
-          <Text mt="md">Select App Version*</Text>
-          <Select
-            data={appVersions.map((app) => app.appVersion)}
-            placeholder="Select App Version"
-          />
-          <Button mt="md" fullWidth>
-            Deploy
-          </Button>
-        </Box>
-      </Modal>
     </Stack>
   );
 };
-function login(ADMIN: any, token: any) {
-  throw new Error("Function not implemented.");
-}
 

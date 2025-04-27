@@ -22,11 +22,18 @@ export const useSubscription = (groupId: string) => {
   const connectionStatus = useSelector((root: RootState) => root.connectionStatus.isConnected)
   const isConnectedRef = useRef(false);
 
+  if (!groupId) {
+    groupId = sessionStorage.getItem("authToken")
+  }
+
   useEffect(() => {
     let connection: signalR.HubConnection | null = null;
 
     if (!connectionStatus && !isConnectedRef.current) {
       isConnectedRef.current = true; // Mark connection as being established
+
+      console.log("Creating SignalR connection...");
+      console.log("Group ID:", groupId);
 
       CreateSubscription(groupId)
         .then(() => {
