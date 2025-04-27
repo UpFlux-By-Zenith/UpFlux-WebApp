@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select, Title, Tabs } from "@mantine/core";
-import { DonutChart } from "@mantine/charts";
+import { Box, Button, Group, Stack, Table, Text, Badge, Modal, Select, Title, Tabs, Paper } from "@mantine/core";
+import { ChartTooltipProps, DonutChart } from "@mantine/charts";
 import { useNavigate } from "react-router-dom";
 import { getAccessibleMachines } from "../../api/accessMachinesRequest";
 import "./gatewayDetails.css";
@@ -13,6 +13,7 @@ import { RootState } from "../reduxSubscription/store";
 import { getMachineStatus, getMachineStoredVersions } from "../../api/applicationsRequest";
 import { IMachineStatus } from "../reduxSubscription/subscriptionConsts";
 import { adminLogin } from "../../api/adminApiActions";
+import { ScatterChart } from "@mantine/charts";
 
 export const GatewayDetails = () => {
   const [rollbackModalOpened, setRollbackModalOpened] = useState(false);
@@ -119,14 +120,54 @@ export const GatewayDetails = () => {
     { name: "Unknown", value: machineValues.length === 0 ? 1 : 0, color: "#6c757d" },
   ];
 
-  const getStatusBadge = (isOnline) => {
-    if (isOnline) return <Badge color="green">Online</Badge>;
-    return <Badge color="red">Offline</Badge>;
+  interface IPlotData {
+    color: string;
+    name: string;
+    machineId: string[];
+    data: {
+      x: number;
+      y: number;
+    }[];
+  }
+  
+  const hardcodedPlotData: IPlotData[] = [
+    {
+      color: "#40C057",
+      name: "Cluster A",
+      machineId: ["machine1", "machine2"],
+      data: [
+        { x: 10, y: 20 },
+        { x: 15, y: 25 },
+        { x: 20, y: 30 },
+      ],
+    },
+    {
+      color: "#FA5252",
+      name: "Cluster B",
+      machineId: ["machine3", "machine4"],
+      data: [
+        { x: 5, y: 8 },
+        { x: 12, y: 18 },
+        { x: 7, y: 14 },
+      ],
+    },
+  ];
+  
+  const ChartTooltip = ({ payload }: ChartTooltipProps) => {
+    if (!payload) return null;
+    return (
+      <Paper px="md" py="sm" withBorder shadow="md" radius="md">
+        <Text fz="sm">
+          {payload["0"]?.payload.name} — {payload["0"]?.payload.machineId}
+        </Text>
+      </Paper>
+    );
   };
 
   return (
 
-      <Box className="content-wrapper">
+    <Box className="chart-wrapper">
+      <Box className="donut-chart-container">
         <Group className="overview-section">
           <Box className="chart">
             <DonutChart className="chart" size={180} thickness={14} withTooltip={false} data={chartData} />
@@ -152,6 +193,20 @@ export const GatewayDetails = () => {
             </Group>
           </Stack>
         </Group>
-      </Box>
+    
+        <Box className="scatter-chart-container" p="md">
+      <ScatterChart
+        w="100%"
+        h={500}
+        data={hardcodedPlotData}
+        tooltipProps={{
+          content: ({ payload }) => <ChartTooltip payload={payload} />,
+        }}
+        dataKey={{ x: 'x', y: 'y' }}
+        withLegend
+      />
+    </Box>
+  </Box>
+  </Box>
   );
 };
