@@ -68,11 +68,11 @@ export const MachineDetails: React.FC = () => {
       getAdminToken();
     }, []);
 
+    const storedMachines = useSelector((root: RootState) => root.machines.messages);
+    console.log("1 Stored Machines:", storedMachines);
+    const machineMetrics = useSelector((state: RootState) => state.metrics.metrics);
 
     useSubscription(authToken);
-
-    const storedMachines = useSelector((root: RootState) => root.machines.messages);
-    const machineMetrics = useSelector((state: RootState) => state.metrics.metrics);
 
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -105,7 +105,7 @@ export const MachineDetails: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const machineId = params.get("machineId");
-  
+
     if (machineId) {
       setSelectedMachineId(machineId);
   
@@ -114,7 +114,7 @@ export const MachineDetails: React.FC = () => {
       if (matchedMachine) {
         setSelectedMachineName(matchedMachine.machineName);
       } else {
-        setSelectedMachineName("Unknown Machine");
+        setSelectedMachineName(machineId);
       }
     }
   }, [location.search, storedMachines]);

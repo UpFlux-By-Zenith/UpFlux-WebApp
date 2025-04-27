@@ -58,7 +58,7 @@ export const GatewayDetails = () => {
     
   //Machine list from redux 
   const storedMachines = useSelector((root: RootState) => root.machines.messages)
-
+    console.log(storedMachines)
   const dispatch = useDispatch();
 
   useSubscription(authToken);
