@@ -18,13 +18,12 @@ import { IMachine } from "../../api/reponseTypes";
 import { HUB_URL } from "../../api/apiConsts";
 
 export const useSubscription = (groupId: string) => {
-  const dispatch = useAppDispatch();
-  const connectionStatus = useSelector((root: RootState) => root.connectionStatus.isConnected)
-  const isConnectedRef = useRef(false);
-
   if (!groupId) {
     groupId = sessionStorage.getItem("authToken")
   }
+  const dispatch = useAppDispatch();
+  const connectionStatus = useSelector((root: RootState) => root.connectionStatus.isConnected)
+  const isConnectedRef = useRef(false);
 
   useEffect(() => {
     let connection: signalR.HubConnection | null = null;
