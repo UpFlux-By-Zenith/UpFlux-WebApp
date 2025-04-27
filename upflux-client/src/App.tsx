@@ -16,8 +16,8 @@ import { CommonDashboard } from './features/commonDashboard/CommonDashboard';
 import store from './features/reduxSubscription/store';
 import SessionTimeout from './features/sessionTimeout/SessionTimeout';
 import '@mantine/charts/styles.css';
-import { MachineDetails } from './features/machineDetails/MachineDetails';
-import MachineDetailsRoute from './features/machineDetails/MachineDetailsRoute';
+import { MachineDetails } from './features/guestPage/MachineDetails';
+import MachineDetailsRoute from './features/guestPage/MachineDetailsRoute';
 export const App = () => {
 
   // This function is called when the session times out.

@@ -1,7 +1,7 @@
 import { IMachineLicense } from '../features/adminDashboard/ManageMachines';
 import { IEngineer } from '../features/adminDashboard/ViewEngineers';
 import { IMachineStatus } from '../features/reduxSubscription/subscriptionConsts';
-import { ADMIN_REQUEST_API, DATA_REQUEST_API, LICENCE_APIS, PACKAGE_DEPOYMENT, ROLLBACK } from './apiConsts';
+import { ADMIN_REQUEST_API, CREATE_NOTIFICATION, DATA_REQUEST_API, LICENCE_APIS, PACKAGE_DEPOYMENT, ROLLBACK } from './apiConsts';
 
 interface MachineDetailsResponse {
   applications: {
@@ -136,7 +136,7 @@ export const CreateSubscription = async (groupId: string) => {
       return null;
     }
 
-    const response = await fetch("http://upflux.cloud:5000/api/Notification/create-group", {
+    const response = await fetch(CREATE_NOTIFICATION, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ export const deployPackage = async (appName: string, ver: string, targetedMachin
       return null;
     }
 
-    const response = await fetch("http://upflux.cloud:5000/api/PackageManagement/packages/upload", {
+    const response = await fetch(PACKAGE_DEPOYMENT.MULTIPLE_DEPLOY, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
