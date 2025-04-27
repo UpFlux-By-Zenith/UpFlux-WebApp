@@ -16,8 +16,8 @@ import { CommonDashboard } from './features/commonDashboard/CommonDashboard';
 import store from './features/reduxSubscription/store';
 import SessionTimeout from './features/sessionTimeout/SessionTimeout';
 import '@mantine/charts/styles.css';
-import { MachineDetails } from './features/guestPage/MachineDetails';
 import MachineDetailsRoute from './features/guestPage/MachineDetailsRoute';
+import GatewayDetailsRoute from './features/gatewayDetails/GatewayDetailsRoute';
 export const App = () => {
 
   // This function is called when the session times out.
@@ -40,6 +40,9 @@ export const App = () => {
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/machine-details" element={<MachineDetailsRoute />} />
+              <Route path="/gateway-details" element={<GatewayDetailsRoute />} />
+
+              {/* Protected Routes - No session timeout here */}
 
               {/* Protected Routes - Wrap with SessionTimeout */}
               <Route
