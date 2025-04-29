@@ -60,7 +60,8 @@ public class Program
             options.AddPolicy("AllowAllOriginsWithCredentials", policy =>
             {
                 policy
-                    .SetIsOriginAllowed(origin => true) // Accepts any origin
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .WithOrigins("https://upflux.cloud") // Explicitly allow the frontend URL
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
