@@ -14,52 +14,53 @@ import { getMachineStatus, getMachineStoredVersions } from "../../api/applicatio
 import { IMachineStatus } from "../reduxSubscription/subscriptionConsts";
 import { adminLogin } from "../../api/adminApiActions";
 import { ScatterChart } from "@mantine/charts";
+import { ClusteringChart } from "../clustering/ClusteringChart";
 
 export const GatewayDetails = () => {
   const [rollbackModalOpened, setRollbackModalOpened] = useState(false);
   const [machines, setMachines] = useState<IMachine[]>([]);
   const [loading, setLoading] = useState(true);
   const [updateModal, setUpdateModal] = useState<boolean>(false)
-   const [authToken, setAuthToken] = useState<string | null>(null);
-  
-    const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL!;
-    const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD!;
-  
-  
-    useEffect(() => {
-      const getAdminToken = async () => {
-        try {
-          const response = await adminLogin({
-            email: ADMIN_EMAIL,
-            password: ADMIN_PASSWORD,
-          });
-    
-          if (response.error) {
-            console.error("Admin login failed:", response.error);
-            return;
-          }
-    
-          if (response.token) {
-            sessionStorage.setItem("authToken", response.token);
-            setAuthToken(response.token);
-          }
-        } catch (error: any) {
-          if (error.response) {
-            console.error(error.response.data?.message || "Admin login failed.");
-          } else if (error.request) {
-            console.error("Network error. Please check your connection.");
-          } else {
-            console.error("Unexpected error during admin login.");
-          }
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL!;
+  const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD!;
+
+
+  useEffect(() => {
+    const getAdminToken = async () => {
+      try {
+        const response = await adminLogin({
+          email: ADMIN_EMAIL,
+          password: ADMIN_PASSWORD,
+        });
+
+        if (response.error) {
+          console.error("Admin login failed:", response.error);
+          return;
         }
-      };
-    
-      getAdminToken();
-    }, []);
-    
+
+        if (response.token) {
+          sessionStorage.setItem("authToken", response.token);
+          setAuthToken(response.token);
+        }
+      } catch (error: any) {
+        if (error.response) {
+          console.error(error.response.data?.message || "Admin login failed.");
+        } else if (error.request) {
+          console.error("Network error. Please check your connection.");
+        } else {
+          console.error("Unexpected error during admin login.");
+        }
+      }
+    };
+
+    getAdminToken();
+  }, []);
+
   //Machine list from redux 
   const storedMachines = useSelector((root: RootState) => root.machines.messages)
-    console.log(storedMachines)
+  console.log(storedMachines)
   const dispatch = useDispatch();
 
   useSubscription(authToken);
@@ -129,7 +130,7 @@ export const GatewayDetails = () => {
       y: number;
     }[];
   }
-  
+
   const hardcodedPlotData: IPlotData[] = [
     {
       color: "#40C057",
@@ -152,7 +153,7 @@ export const GatewayDetails = () => {
       ],
     },
   ];
-  
+
   const ChartTooltip = ({ payload }: ChartTooltipProps) => {
     if (!payload) return null;
     return (
@@ -186,27 +187,18 @@ export const GatewayDetails = () => {
               <Text size="sm">{shutdownCount} Offline</Text>
             </Group>
             <Group className="last-legend-item">
-            <Group className="legend-item">
-              <Box className="circle gray"></Box>
-              <Text size="sm">{machineValues.length === 0 ? 1 : 0} Unknown</Text>
-            </Group>
+              <Group className="legend-item">
+                <Box className="circle gray"></Box>
+                <Text size="sm">{machineValues.length === 0 ? 1 : 0} Unknown</Text>
+              </Group>
             </Group>
           </Stack>
         </Group>
-    
+
         <Box className="scatter-chart-container" p="md">
-      <ScatterChart
-        w="100%"
-        h={500}
-        data={hardcodedPlotData}
-        tooltipProps={{
-          content: ({ payload }) => <ChartTooltip payload={payload} />,
-        }}
-        dataKey={{ x: 'x', y: 'y' }}
-        withLegend
-      />
+          <ClusteringChart />
+        </Box>
+      </Box>
     </Box>
-  </Box>
-  </Box>
   );
 };

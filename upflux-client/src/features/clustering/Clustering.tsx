@@ -14,6 +14,7 @@ import { PLOT_COLORS } from "./clusteringConsts";
 import { IconAi, IconArrowBigDownLinesFilled, IconBulbFilled } from "@tabler/icons-react";
 import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
 import { notifications } from "@mantine/notifications";
+import { ClusteringChart } from "./ClusteringChart";
 
 interface IPlotData {
   color: string;
@@ -234,29 +235,7 @@ export const Clustering: React.FC = () => {
   return (
     <Box className="clustering-container">
       <Group align="flex-start" className="main-content">
-        <div>
-          <ScatterChart
-            w={800}
-            h={600}
-            data={mappedClusterPlotData}
-            tooltipProps={{
-              content: ({ payload }) => <ChartTooltip payload={payload} />,
-            }}
-            dataKey={{ x: 'x', y: 'y' }}
-            withLegend
-            xAxisLabel="PC 1"
-            yAxisLabel="PC 2"
-          />
-          <Text
-            size="xs"
-            mt="sm"
-            c="dimmed"
-            ta="center"
-          >
-            * Some data points (labelled "Synthetic") have been added for demonstration purposes.
-          </Text>
-        </div>
-
+        <ClusteringChart />
         <Box className="calendar-wrapper" title="Schedule Update" mt="md" style={{ display: 'flex', flexDirection: 'column', gap: "20px" }}>
           <Text className="form-title">Update Scheduling </Text>
 
