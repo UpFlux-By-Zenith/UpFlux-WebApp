@@ -37,7 +37,7 @@ export const useSubscription = (groupId: string) => {
       CreateSubscription(groupId)
         .then(() => {
           connection = new signalR.HubConnectionBuilder()
-            .withUrl(HUB_URL)
+            .withUrl("/notificationHub")
             .withAutomaticReconnect()
             .build();
           dispatch(changeConnectionStatus(true));

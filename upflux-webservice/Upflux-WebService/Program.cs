@@ -224,7 +224,9 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-
+        
+        app.MapHub<NotificationHub>("/notificationHub");
+        
         // Use CORS
         app.UseCors("AllowAllOriginsWithCredentials");
 
@@ -245,6 +247,6 @@ public class Program
         app.MapGrpcService<ControlChannelService>();
 
 
-        app.MapHub<NotificationHub>("/notificationHub");
+
     }
 }
