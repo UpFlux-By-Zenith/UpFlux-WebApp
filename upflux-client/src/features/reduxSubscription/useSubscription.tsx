@@ -37,7 +37,7 @@ export const useSubscription = (groupId: string) => {
       CreateSubscription(groupId)
         .then(() => {
           connection = new signalR.HubConnectionBuilder()
-            .withUrl("/notificationHub")
+            .withUrl("wss://upflux.cloud/notificationHub")  // Use wss:// for secure WebSocket
             .withAutomaticReconnect()
             .build();
           dispatch(changeConnectionStatus(true));

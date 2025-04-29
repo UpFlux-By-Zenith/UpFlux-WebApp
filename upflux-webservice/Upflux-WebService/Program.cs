@@ -41,20 +41,6 @@ public class Program
         // serilog as default logger
         builder.Host.UseSerilog();
 
-        // builder.Services.AddCors(options =>
-        // {
-        //     options.AddPolicy("AllowSpecificOrigins", policy =>
-        //     {
-        //         policy.WithOrigins("http://localhost:3000",
-        //                 "http://127.0.0.1:5500", // Add this
-        //                 "https://localhost:5500" // And this, if you're using HTTPS
-        //             ) // Replace with your client URL(s)
-        //             .AllowAnyHeader()
-        //             .AllowAnyMethod()
-        //             .AllowCredentials(); // Necessary for SignalR negotiation
-        //     });
-        // });
-        //
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAllOriginsWithCredentials", policy =>
@@ -225,14 +211,17 @@ public class Program
             app.UseSwaggerUI();
         }
 
-
         // Use CORS
         app.UseCors("AllowAllOriginsWithCredentials");
 
         // Apply Rate Limiting Middleware
         app.UseRateLimiter();
-        //Enforce HTTPS redirection
+
+        // Enforce HTTPS redirection
         app.UseHttpsRedirection();
+
+        // Use WebSockets before routing
+        app.UseWebSockets();
 
         // Add authentication and authorization middleware
         app.UseAuthentication();
@@ -245,6 +234,10 @@ public class Program
         app.MapGrpcService<LicenceCommunicationService>();
         app.MapGrpcService<ControlChannelService>();
 
+        // Map SignalR Hub for Notification
         app.MapHub<NotificationHub>("/notificationHub");
+
+        // Add fallback route to handle other requests if needed
+        app.MapFallbackToFile("index.html"); // Optional, for SPA routing
     }
 }
