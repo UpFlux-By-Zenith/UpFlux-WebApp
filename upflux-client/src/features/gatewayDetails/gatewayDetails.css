@@ -1,0 +1,65 @@
+/* Parent container wrapping DonutChart + ScatterChart */
+.chart-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap; /* In case screen shrinks, allow wrapping */
+}
+
+/* ScatterChart container */
+.scatter-chart-container {
+  flex: 1;
+  min-width: 300px;
+  max-width: 800px;
+}
+
+
+@media (max-width: 768px) {
+
+    .legend {
+        margin-right: auto;
+        margin-left: 310px;
+        margin-top: -190px;
+        margin-bottom: 100px;
+    }
+
+    .last-legend-item{
+        margin-right: -15px;
+    }
+
+    .chart{
+        margin-right: auto;
+        margin-left: 20px;
+    }
+  
+    .chart-container {
+      width: 100%;
+      height: 220px;
+    }
+  
+    .chart-text {
+      font-size: 20px;
+      margin-left: -47px;
+    }
+  
+    .configure-button,
+    .smart-button {
+      width: 90%;
+    }
+
+    .chart-wrapper {
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    .donut-chart-container {
+      order: 1; /* Donut appears first */
+    }
+  
+    .scatter-chart-container {
+      order: 2; /* ScatterChart appears below donut */
+      width: 98%; 
+    }
+  }

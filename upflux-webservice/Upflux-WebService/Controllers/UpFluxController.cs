@@ -17,4 +17,13 @@ public class UpFluxController : ControllerBase
 
         return $"Application Name: {appName}, Version: {appVersion}";
     }
+
+    [HttpPost("guestview", Name = "GuestView")]
+    public string GuestLogin(string deviceId)
+    {
+        var appName = Assembly.GetExecutingAssembly().GetName().Name;
+        var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+
+        return $"Application Name: {appName}, Version: {appVersion}";
+    }
 }

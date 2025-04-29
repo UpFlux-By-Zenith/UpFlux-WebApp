@@ -150,6 +150,11 @@ public class AuthService : IAuthService
         }
     }
 
+    public string GuestLogin()
+    {
+        return GenerateToken("guest", _context.Machines.Select(m => m.MachineId).ToList(), "Guest");
+    }
+
     public string ParseLoginToken(string engineerEmail, List<string> machineIds, string engineerName = "Engineer")
     {
         var token = GenerateToken(engineerEmail, machineIds, "Engineer");

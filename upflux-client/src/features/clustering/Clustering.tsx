@@ -14,6 +14,7 @@ import { PLOT_COLORS } from "./clusteringConsts";
 import { IconAi, IconArrowBigDownLinesFilled, IconBulbFilled } from "@tabler/icons-react";
 import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
 import { notifications } from "@mantine/notifications";
+import { ClusteringChart } from "./ClusteringChart";
 
 interface IPlotData {
   color: string;
@@ -22,11 +23,21 @@ interface IPlotData {
   data: {
     x: number;
     y: number;
+    machineId: any;
   }[];
 }
 
+interface PlotRecommendation {
+  x?: number;
+  y?: number;
+  clusterId?: string;
+}
+
+
 export const Clustering: React.FC = () => {
   const storedMachines = useSelector((root: RootState) => root.machines.messages);
+  const syntheticMachines = useSelector((root: RootState) => root.machines.syntheticMachines)
+
   const clusterRecommendation = useSelector((root: RootState) => root.clusterRecommendation);
 
   const [mappedClusterPlotData, setMappedClusterPlotData] = useState<IPlotData[]>([]);
@@ -46,7 +57,9 @@ export const Clustering: React.FC = () => {
 
   useEffect(() => {
     const plotData: IPlotData[] = [];
-
+    let clusterIndex = 0; // Track cluster color manually
+    const clusterColorMap: Record<string, { normal: string; light: string }> = {};
+    // --- Process real machines ---
     const groupedMachines: Record<string, IMachine[]> = Object.values(storedMachines).reduce(
       (acc, machine) => {
         if (machine && machine.clusterId) {
@@ -60,24 +73,68 @@ export const Clustering: React.FC = () => {
       {} as Record<string, IMachine[]>
     );
 
-    Object.entries(groupedMachines).forEach(([clusterId, machines], index) => {
+    // --- Process real machines ---
+    Object.entries(groupedMachines).forEach(([clusterId, machines]) => {
       const validMachines = machines.filter(m => m.x !== undefined && m.y !== undefined);
 
       if (validMachines.length > 0) {
+        const color = PLOT_COLORS[clusterIndex % PLOT_COLORS.length];
+        clusterColorMap[clusterId] = color; // Save mapping real clusterId -> color
+
         plotData.push({
           name: clusterId,
           data: validMachines.map(machine => ({
             x: machine.x!,
-            y: machine.y!
+            y: machine.y!,
+            machineId: machine.machineId
           })),
           machineId: validMachines.map(m => m.machineId),
-          color: PLOT_COLORS[index % PLOT_COLORS.length]
+          color: color.normal
         });
+
+        clusterIndex++;
       }
     });
 
+    // --- Process synthetic machines ---
+    const syntheticEntries = Object.entries(syntheticMachines);
+    if (syntheticEntries.length > 0) {
+      const syntheticClustered = syntheticEntries.reduce((acc, [deviceId, machine]) => {
+        if (machine && machine.clusterId) {
+          if (!acc[machine.clusterId]) {
+            acc[machine.clusterId] = [];
+          }
+          acc[machine.clusterId].push({ deviceId, ...machine });
+        }
+        return acc;
+      }, {} as Record<string, (PlotRecommendation & { deviceId: string })[]>);
+
+      // --- Process synthetic machines ---
+      Object.entries(syntheticClustered).forEach(([clusterId, machines]) => {
+        const validMachines = machines.filter(m => m.x !== undefined && m.y !== undefined);
+
+        if (validMachines.length > 0) {
+          const baseColor = clusterColorMap[clusterId] || PLOT_COLORS[clusterIndex % PLOT_COLORS.length];
+
+          plotData.push({
+            name: `Synthetic ${clusterId}`,
+            data: validMachines.map(machine => ({
+              x: machine.x!,
+              y: machine.y!,
+              machineId: machine.deviceId
+            })),
+            machineId: validMachines.map(m => m.deviceId),
+            color: baseColor.light // use lighter color for synthetic
+          });
+
+          clusterIndex++;
+        }
+      });
+    }
     setMappedClusterPlotData(plotData);
-  }, [storedMachines]);
+  }, [storedMachines, syntheticMachines]);
+
+
 
   const [recommendedTime, setRecommendedTime] = useState<Date | null>(null);
 
@@ -155,12 +212,21 @@ export const Clustering: React.FC = () => {
 
 
   const ChartTooltip = ({ payload }: ChartTooltipProps) => {
-    if (!payload) return null;
+    if (!payload || !payload.length) return null;
+
+    const data = payload[0]?.payload;
+    if (!data) return null;
+
     return (
       <Paper px="md" py="sm" withBorder shadow="md" radius="md">
-        <Text fz="sm">
-          {payload["0"]?.payload.name}
-          {payload["0"]?.payload.machineId}
+        <Text fz="sm" fw={500}>
+          {data.name}
+        </Text>
+        <Text fz="xs" c="dimmed">
+          ID: {data.machineId}
+        </Text>
+        <Text fz="xs">
+          ( {data.x.toFixed(2)}, {data.y.toFixed(2)} )
         </Text>
       </Paper>
     );
@@ -169,26 +235,20 @@ export const Clustering: React.FC = () => {
   return (
     <Box className="clustering-container">
       <Group align="flex-start" className="main-content">
-        <ScatterChart
-          w={800}
-          h={600}
-          data={mappedClusterPlotData}
-          tooltipProps={{
-            content: ({ payload }) => <ChartTooltip payload={payload} />,
-          }}
-          dataKey={{ x: 'x', y: 'y' }}
-          withLegend
-        />
+        <ClusteringChart />
         <Box className="calendar-wrapper" title="Schedule Update" mt="md" style={{ display: 'flex', flexDirection: 'column', gap: "20px" }}>
           <Text className="form-title">Update Scheduling </Text>
 
           <Select
             label="Select Cluster*"
             placeholder="Choose a cluster"
-            data={mappedClusterPlotData.map((plot) => ({ value: plot.name, label: plot.name }))}
+            data={mappedClusterPlotData
+              .filter(plot => !plot.name.startsWith("Synthetic"))
+              .map(plot => ({ value: plot.name, label: plot.name }))}
             value={selectedCluster}
             onChange={(value) => setSelectedCluster(value)}
           />
+
           {selectedCluster && <Text></Text>}
           <Select
             label="Select Application*"

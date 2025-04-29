@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, FileInput, Modal, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import "./admin-dashboard.css";
+import { PACKAGE_DEPOYMENT } from "../../api/apiConsts";
 
 export const PackageFileInput = ({ opened, close, getPackages }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -25,7 +26,7 @@ export const PackageFileInput = ({ opened, close, getPackages }) => {
           return;
         }
 
-        const response = await fetch("http://localhost:5000/api/PackageManagement/sign", {
+        const response = await fetch(PACKAGE_DEPOYMENT.SIGN_PACKAGE, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${authToken}`,

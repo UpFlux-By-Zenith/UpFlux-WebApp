@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box } from '@mantine/core';
-import './machineDetails.css';
+import './gatewayDetails.css';
 import {BlankNavbar} from '../../features/navbar/BlankNavbar';
-import {MachineDetails} from './MachineDetails';
+import {GatewayDetails} from './GatewayDetails';
 import { Footer } from '../footer/Footer';
 
 const MachineDetailsRoute: React.FC = () => {
@@ -10,7 +10,7 @@ const MachineDetailsRoute: React.FC = () => {
         <>
             <BlankNavbar />
             <Box className="details-section">
-            <MachineDetails />
+            <GatewayDetails />
             </Box>
             <Footer />
         </>

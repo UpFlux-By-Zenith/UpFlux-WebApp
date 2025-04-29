@@ -1,4 +1,4 @@
-import { Stack, TextInput, CopyButton, ActionIcon, Tooltip, Text, Button, Checkbox, Table } from "@mantine/core";
+import { Stack, TextInput, CopyButton, ActionIcon, Tooltip, Text, Button, Checkbox, Table, Space } from "@mantine/core";
 import { IconCheck, IconCopy, IconLicense, IconRotateClockwise } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { generateMachineId, getMachinesWithLicense } from "../../api/applicationsRequest";
@@ -101,7 +101,7 @@ export const ManageMachines: React.FC = () => {
                     ))}
                 </Table.Tbody>
             </Table>
+            <Space h={250} />
         </Stack>
-
     );
 };
