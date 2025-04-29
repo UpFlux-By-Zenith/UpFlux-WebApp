@@ -6,7 +6,7 @@ export const GROUP_TYPES = {
     ROLLBACK_ALERT: "Alert/Rollback",
     RECOMMENDATION_ALERT: "Recommendations/Cluster",
     STATUS_ALERT: `Status/`,
-    RECOMMENDATION_PLOT: `Recommendations/Plot/`
+    RECOMMENDATION_PLOT: `Recommendations/Plot`
 }
 
 export interface IMachineStatus {
