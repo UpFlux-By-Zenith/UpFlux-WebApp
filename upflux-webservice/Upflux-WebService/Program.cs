@@ -218,7 +218,7 @@ public class Program
         app.UseRateLimiter();
 
         // Enforce HTTPS redirection
-        app.UseHttpsRedirection();
+        // app.UseHttpsRedirection();
 
         // Use WebSockets before routing
         app.UseWebSockets();
