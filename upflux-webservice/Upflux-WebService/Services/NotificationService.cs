@@ -45,11 +45,11 @@ public class NotificationService : INotificationService
                 await AddUriToGroupAsync(groupId, "Alert/ScheduledUpdate");
                 await AddUriToGroupAsync(groupId, "Alert/Rollback");
                 await AddUriToGroupAsync(groupId, "Recommendations/Cluster");
+                await AddUriToGroupAsync(groupId, "Recommendations/Plot");
                 foreach (var machineId in machineIds)
                 {
                     await AddUriToGroupAsync(groupId, machineId);
                     await AddUriToGroupAsync(groupId, $"Status/{machineId}");
-                    await AddUriToGroupAsync(groupId, $"Recommendations/Plot/{machineId}");
                 }
 
                 _logger.LogInformation("Group created successfully with ID: {GroupId}", groupId);
@@ -109,12 +109,9 @@ public class NotificationService : INotificationService
             foreach (var groupId in GroupUriMapping.Keys)
                 // Check if the group contains the uri
                 if (GroupUriMapping[groupId].Contains(uri))
-                {
                     // Send message to the group if the uri is found
                     await _hubContext.Clients.Group(groupId).SendAsync("ReceiveMessage", uri, message);
-                    // _logger.LogInformation("Message sent to URI '{Uri}' in group '{GroupId}'", uri, groupId);
-                }
-
+            // _logger.LogInformation("Message sent to URI '{Uri}' in group '{GroupId}'", uri, groupId);
             // _logger.LogWarning("[SignalR] Message not sent. URI '{Uri}' not found in any group.", uri);
         }
         catch (Exception ex)

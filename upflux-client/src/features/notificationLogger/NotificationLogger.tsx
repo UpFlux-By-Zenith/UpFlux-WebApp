@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Table, ScrollArea, TextInput, Button } from "@mantine/core";
+import { Table, ScrollArea, TextInput, Button, Space } from "@mantine/core";
 import { useSelector, useDispatch } from "react-redux";
 import { IconMenu3, IconSearch, IconTrash } from "@tabler/icons-react";
 import { IAlertMessage, clearAlerts } from "../reduxSubscription/alertSlice";
@@ -92,6 +92,7 @@ export const NotificationLogger = () => {
                         )}
                     </Table.Tbody>
                 </Table>
-            </ScrollArea ></>
+            </ScrollArea >
+            <Space h={310} /></>
     );
 };

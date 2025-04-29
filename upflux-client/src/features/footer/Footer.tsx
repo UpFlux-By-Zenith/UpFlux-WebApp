@@ -13,15 +13,6 @@ export const Footer = () => {
         <Text size="sm" className="upflux-copyright">
           Copyright © 2024 UpFlux all rights reserved
         </Text>
-
-        <Group gap="lg" className="footer-links">
-          <Anchor href="/privacy-policy" className="footer-link">
-            Privacy Policy
-          </Anchor>
-          <Anchor href="/terms-conditions" className="footer-link">
-            Terms and Conditions
-          </Anchor>
-        </Group>
       </div>
     </Container>
   );

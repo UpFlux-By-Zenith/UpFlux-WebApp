@@ -12,6 +12,7 @@ export const AUTH_API = {
   GET_ENGINEER_TOKEN: `${API_BASE_URL}/api/Auth/admin/create-engineer-token`,
   ADMIN_LOGIN: `${API_BASE_URL}/api/Auth/admin/login`,
   VERIFY_TOKEN: `${API_BASE_URL}/api/Auth/parse-token`,
+  GUEST_LOGIN: `${API_BASE_URL}/api/Auth/guest/login`,
 };
 
 export const ADMIN_REQUEST_API = {
@@ -36,12 +37,18 @@ export const DATA_REQUEST_API = {
 
 export const PACKAGE_DEPOYMENT = {
   GET_AVAILABLE_PACKAGES: `${API_BASE_URL}/api/PackageManagement/packages `,
-  DEPLOYMENT: `${API_BASE_URL}/api/PackageManagement/upload `
+  DEPLOYMENT: `${API_BASE_URL}/api/PackageManagement/upload`,
+  MULTIPLE_DEPLOY: `${API_BASE_URL}/api/PackageManagement/packages/upload`,
+  SIGN_PACKAGE: `${API_BASE_URL}/api/PackageManagement/sign`
 }
 
 export const LICENCE_APIS = {
   REGISTRATION: `${API_BASE_URL}/api/Licence/admin/register`,
   GENERATE_MACHINE_ID: `${API_BASE_URL}/api/Licence/admin/generateId`
 }
+
+export const CREATE_NOTIFICATION = `${API_BASE_URL}/api/Notification/create-group`
+
+export const HUB_URL = `${API_BASE_URL}/notificationHub`; // Replace with your SignalR hub URL
 
 export const ROLLBACK = `${API_BASE_URL}/api/Command/rollback`

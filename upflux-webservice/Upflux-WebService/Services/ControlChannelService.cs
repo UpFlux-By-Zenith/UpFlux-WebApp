@@ -326,8 +326,9 @@ namespace UpFlux_WebService
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
             // This handles alerts that affects device packages
-            if ((alert.Message.StartsWith("Update to version ") && alert.Message.Contains(" installed successfully")) || (alert.Message.StartsWith("Rollback to version ") &&
-                    alert.Message.Contains(" completed successfully")))
+            if ((alert.Message.StartsWith("Update to version ") && alert.Message.Contains(" installed successfully")) ||
+                (alert.Message.StartsWith("Rollback to version ") &&
+                 alert.Message.Contains(" completed successfully")))
             {
                 await SendVersionDataRequestAsync("gateway-patrick-1234");
                 await notificationService.SendMessageToUriAsync($"Alert/Update", alert.ToString());
@@ -869,7 +870,7 @@ namespace UpFlux_WebService
                 _logger.LogInformation(" Plot: dev={0}, x={1}, y={2}, cluster={3}",
                     plot.DeviceUuid, plot.X, plot.Y, plot.ClusterId);
 
-                await notificationService.SendMessageToUriAsync($"Recommendations/Plot/{plot.DeviceUuid}",
+                await notificationService.SendMessageToUriAsync($"Recommendations/Plot",
                     JsonSerializer.Serialize(plot));
             }
         }

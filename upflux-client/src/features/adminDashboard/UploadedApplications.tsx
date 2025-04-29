@@ -1,4 +1,4 @@
-import { Table, Stack, Text, Button } from "@mantine/core";
+import { Table, Stack, Text, Button, Space } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { IPackagesOnCloud, getAvailablePackages } from "../../api/applicationsRequest";
 import "./admin-dashboard.css";
@@ -47,6 +47,8 @@ export const UploadedApplications = () => {
                     </Table>
                 </Table>
             </Stack>
+
+            <Space h={250} />
         </>
     );
 };
